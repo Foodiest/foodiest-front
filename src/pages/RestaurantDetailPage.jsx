@@ -1,5 +1,99 @@
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
+
+const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY;
+let kakaoScriptPromise = null;
+
+const loadKakaoMapSdk = () => {
+  if (typeof window === 'undefined') {
+    return Promise.reject(new Error('Kakao map is only available in browser.'));
+  }
+
+  if (window.kakao?.maps) {
+    return Promise.resolve(window.kakao);
+  }
+
+  if (kakaoScriptPromise) {
+    return kakaoScriptPromise;
+  }
+
+  kakaoScriptPromise = new Promise((resolve, reject) => {
+    if (!KAKAO_APP_KEY) {
+      reject(new Error('Missing VITE_KAKAO_MAP_APP_KEY environment variable.'));
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_APP_KEY}&autoload=false`;
+    script.async = true;
+    script.onload = () => {
+      if (!window.kakao?.maps) {
+        reject(new Error('Kakao SDK loaded but map object is unavailable. Check app key and allowed web domain.'));
+        return;
+      }
+      window.kakao.maps.load(() => resolve(window.kakao));
+    };
+    script.onerror = () => reject(new Error('Failed to load Kakao Map SDK.'));
+    document.head.appendChild(script);
+  });
+
+  kakaoScriptPromise = kakaoScriptPromise.catch(error => {
+    kakaoScriptPromise = null;
+    throw error;
+  });
+
+  return kakaoScriptPromise;
+};
+
+function KakaoLocationMiniMap({ x, y }) {
+  const mapRef = useRef(null);
+  const mapElementRef = useRef(null);
+  const [mapError, setMapError] = useState('');
+
+  useEffect(() => {
+    let isUnmounted = false;
+
+    loadKakaoMapSdk()
+      .then(kakao => {
+        if (isUnmounted || !mapElementRef.current) {
+          return;
+        }
+
+        const center = new kakao.maps.LatLng(y, x);
+        const map = new kakao.maps.Map(mapElementRef.current, {
+          center,
+          level: 4,
+        });
+        mapRef.current = map;
+
+        new kakao.maps.Marker({
+          map,
+          position: center,
+        });
+      })
+      .catch(error => {
+        if (!isUnmounted) {
+          setMapError(error.message);
+        }
+      });
+
+    return () => {
+      isUnmounted = true;
+      mapRef.current = null;
+    };
+  }, [x, y]);
+
+  if (mapError) {
+    return (
+      <div className="w-full h-full bg-slate-100 flex items-center justify-center px-3 text-center text-xs text-red-500">
+        {mapError}
+      </div>
+    );
+  }
+
+  return <div ref={mapElementRef} className="w-full h-full" />;
+}
 
 const dishes = [
   { name: 'Carbonara Tradizionale', price: '$24', desc: 'Guanciale, Pecorino Romano, black pepper, fresh egg yolks.', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBUDCZEaTkArBMz8JpvtFHITdHllxtrqQbji5qcaUDZNH55pXsjh7Eb10SSBW_puq-s03qm1_AV1IRVmL8SopZYunhrx6s_LeOrnBgFjTt12IHx0UEPPgBxI0mSB4yZG3zOWzVzIdbt7UbasccgETPvXw_kHJmXjdolWXLHrfoPxoFp0pYh-5nm55IN3ictKJHl5HG5gqTZB79OH_ovmGmHGbbVodIHqS_wrg2s2E7n5ojJkJHX1Qph5JxOGv5sidjWhBuun68Ho6AE' },
@@ -23,6 +117,15 @@ const bentoImages = [
 
 export default function RestaurantDetailPage() {
   const navigate = useNavigate();
+  const restaurantLocation = { x: 126.9784, y: 37.5665 };
+
+  const handleGoToMyPage = () => {
+    navigate('/mypage');
+    // Route transition happens asynchronously in SPA; scroll on next frame.
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    });
+  };
 
   return (
     <Layout>
@@ -178,7 +281,7 @@ export default function RestaurantDetailPage() {
                   <div>
                     <h4 className="font-semibold text-sm">
                       <button
-                        onClick={() => navigate('/mypage')}
+                        onClick={handleGoToMyPage}
                         className="hover:underline hover:text-primary transition-colors"
                       >
                         Elena Martinez
@@ -241,11 +344,7 @@ export default function RestaurantDetailPage() {
               </h4>
               <p className="text-sm text-on-surface-variant">124 Via Della Conciliazione, Historic Center</p>
               <div className="mt-2 h-28 rounded-lg overflow-hidden">
-                <img
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNWRVLlMDCvb11z87_GipcmgbXAynxMHN_MveXhqwDxw2rXzCSDCLzLGNZ9WPGkGTZrHiean4nbyhjRh-EPf1oXRFY8-z6zy1wFN3mrh_qS6k24hmQ9tylX_2lJfBflVAdai4GDHPuG08zIu-ufgQ_KKiQiZBUU2jI4IOrgPrMz5RTvNepv5S0-8y0LaoLNJY-uu9dTuB1spoSK-MRU_sGaLVB3GSq7eZFop3NBNbW9cL8Fk4NqdnunAl4DQxvW1myrdfMmQfr_6VJ"
-                  alt="map"
-                  className="w-full h-full object-cover"
-                />
+                <KakaoLocationMiniMap x={restaurantLocation.x} y={restaurantLocation.y} />
               </div>
             </div>
             <div>

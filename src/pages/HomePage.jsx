@@ -181,6 +181,14 @@ export default function HomePage() {
     setList(prev => prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]);
   };
 
+  const handleGoToRestaurantDetail = restaurantId => {
+    navigate(`/restaurant/${restaurantId}`);
+    // Ensure the destination page starts from the top after route transition.
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    });
+  };
+
   return (
     <Layout>
       {/* Hero Section */}
@@ -343,7 +351,7 @@ export default function HomePage() {
                   <div className="flex justify-between items-center pt-3 border-t border-slate-50">
                     <span className="text-slate-600 text-sm italic truncate max-w-[60%]">{r.quote}</span>
                     <button
-                      onClick={() => navigate(`/restaurant/${r.id}`)}
+                      onClick={() => handleGoToRestaurantDetail(r.id)}
                       className="bg-primary text-white text-sm font-semibold px-5 py-2 rounded-lg hover:brightness-110 active:scale-95 transition-all ml-3 flex-shrink-0"
                     >
                       View Details
