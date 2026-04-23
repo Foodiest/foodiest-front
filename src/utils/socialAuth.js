@@ -116,29 +116,22 @@ export async function loginWithKakao() {
   });
 }
 
-export async function loginWithGoogle() {
-  await loadScript('https://accounts.google.com/gsi/client');
-  return new Promise((resolve, reject) => {
-    const client = window.google.accounts.oauth2.initTokenClient({
-      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-      scope: 'openid email profile',
-      callback: async (tokenResponse) => {
-        if (tokenResponse.error) { reject(new Error(tokenResponse.error)); return; }
-        try {
-          const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-          });
-          const user = await res.json();
-          resolve({
-            provider: 'google',
-            socialId: user.sub,
-            email: user.email ?? '',
-            nickname: user.name ?? '',
-            profileImage: user.picture ?? '',
-          });
-        } catch (e) { reject(e); }
-      },
+export async function loginWithGoogle(accessToken) {
+  try {
+    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
-    client.requestAccessToken({ prompt: 'select_account' });
-  });
+    if (!res.ok) throw new Error('구글 유저 정보 가져오기 실패');
+    const user = await res.json();
+    return {
+      provider: 'google',
+      socialId: user.sub,
+      email: user.email ?? '',
+      nickname: user.name ?? '',
+      profileImage: user.picture ?? '',
+    };
+  } catch (e) {
+    throw e;
+  }
 }
+
