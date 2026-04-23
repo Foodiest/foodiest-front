@@ -8,6 +8,9 @@ export default function AIChatBot() {
     { id: 1, from: 'bot', text: '안녕하세요! 어떤 맛집을 찾으시나요?' }
   ]);
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiKey, setApiKey] = useState(() => sessionStorage.getItem('groq_api_key') || '');
+  const [showApiKeyInput, setShowApiKeyInput] = useState(() => !sessionStorage.getItem('groq_api_key'));
 
   const suggestions = [
     '조용한 카페 추천해줘',
@@ -16,15 +19,106 @@ export default function AIChatBot() {
     '야외 다이닝',
   ];
 
-  const sendMessage = (text) => {
+  const formatBotMessage = text => {
+    if (!text) return '';
+    // Add line breaks before numbered list items for better readability.
+    return text
+      .replace(/(\S)\s+(\d+\.\s+\*\*)/g, '$1\n$2')
+      .replace(/(\*\*:)\s*/g, '$1 ');
+  };
+
+  const renderBotMessage = text => {
+    const formatted = formatBotMessage(text);
+    const parts = formatted.split(/(\*\*[^*]+\*\*)/g);
+
+    return parts.map((part, index) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={`${part}-${index}`}>{part.slice(2, -2)}</strong>;
+      }
+      return <span key={`${part}-${index}`}>{part}</span>;
+    });
+  };
+
+  const saveApiKey = () => {
+    const trimmed = apiKey.trim();
+    if (!trimmed) return;
+    sessionStorage.setItem('groq_api_key', trimmed);
+    setShowApiKeyInput(false);
+  };
+
+  const sendMessage = async (text) => {
     const userMsg = text || input.trim();
-    if (!userMsg) return;
-    setMessages(prev => [
-      ...prev,
-      { id: Date.now(), from: 'user', text: userMsg },
-      { id: Date.now() + 1, from: 'bot', text: `"${userMsg}"에 맞는 맛집을 찾고 있어요! 잠시만 기다려주세요.` }
-    ]);
+    if (!userMsg || isLoading) return;
+
+    const key = sessionStorage.getItem('groq_api_key') || apiKey.trim();
+    if (!key) {
+      setShowApiKeyInput(true);
+      return;
+    }
+
+    const userMessage = { id: Date.now(), from: 'user', text: userMsg };
+    const nextMessages = [
+      ...messages,
+      userMessage,
+    ];
+
+    setMessages(nextMessages);
     setInput('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+          model: 'llama-3.1-8b-instant',
+          messages: [
+            {
+              role: 'user',
+              content: '너는 Foodiest AI concierge야. 맛집 추천과 음식 관련 질문에 대해 한국어로 친절하고 간결하게 답변해.',
+            },
+            ...nextMessages.map(message => ({
+              role: message.from === 'user' ? 'user' : 'assistant',
+              content: message.text,
+            })),
+          ],
+          temperature: 0.7,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        const apiError =
+          data?.error?.message ||
+          data?.error?.status ||
+          `HTTP ${response.status}`;
+        throw new Error(apiError);
+      }
+      const botReply = data?.choices?.[0]?.message?.content?.trim() || '응답을 받아오지 못했어요.';
+
+      setMessages(prev => [
+        ...prev,
+        { id: Date.now() + 1, from: 'bot', text: botReply },
+      ]);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          from: 'bot',
+          text: `Groq 오류: ${errorMessage}`,
+        },
+      ]);
+      if (key !== (sessionStorage.getItem('groq_api_key') || '')) {
+        setShowApiKeyInput(true);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -51,6 +145,28 @@ export default function AIChatBot() {
 
           {/* Messages */}
           <div className="h-80 overflow-y-auto p-4 bg-slate-50 space-y-3">
+            {showApiKeyInput && (
+              <div className="bg-white border border-orange-200 rounded-xl p-3 shadow-sm">
+                <p className="text-xs font-semibold text-slate-700 mb-2">Groq API Key 입력</p>
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    value={apiKey}
+                    onChange={e => setApiKey(e.target.value)}
+                    placeholder="gsk_..."
+                    className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                  />
+                  <button
+                    onClick={saveApiKey}
+                    className="px-3 py-2 text-xs bg-[#FF5722] text-white rounded-lg hover:brightness-110"
+                  >
+                    저장
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2">키는 브라우저 세션에만 저장됩니다. (Groq API Key)</p>
+              </div>
+            )}
+
             {messages.map(msg => (
               <div
                 key={msg.id}
@@ -68,10 +184,23 @@ export default function AIChatBot() {
                       : 'bg-[#FF5722] rounded-tr-none text-white'
                   }`}
                 >
-                  {msg.text}
+                  <span className="whitespace-pre-wrap break-words leading-relaxed">
+                    {msg.from === 'bot' ? renderBotMessage(msg.text) : msg.text}
+                  </span>
                 </div>
               </div>
             ))}
+
+            {isLoading && (
+              <div className="flex items-start gap-2">
+                <div className="w-8 h-8 rounded-full bg-[#FF5722] flex-shrink-0 overflow-hidden">
+                  <img src={BOT_AVATAR} alt="bot" className="w-full h-full object-cover" />
+                </div>
+                <div className="p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[80%] text-sm bg-white border border-slate-100 text-slate-500">
+                  응답 생성 중...
+                </div>
+              </div>
+            )}
 
             {/* Suggestion chips */}
             {messages.length <= 2 && (
@@ -100,11 +229,13 @@ export default function AIChatBot() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && sendMessage()}
+                disabled={isLoading}
                 className="w-full pl-4 pr-12 py-2.5 bg-slate-100 border-none rounded-full focus:ring-2 focus:ring-[#FF5722] focus:border-transparent text-sm"
                 placeholder="메시지를 입력하세요..."
               />
               <button
                 onClick={() => sendMessage()}
+                disabled={isLoading}
                 className="absolute right-2 text-[#FF5722] hover:scale-110 transition-transform"
               >
                 <span className="material-symbols-outlined">send</span>
