@@ -5,6 +5,7 @@ import { restaurants } from '../data/mockRestaurants';
 import { popularDishes } from '../data/mockMenus';
 import { scores, mockReview, nlpKeywords } from '../data/mockReviews';
 import { useParams } from 'react-router-dom';
+import { isSaved, toggleSaved } from '../data/mockSavedRestaurants';
 
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY;
@@ -111,10 +112,30 @@ export default function RestaurantDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // Find restaurant by id or default to first one
   const restaurant = restaurants.find(r => r.id === parseInt(id)) || restaurants[0];
   const restaurantLocation = { x: restaurant.x, y: restaurant.y };
 
+  const [copyToast, setCopyToast] = useState(false);
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopyToast(true);
+      setTimeout(() => setCopyToast(false), 2000);
+    });
+  };
+
+  const userIdNo = Number(localStorage.getItem('currentUserIdNo'));
+  const isLoggedIn = !!localStorage.getItem('currentUser');
+  const [saved, setSaved] = useState(() => isLoggedIn ? isSaved(userIdNo, restaurant.id) : false);
+
+  const handleSaveToggle = () => {
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
+    const updated = toggleSaved(userIdNo, restaurant.id);
+    setSaved(updated.includes(restaurant.id));
+  };
 
   const handleGoToMyPage = () => {
     navigate('/mypage');
@@ -159,11 +180,30 @@ export default function RestaurantDetailPage() {
             </div>
           </div>
           <div className="flex gap-3">
-            <button className="bg-surface-container-high text-on-surface-variant px-5 py-3 rounded-lg text-sm font-semibold hover:bg-surface-variant transition-colors flex items-center gap-1">
-              <span className="material-symbols-outlined text-sm">share</span> Share
+            <button
+              onClick={handleShare}
+              className="bg-surface-container-high text-on-surface-variant px-5 py-3 rounded-lg text-sm font-semibold hover:bg-surface-variant transition-colors flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-sm">
+                {copyToast ? 'check' : 'share'}
+              </span>
+              {copyToast ? 'Copied!' : 'Share'}
             </button>
-            <button className="bg-surface-container-high text-on-surface-variant px-5 py-3 rounded-lg text-sm font-semibold hover:bg-surface-variant transition-colors flex items-center gap-1">
-              <span className="material-symbols-outlined text-sm">bookmark</span> Save
+            <button
+              onClick={handleSaveToggle}
+              className={`px-5 py-3 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1 ${
+                saved
+                  ? 'bg-primary text-white hover:opacity-90'
+                  : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-variant'
+              }`}
+            >
+              <span
+                className="material-symbols-outlined text-sm"
+                style={saved ? { fontVariationSettings: "'FILL' 1" } : {}}
+              >
+                bookmark
+              </span>
+              {saved ? 'Saved' : 'Save'}
             </button>
           </div>
         </div>

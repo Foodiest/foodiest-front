@@ -14,10 +14,17 @@ export default function TopNavBar() {
 
   const navLinks = [
     { to: '/', label: 'Explore' },
-    { to: '/saved', label: 'Saved' },
+    { to: '/saved', label: 'Saved', requireAuth: true },
     { to: '/collections', label: 'Collections' },
     { to: '/admin', label: 'Analytics' },
   ];
+
+  const handleNavClick = (e, link) => {
+    if (link.requireAuth && !currentUser) {
+      e.preventDefault();
+      navigate('/login');
+    }
+  };
 
   return (
     <nav className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
@@ -28,19 +35,20 @@ export default function TopNavBar() {
         </Link>
 
         <div className="hidden md:flex items-center space-x-8">
-          {navLinks.map(({ to, label }) => {
-            const isActive = location.pathname === to;
+          {navLinks.map((link) => {
+            const isActive = location.pathname === link.to;
             return (
               <Link
-                key={to}
-                to={to}
+                key={link.to}
+                to={link.to}
+                onClick={(e) => handleNavClick(e, link)}
                 className={`font-medium transition-colors duration-200 ${
                   isActive
                     ? 'text-orange-600 font-bold border-b-2 border-orange-600'
                     : 'text-gray-600 hover:text-orange-600'
                 }`}
               >
-                {label}
+                {link.label}
               </Link>
             );
           })}

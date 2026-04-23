@@ -9,6 +9,7 @@ import SignUpStep1Page from "./pages/SignUpStep1Page";
 import SignUpStep2Page from "./pages/SignUpStep2Page";
 import ProfileSettingsPage from "./pages/ProfileSettingsPage";
 import MyPageSettingsPage from "./pages/MyPageSettingsPage";
+import SavedPage from "./pages/SavedPage";
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route path="/signup/step2" element={<SignUpStep2Page />} />
         <Route path="/profile-settings" element={<ProfileSettingsPage />} />
         <Route path="/mypage-settings" element={<MyPageSettingsPage />} />
+        <Route path="/saved" element={<SavedPage />} />
       </Routes>
     </BrowserRouter>
   );
