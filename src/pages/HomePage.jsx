@@ -1,16 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Layout from '../components/Layout';
-import { restaurants, nearbyFavorites } from '../data/mockRestaurants';
-import { vibes, flavors, dietary } from '../data/mockFilters';
-
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Layout from "../components/Layout";
+import { restaurants, nearbyFavorites } from "../data/mockRestaurants";
+import { vibes, flavors, dietary } from "../data/mockFilters";
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY;
 let kakaoScriptPromise = null;
 
 const loadKakaoMapSdk = () => {
-  if (typeof window === 'undefined') {
-    return Promise.reject(new Error('Kakao map is only available in browser.'));
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("Kakao map is only available in browser."));
   }
 
   if (window.kakao?.maps) {
@@ -23,25 +22,25 @@ const loadKakaoMapSdk = () => {
 
   kakaoScriptPromise = new Promise((resolve, reject) => {
     if (!KAKAO_APP_KEY) {
-      reject(new Error('Missing VITE_KAKAO_MAP_APP_KEY environment variable.'));
+      reject(new Error("Missing VITE_KAKAO_MAP_APP_KEY environment variable."));
       return;
     }
 
-    const script = document.createElement('script');
+    const script = document.createElement("script");
     script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_APP_KEY}&autoload=false`;
     script.async = true;
     script.onload = () => {
       if (!window.kakao?.maps) {
         reject(
           new Error(
-            'Kakao SDK loaded but map object is unavailable. Check app key and allowed web domain.'
-          )
+            "Kakao SDK loaded but map object is unavailable. Check app key and allowed web domain.",
+          ),
         );
         return;
       }
       window.kakao.maps.load(() => resolve(window.kakao));
     };
-    script.onerror = () => reject(new Error('Failed to load Kakao Map SDK.'));
+    script.onerror = () => reject(new Error("Failed to load Kakao Map SDK."));
     document.head.appendChild(script);
   });
 
@@ -62,7 +61,7 @@ function KakaoMapView({
   const mapElRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
-  const [mapError, setMapError] = useState('');
+  const [mapError, setMapError] = useState("");
 
   useEffect(() => {
     let isUnmounted = false;
@@ -76,7 +75,7 @@ function KakaoMapView({
         const firstRestaurant = restaurants[0];
         const center = new kakao.maps.LatLng(
           firstRestaurant.y,
-          firstRestaurant.x
+          firstRestaurant.x,
         );
         const map = new kakao.maps.Map(mapElRef.current, {
           center,
@@ -91,8 +90,8 @@ function KakaoMapView({
             clickable: true,
           });
 
-          kakao.maps.event.addListener(marker, 'click', () =>
-            onSelectRestaurant(restaurant.id)
+          kakao.maps.event.addListener(marker, "click", () =>
+            onSelectRestaurant(restaurant.id),
           );
           return { id: restaurant.id, marker };
         });
@@ -117,7 +116,7 @@ function KakaoMapView({
     }
 
     const selected = restaurants.find(
-      (restaurant) => restaurant.id === selectedRestaurantId
+      (restaurant) => restaurant.id === selectedRestaurantId,
     );
     if (!selected) {
       return;
@@ -154,29 +153,27 @@ function KakaoMapView({
   return <div ref={mapElRef} className={`${className} w-full`} />;
 }
 
-
-
 export default function HomePage() {
   const navigate = useNavigate();
-  const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
   const [selectedVibes, setSelectedVibes] = useState(currentUser?.vibes ?? []);
   const [selectedFlavors, setSelectedFlavors] = useState(
-    currentUser?.flavors ?? []
+    currentUser?.flavors ?? [],
   );
   const [selectedDietary, setSelectedDietary] = useState(
-    currentUser?.dietary ?? []
+    currentUser?.dietary ?? [],
   );
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [selectedRestaurantId, setSelectedRestaurantId] = useState(
-    restaurants[0]?.id ?? null
+    restaurants[0]?.id ?? null,
   );
   const [isMapExpanded, setIsMapExpanded] = useState(false);
 
   const toggle = (list, setList, item) => {
     setList((prev) =>
-      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]
+      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item],
     );
   };
 
@@ -185,7 +182,7 @@ export default function HomePage() {
       restaurants.filter((r) => {
         const q = searchQuery.toLowerCase();
         const searchMatch =
-          q === '' ||
+          q === "" ||
           r.name.toLowerCase().includes(q) ||
           r.cuisine.toLowerCase().includes(q) ||
           r.tags.some((t) => t.toLowerCase().includes(q));
@@ -200,7 +197,7 @@ export default function HomePage() {
           selectedDietary.every((d) => r.dietary.includes(d));
         return searchMatch && vibeMatch && flavorMatch && dietaryMatch;
       }),
-    [searchQuery, selectedVibes, selectedFlavors, selectedDietary]
+    [searchQuery, selectedVibes, selectedFlavors, selectedDietary],
   );
 
   const effectiveSelectedRestaurantId = useMemo(() => {
@@ -213,16 +210,16 @@ export default function HomePage() {
   const selectedRestaurant = useMemo(
     () =>
       filteredRestaurants.find(
-        (restaurant) => restaurant.id === effectiveSelectedRestaurantId
+        (restaurant) => restaurant.id === effectiveSelectedRestaurantId,
       ) ?? null,
-    [filteredRestaurants, effectiveSelectedRestaurantId]
+    [filteredRestaurants, effectiveSelectedRestaurantId],
   );
 
   const handleGoToRestaurantDetail = (restaurantId) => {
     navigate(`/restaurant/${restaurantId}`);
     // Ensure the destination page starts from the top after route transition.
     window.requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     });
   };
 
@@ -281,11 +278,13 @@ export default function HomePage() {
                 {vibes.map((v) => (
                   <button
                     key={v.label}
-                    onClick={() => toggle(selectedVibes, setSelectedVibes, v.label)}
+                    onClick={() =>
+                      toggle(selectedVibes, setSelectedVibes, v.label)
+                    }
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${
                       selectedVibes.includes(v.label)
-                        ? 'border-orange-100 bg-orange-50 text-orange-600'
-                        : 'border-slate-200 text-slate-600 hover:border-orange-200'
+                        ? "border-orange-100 bg-orange-50 text-orange-600"
+                        : "border-slate-200 text-slate-600 hover:border-orange-200"
                     }`}
                   >
                     {v.label}
@@ -309,8 +308,8 @@ export default function HomePage() {
                     }
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${
                       selectedFlavors.includes(f.label)
-                        ? 'border-orange-100 bg-orange-50 text-orange-600'
-                        : 'border-slate-200 text-slate-600 hover:border-orange-200'
+                        ? "border-orange-100 bg-orange-50 text-orange-600"
+                        : "border-slate-200 text-slate-600 hover:border-orange-200"
                     }`}
                   >
                     {f.label}
@@ -334,8 +333,8 @@ export default function HomePage() {
                     }
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${
                       selectedDietary.includes(d.label)
-                        ? 'border-orange-100 bg-orange-50 text-orange-600'
-                        : 'border-slate-200 text-slate-600 hover:border-orange-200'
+                        ? "border-orange-100 bg-orange-50 text-orange-600"
+                        : "border-slate-200 text-slate-600 hover:border-orange-200"
                     }`}
                   >
                     {d.label}
@@ -358,7 +357,7 @@ export default function HomePage() {
               </h2>
               <p className="text-slate-500 text-sm mt-1">
                 {filteredRestaurants.length} result
-                {filteredRestaurants.length !== 1 ? 's' : ''} matching your
+                {filteredRestaurants.length !== 1 ? "s" : ""} matching your
                 filters
               </p>
             </div>
@@ -452,8 +451,8 @@ export default function HomePage() {
                           key={v}
                           className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
                             selectedVibes.includes(v)
-                              ? 'bg-indigo-500 text-white border-indigo-500'
-                              : 'bg-indigo-50 text-indigo-500 border-indigo-100'
+                              ? "bg-indigo-500 text-white border-indigo-500"
+                              : "bg-indigo-50 text-indigo-500 border-indigo-100"
                           }`}
                         >
                           <span className="material-symbols-outlined text-[12px]">
@@ -467,8 +466,8 @@ export default function HomePage() {
                           key={f}
                           className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
                             selectedFlavors.includes(f)
-                              ? 'bg-amber-500 text-white border-amber-500'
-                              : 'bg-amber-50 text-amber-500 border-amber-100'
+                              ? "bg-amber-500 text-white border-amber-500"
+                              : "bg-amber-50 text-amber-500 border-amber-100"
                           }`}
                         >
                           <span className="material-symbols-outlined text-[12px]">
@@ -482,8 +481,8 @@ export default function HomePage() {
                           key={d}
                           className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
                             selectedDietary.includes(d)
-                              ? 'bg-green-500 text-white border-green-500'
-                              : 'bg-green-50 text-green-600 border-green-100'
+                              ? "bg-green-500 text-white border-green-500"
+                              : "bg-green-50 text-green-600 border-green-100"
                           }`}
                         >
                           <span className="material-symbols-outlined text-[12px]">
@@ -495,7 +494,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div className="flex justify-between items-center pt-3 border-t border-slate-50">
-                    <span className="text-slate-600 text-sm italic truncate max-w-[60%]">
+                    <span className="text-slate-600 text-sm italic line-clamp-2 max-w-[70%]">
                       {r.quote}
                     </span>
                     <button
@@ -533,7 +532,7 @@ export default function HomePage() {
             <div className="p-5">
               {selectedRestaurant && (
                 <p className="text-xs text-slate-500 mb-3">
-                  Selected:{' '}
+                  Selected:{" "}
                   <span className="font-semibold text-slate-700">
                     {selectedRestaurant.name}
                   </span>
@@ -542,7 +541,6 @@ export default function HomePage() {
               <h4 className="font-semibold text-sm mb-3">Nearby Favorites</h4>
               <div className="space-y-3">
                 {nearbyFavorites.map((item) => (
-
                   <div key={item.name} className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-100">
                       <img
@@ -573,9 +571,9 @@ export default function HomePage() {
           tabIndex={0}
           onKeyDown={(event) => {
             if (
-              event.key === 'Escape' ||
-              event.key === 'Enter' ||
-              event.key === ' '
+              event.key === "Escape" ||
+              event.key === "Enter" ||
+              event.key === " "
             ) {
               setIsMapExpanded(false);
             }
