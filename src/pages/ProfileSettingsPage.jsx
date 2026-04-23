@@ -1,22 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
+import { vibes, flavors, dietary } from '../data/mockFilters';
 
-const vibeOptions = [
-  { label: 'Quiet', icon: 'volume_off' },
-  { label: 'Lively', icon: 'celebration' },
-  { label: 'Romantic', icon: 'favorite' },
-  { label: 'Business', icon: 'business_center' },
-  { label: 'Family-friendly', icon: 'family_restroom' },
-];
-const tasteOptions = [
-  { label: 'Spicy', icon: 'local_fire_department' },
-  { label: 'Sweet', icon: 'icecream' },
-  { label: 'Savory', icon: 'egg_alt' },
-  { label: 'Umami', icon: 'emoji_food_beverage' },
-  { label: 'Salt-heavy', icon: 'water_drop' },
-];
-const allergyOptions = ['Nut-free', 'Gluten-free', 'Vegan', 'No Seafood', 'No Pork'];
+
+const vibeOptions = vibes.filter(v => ['Quiet', 'Lively', 'Romantic', 'Business', 'Family Friendly'].includes(v.label));
+const tasteOptions = flavors.filter(f => ['Spicy', 'Sweet', 'Savory', 'Umami', 'Salt-heavy'].includes(f.label));
+const allergyOptions = dietary.filter(d => ['Nut-free', 'Gluten-free', 'Vegan', 'No Seafood', 'No Pork'].includes(d.label)).map(d => d.label);
+
 
 export default function ProfileSettingsPage() {
   const navigate = useNavigate();

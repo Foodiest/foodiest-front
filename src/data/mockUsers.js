@@ -2,6 +2,7 @@ const mockUsers = [
   {
     id: 1,
     userId: 'hyuk_dev',
+    nickname: '혁이',
     email: 'hyuk@foodiest.com',
     password: 'password123',
     phone: '010-1234-5678',
@@ -13,6 +14,7 @@ const mockUsers = [
   {
     id: 2,
     userId: 'jane_gourmet',
+    nickname: '미식가 제인',
     email: 'jane@foodiest.com',
     password: 'jane1234',
     phone: '010-9876-5432',
@@ -24,6 +26,7 @@ const mockUsers = [
   {
     id: 3,
     userId: 'admin',
+    nickname: '관리자',
     email: 'admin@foodiest.com',
     password: 'admin1234',
     phone: '010-0000-0001',
