@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
+import { restaurants, nearbyFavorites } from '../data/mockRestaurants';
+import { vibes, flavors, dietary } from '../data/mockFilters';
+
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY;
 let kakaoScriptPromise = null;
@@ -151,138 +154,7 @@ function KakaoMapView({
   return <div ref={mapElRef} className={`${className} w-full`} />;
 }
 
-const restaurants = [
-  {
-    id: 1,
-    name: "L'Anima Trattoria",
-    match: 98,
-    rating: 4.9,
-    cuisine: 'Italian',
-    price: '$$$',
-    distance: '0.4 miles away',
-    badge: '푸슐랭 가이드',
-    event: '리뷰 이벤트',
-    tags: ['Exquisite Truffle Pasta', 'Quiet Atmosphere'],
-    note: 'Limited seating',
-    quote:
-      '"The portion sizes were generous and the waitstaff was incredibly attentive."',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDbV0RFghqxJ3lMU65T3gmU91Hb6Mx5TewTu4Nl6OuqrzYLlp0LtnhJST9KJhwFTdx10i-07-5YZPfaGEGZmgn2iC741ofDyTb1SDLLYCPV0Dj7nzGXCgXoYhHR2LhlRe8l5i2_XHHsXdhZrniz3FHr5g8O3Qi3S69WX8SAleqKwhXGHv2evns6brXEL5eaoHzqX6CL8W6G564--ntDO0qo1vRg6kICXPMJG-nCEwwdailk3XGabsnujTUxeSRUD3RAj3-xRdqBRXA3',
-    vibes: ['Quiet', 'Romantic'],
-    flavors: ['Savory Classics', 'Umami & Rich'],
-    dietary: ['Gluten-free', 'Nut-free'],
-    x: 126.9784,
-    y: 37.5665,
-  },
-  {
-    id: 2,
-    name: 'Zenith Sushi',
-    match: 92,
-    rating: 4.7,
-    cuisine: 'Japanese',
-    price: '$$$$',
-    distance: '1.2 miles away',
-    badge: '푸슐랭 가이드',
-    event: '리뷰 이벤트',
-    tags: ['Freshest Sashimi'],
-    note: 'Pricey but worth it',
-    quote: '"A true masterclass in minimalist dining and flavor balance."',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBzUfzwLMQ32xHuDnvGV8J-QyTSOpMJNoPibvjsKk4axh9rixwT76n_RYoOqNt5eZNeYE1qHOF1RPhacE3sZyr-fZ6gpQAA7yx-7iVv0gtkekzaTYYsjwA1EfMMsygdrWrGxN3tbbRhFn2U3OborWQk9oeupPUufCk29ggypT949zsz-p15VtMWsJFiXG0WsVDEtsfUyayadS-l9pfC7Iu1VYfLTMxB507nBBwePxJ-kZIuYkZGZuv65aO1pptr4yxfBjFKg_ET7GDd',
-    vibes: ['Quiet', 'Professional'],
-    flavors: ['Umami & Rich', 'Savory Classics'],
-    dietary: ['Gluten-free', 'Dairy-free'],
-    x: 127.0495,
-    y: 37.5172,
-  },
-  {
-    id: 3,
-    name: 'Spice Garden',
-    match: 85,
-    rating: 4.5,
-    cuisine: 'Indian',
-    price: '$$',
-    distance: '0.8 miles away',
-    badge: '푸슐랭 가이드',
-    event: '리뷰 이벤트',
-    tags: ['Authentic Curry', 'Vibrant Flavors'],
-    note: 'Great for groups',
-    quote:
-      '"Bold spices and a lively atmosphere — an unforgettable experience."',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDbV0RFghqxJ3lMU65T3gmU91Hb6Mx5TewTu4Nl6OuqrzYLlp0LtnhJST9KJhwFTdx10i-07-5YZPfaGEGZmgn2iC741ofDyTb1SDLLYCPV0Dj7nzGXCgXoYhHR2LhlRe8l5i2_XHHsXdhZrniz3FHr5g8O3Qi3S69WX8SAleqKwhXGHv2evns6brXEL5eaoHzqX6CL8W6G564--ntDO0qo1vRg6kICXPMJG-nCEwwdailk3XGabsnujTUxeSRUD3RAj3-xRdqBRXA3',
-    vibes: ['Lively', 'Social'],
-    flavors: ['Spicy & Bold', 'Savory Classics'],
-    dietary: ['Vegan', 'Vegetarian'],
-    x: 126.9219,
-    y: 37.5563,
-  },
-  {
-    id: 4,
-    name: 'Sweet Bliss Patisserie',
-    match: 78,
-    rating: 4.6,
-    cuisine: 'French',
-    price: '$$',
-    distance: '1.5 miles away',
-    badge: '푸슐랭 가이드',
-    event: '리뷰 이벤트',
-    tags: ['Handcrafted Desserts', 'Cozy Setting'],
-    note: 'Perfect for dates',
-    quote: '"Every bite felt like a little moment of joy."',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBzUfzwLMQ32xHuDnvGV8J-QyTSOpMJNoPibvjsKk4axh9rixwT76n_RYoOqNt5eZNeYE1qHOF1RPhacE3sZyr-fZ6gpQAA7yx-7iVv0gtkekzaTYYsjwA1EfMMsygdrWrGxN3tbbRhFn2U3OborWQk9oeupPUufCk29ggypT949zsz-p15VtMWsJFiXG0WsVDEtsfUyayadS-l9pfC7Iu1VYfLTMxB507nBBwePxJ-kZIuYkZGZuv65aO1pptr4yxfBjFKg_ET7GDd',
-    vibes: ['Romantic', 'Family Friendly'],
-    flavors: ['Sweet Treats'],
-    dietary: ['Nut-free', 'Vegan'],
-    x: 126.9887,
-    y: 37.572,
-  },
-  {
-    id: 5,
-    name: 'The Boardroom Grill',
-    match: 88,
-    rating: 4.8,
-    cuisine: 'American',
-    price: '$$$$',
-    distance: '0.6 miles away',
-    badge: '푸슐랭 가이드',
-    event: '리뷰 이벤트',
-    tags: ['Prime Steak', 'Private Dining'],
-    note: 'Business friendly',
-    quote: '"Impeccable service and a menu that impresses every client."',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDbV0RFghqxJ3lMU65T3gmU91Hb6Mx5TewTu4Nl6OuqrzYLlp0LtnhJST9KJhwFTdx10i-07-5YZPfaGEGZmgn2iC741ofDyTb1SDLLYCPV0Dj7nzGXCgXoYhHR2LhlRe8l5i2_XHHsXdhZrniz3FHr5g8O3Qi3S69WX8SAleqKwhXGHv2evns6brXEL5eaoHzqX6CL8W6G564--ntDO0qo1vRg6kICXPMJG-nCEwwdailk3XGabsnujTUxeSRUD3RAj3-xRdqBRXA3',
-    vibes: ['Professional', 'Quiet'],
-    flavors: ['Savory Classics', 'Umami & Rich'],
-    dietary: ['Keto', 'Gluten-free'],
-    x: 127.0276,
-    y: 37.4979,
-  },
-];
 
-const vibes = [
-  'Quiet',
-  'Lively',
-  'Romantic',
-  'Social',
-  'Professional',
-  'Family Friendly',
-];
-const flavors = [
-  'Spicy & Bold',
-  'Sweet Treats',
-  'Umami & Rich',
-  'Savory Classics',
-];
-const dietary = [
-  'Nut-free',
-  'Vegan',
-  'Gluten-free',
-  'Dairy-free',
-  'Vegetarian',
-  'Keto',
-];
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -408,15 +280,15 @@ export default function HomePage() {
               <div className="flex flex-wrap gap-2">
                 {vibes.map((v) => (
                   <button
-                    key={v}
-                    onClick={() => toggle(selectedVibes, setSelectedVibes, v)}
+                    key={v.label}
+                    onClick={() => toggle(selectedVibes, setSelectedVibes, v.label)}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${
-                      selectedVibes.includes(v)
+                      selectedVibes.includes(v.label)
                         ? 'border-orange-100 bg-orange-50 text-orange-600'
                         : 'border-slate-200 text-slate-600 hover:border-orange-200'
                     }`}
                   >
-                    {v}
+                    {v.label}
                   </button>
                 ))}
               </div>
@@ -431,17 +303,17 @@ export default function HomePage() {
               <div className="flex flex-wrap gap-2">
                 {flavors.map((f) => (
                   <button
-                    key={f}
+                    key={f.label}
                     onClick={() =>
-                      toggle(selectedFlavors, setSelectedFlavors, f)
+                      toggle(selectedFlavors, setSelectedFlavors, f.label)
                     }
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${
-                      selectedFlavors.includes(f)
+                      selectedFlavors.includes(f.label)
                         ? 'border-orange-100 bg-orange-50 text-orange-600'
                         : 'border-slate-200 text-slate-600 hover:border-orange-200'
                     }`}
                   >
-                    {f}
+                    {f.label}
                   </button>
                 ))}
               </div>
@@ -456,17 +328,17 @@ export default function HomePage() {
               <div className="flex flex-wrap gap-2">
                 {dietary.map((d) => (
                   <button
-                    key={d}
+                    key={d.label}
                     onClick={() =>
-                      toggle(selectedDietary, setSelectedDietary, d)
+                      toggle(selectedDietary, setSelectedDietary, d.label)
                     }
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${
-                      selectedDietary.includes(d)
+                      selectedDietary.includes(d.label)
                         ? 'border-orange-100 bg-orange-50 text-orange-600'
                         : 'border-slate-200 text-slate-600 hover:border-orange-200'
                     }`}
                   >
-                    {d}
+                    {d.label}
                   </button>
                 ))}
               </div>
@@ -669,18 +541,8 @@ export default function HomePage() {
               )}
               <h4 className="font-semibold text-sm mb-3">Nearby Favorites</h4>
               <div className="space-y-3">
-                {[
-                  {
-                    name: 'The Daily Grind',
-                    sub: '0.2 miles • Coffee',
-                    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB6KO-M3xKogRmdAQc3tuFwF0Ifa-4Nvv0FB2agawLXLE4kt5hZG_SfvdzLPpMMODoZVDnZSzHdCxZV-wCUEzqiNZ2ZCZmYRnZuViu--wwHNbgbO92n9Dwr2nJf64hl3ZsOPgI44wxFUBJkg6UrnZ7r3jU3BPR7aG-RACAXhwQNRysAfF6Oe9IeosgimB0djze3lxIN1E23RY7zR7xvNRs3y4MFCtk2CzucuOpw3Tbl0lv_YMA3hGs3iWzsjQvrz3MqasK1TnqLpRf5',
-                  },
-                  {
-                    name: 'Taco Theory',
-                    sub: '0.5 miles • Mexican',
-                    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCHmDnYklZfS2ovFicfL3qOTQgj0DGWejlakVViEcksvnKsVjtdJ3mPWYvZV6ycd5Ggy-_QJ7Fx69dEAtecAM7bQT1FBDND4SUGMQ8GnXezodjCHiPwxYusXpPQ-3uF9C6BVglpIsSdgNd98DARCu6s1pzD2LFvmFA9XyiRLrAsGvR5dhk7-FCvFMifTQrF03fQpmbfg02bChaqCSDVaNs6WpRxt2ji4LBBhP6W4vl9Fr9gQsAjlU-Nm5XThu_e0OK9wENkvjBibqo3',
-                  },
-                ].map((item) => (
+                {nearbyFavorites.map((item) => (
+
                   <div key={item.name} className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-100">
                       <img

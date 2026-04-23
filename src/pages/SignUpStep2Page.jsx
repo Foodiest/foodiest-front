@@ -1,17 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { vibes, flavors, dietary, allergies } from '../data/mockFilters';
 
-const vibes = ['Quiet', 'Lively', 'Romantic', 'Social', 'Professional', 'Family Friendly'];
-const vibeIcons = { Quiet: 'volume_off', Lively: 'celebration', Romantic: 'favorite', Social: 'groups', Professional: 'work', 'Family Friendly': 'child_care' };
-const flavors = [
-  { label: 'Spicy & Bold', icon: 'local_fire_department' },
-  { label: 'Sweet Treats', icon: 'icecream' },
-  { label: 'Umami & Rich', icon: 'set_meal' },
-  { label: 'Savory Classics', icon: 'bakery_dining' },
-];
-const dietaryItems = ['Nut-free', 'Vegan', 'Gluten-free', 'Dairy-free', 'Vegetarian', 'Keto'];
-const dietaryIcons = { 'Nut-free': 'nutrition', 'Vegan': 'eco', 'Gluten-free': 'egg', 'Dairy-free': 'water_drop', 'Vegetarian': 'spa', 'Keto': 'bakery_dining' };
-const allergyItems = ['Peanuts', 'Shellfish', 'Dairy', 'Wheat', 'Soy', 'Fish'];
+
+
 
 export default function SignUpStep2Page() {
   const navigate = useNavigate();
@@ -54,19 +46,19 @@ export default function SignUpStep2Page() {
             </div>
             <div className="flex flex-wrap gap-3">
               {vibes.map(v => {
-                const active = selectedVibes.includes(v);
+                const active = selectedVibes.includes(v.label);
                 return (
                   <button
-                    key={v}
-                    onClick={() => toggle(selectedVibes, setSelectedVibes, v)}
+                    key={v.label}
+                    onClick={() => toggle(selectedVibes, setSelectedVibes, v.label)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-all active:scale-95 ${
                       active ? 'bg-primary-container text-white border-primary-container shadow-sm' : 'border-outline-variant hover:border-primary text-on-surface bg-white'
                     }`}
                   >
                     <span className="material-symbols-outlined text-sm" style={active ? { fontVariationSettings: "'FILL' 1" } : {}}>
-                      {vibeIcons[v]}
+                      {v.icon}
                     </span>
-                    {v}
+                    {v.label}
                   </button>
                 );
               })}
@@ -126,20 +118,20 @@ export default function SignUpStep2Page() {
               <span className="text-xs font-medium text-on-surface-variant bg-surface-container px-3 py-1 rounded-full">Select all that apply</span>
             </div>
             <div className="flex gap-3 overflow-x-auto pb-2">
-              {dietaryItems.map(item => {
-                const active = selectedDietary.includes(item);
+              {dietary.map(item => {
+                const active = selectedDietary.includes(item.label);
                 return (
                   <button
-                    key={item}
-                    onClick={() => toggle(selectedDietary, setSelectedDietary, item)}
+                    key={item.label}
+                    onClick={() => toggle(selectedDietary, setSelectedDietary, item.label)}
                     className={`flex-none flex items-center gap-2 px-5 py-3 border-2 rounded-xl cursor-pointer transition-all ${
                       active ? 'border-primary-container bg-orange-50 shadow-sm' : 'border-outline-variant bg-white hover:border-primary'
                     }`}
                   >
                     <span className={`material-symbols-outlined ${active ? 'text-primary' : 'text-on-surface-variant'}`} style={active ? { fontVariationSettings: "'FILL' 1" } : {}}>
-                      {dietaryIcons[item]}
+                      {item.icon}
                     </span>
-                    <span className={`font-semibold text-sm whitespace-nowrap ${active ? 'text-on-primary-container' : ''}`}>{item}</span>
+                    <span className={`font-semibold text-sm whitespace-nowrap ${active ? 'text-on-primary-container' : ''}`}>{item.label}</span>
                   </button>
                 );
               })}
@@ -156,7 +148,7 @@ export default function SignUpStep2Page() {
               <span className="text-xs font-medium text-on-surface-variant bg-surface-container px-3 py-1 rounded-full">Select all that apply</span>
             </div>
             <div className="flex gap-3 overflow-x-auto pb-2">
-              {allergyItems.map(item => {
+              {allergies.map(item => {
                 const active = selectedAllergies.includes(item);
                 return (
                   <button

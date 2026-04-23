@@ -3,7 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 
 export default function SignUpStep1Page() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ userId: '', email: '', password: '', confirmPassword: '', phone: '' });
+  const [form, setForm] = useState({ userId: '', nickname: '', email: '', password: '', confirmPassword: '', phone: '' });
+
   const [showPw, setShowPw] = useState(false);
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
@@ -63,6 +64,21 @@ export default function SignUpStep1Page() {
                   </div>
                   <p className="text-xs text-on-surface-variant">Your unique identifier on the platform.</p>
                 </div>
+
+                {/* Nickname */}
+                <div className="space-y-2">
+                  <label className="font-semibold text-sm text-on-surface">Nickname</label>
+                  <input
+                    name="nickname"
+                    value={form.nickname}
+                    onChange={handleChange}
+                    className="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg px-4 py-3 text-base"
+                    placeholder="Enter your nickname"
+                    type="text"
+                  />
+                  <p className="text-xs text-on-surface-variant">This name will be shown on your profile.</p>
+                </div>
+
 
                 {/* Email */}
                 <div className="space-y-2">
