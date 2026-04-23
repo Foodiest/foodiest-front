@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import mockUsers from '../data/mockUsers';
+import { loginWithKakao, loginWithGoogle } from '../utils/socialAuth';
 
 const BG_IMG = "https://lh3.googleusercontent.com/aida-public/AB6AXuAEESejBsvrAH9V2Hra3qnLCX9NFGZ_dP9UhpxIyuNf-xvfdfX4MCTfK3sdrXGa1Gmaj1c6SRp06N0UIWs6cf2tJNwagmaGY18wxtbl2kkbqb1vy0Xmptj-XGF_h8mY7Qv3PbgbC_rKhffxMK0mh3jEauWglbpd65SXRqg-z3h5JryQ5uO0wfTQm_QMVz8eWExDBMzT-W3UipHgCcSiaOb8PWslKC6EeSzARN5Dd7hME0EJhAwAJSlZWVv7Va_UFfPgxOhPjruPu8LB";
 const GOOGLE_LOGO = "https://lh3.googleusercontent.com/aida-public/AB6AXuATt_UcM1PerdrYicyNIsNE3FxcIp_ixHQk-l3BA6QtzILOUkHCwI5aNmHRQu7FG0n_t3E8IVEAUob1k3OCkvxZo1L1Kwegq0y1ZRz-QWGrqlhRJspvTLAs0A0RcQVLOgtaGcBmvTREt1c0KN0tQLzG94x-W6vrF8Dyn7ilkvg62O0e_Khku1_OB5OGwuIqIfqO66S9bQTquNyQDAocnn6E6ISQrIV0y5CehyKzPDSrxeuK76s-8tj1n6kqHxGa2WPR8ghJh30E1nxa";
@@ -10,6 +11,25 @@ export default function LoginPage() {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+
+  const handleSocialLogin = async (loginFn) => {
+    try {
+      const socialUser = await loginFn();
+      const existing = mockUsers.find(
+        u => u.socialId === socialUser.socialId || (socialUser.email && u.email === socialUser.email)
+      );
+      if (existing) {
+        const { password: _, ...userWithoutPassword } = existing;
+        localStorage.setItem('currentUser', JSON.stringify({ ...userWithoutPassword, profileImage: socialUser.profileImage }));
+        navigate('/');
+      } else {
+        localStorage.setItem('socialSignupTemp', JSON.stringify(socialUser));
+        navigate('/signup');
+      }
+    } catch (err) {
+      setError(err.message || '소셜 로그인에 실패했습니다. 다시 시도해주세요.');
+    }
+  };
 
   const handleLogin = e => {
     e.preventDefault();
@@ -108,11 +128,19 @@ export default function LoginPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <button className="flex items-center justify-center gap-2 py-3 border border-outline-variant rounded-lg font-semibold text-sm hover:bg-surface-container-high transition-colors active:scale-95">
+              <button
+                type="button"
+                onClick={() => handleSocialLogin(loginWithGoogle)}
+                className="flex items-center justify-center gap-2 py-3 border border-outline-variant rounded-lg font-semibold text-sm hover:bg-surface-container-high transition-colors active:scale-95"
+              >
                 <img src={GOOGLE_LOGO} alt="Google" className="w-5 h-5" />
                 Google
               </button>
-              <button className="flex items-center justify-center gap-2 py-3 bg-[#FEE500] text-[#191919] rounded-lg font-semibold text-sm hover:brightness-95 transition-colors active:scale-95">
+              <button
+                type="button"
+                onClick={() => handleSocialLogin(loginWithKakao)}
+                className="flex items-center justify-center gap-2 py-3 bg-[#FEE500] text-[#191919] rounded-lg font-semibold text-sm hover:brightness-95 transition-colors active:scale-95"
+              >
                 <span className="material-symbols-outlined text-sm">chat_bubble</span>
                 Kakao
               </button>

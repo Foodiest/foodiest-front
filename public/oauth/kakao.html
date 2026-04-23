@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8" /></head>
+<body>
+<script>
+  // Kakao redirects here after login (implicit grant: hash, auth code: search)
+  const params = window.location.hash
+    ? new URLSearchParams(window.location.hash.slice(1))
+    : new URLSearchParams(window.location.search);
+  const payload = Object.fromEntries(params);
+  if (window.opener) {
+    window.opener.postMessage({ type: 'KAKAO_OAUTH', payload }, window.location.origin);
+  }
+  window.close();
+</script>
+</body>
+</html>
