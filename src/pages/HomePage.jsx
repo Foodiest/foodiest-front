@@ -236,7 +236,7 @@ const restaurants = [
     flavors: ['Sweet Treats'],
     dietary: ['Nut-free', 'Vegan'],
     x: 126.9887,
-    y: 37.5720,
+    y: 37.572,
   },
   {
     id: 5,
@@ -510,7 +510,7 @@ export default function HomePage() {
               <div
                 key={r.id}
                 onClick={() => setSelectedRestaurantId(r.id)}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 overflow-hidden flex flex-col md:flex-row h-auto md:h-64"
+                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 overflow-hidden flex flex-col md:flex-row h-auto md:h-[19rem]"
               >
                 <div className="md:w-1/3 relative">
                   <img
@@ -557,9 +557,7 @@ export default function HomePage() {
                         {r.event}
                       </span>
                     </div>
-                    <p className="text-slate-500 text-xs mb-3">
-                      {r.cuisine} • {r.price} • {r.distance}
-                    </p>
+                    <p className="text-slate-500 text-xs mb-3">{r.cuisine}</p>
                     <div className="flex flex-wrap gap-2 mb-3">
                       {r.tags.map((tag) => (
                         <span
