@@ -42,6 +42,12 @@ const tasteIdentity = [
 
 export default function MyPage() {
   const navigate = useNavigate();
+  const navigateToTop = path => {
+    navigate(path);
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    });
+  };
 
   return (
     <Layout>
@@ -71,7 +77,7 @@ export default function MyPage() {
             </div>
             <div className="mt-5 md:mt-0 flex gap-3 w-full md:w-auto">
               <button
-                onClick={() => navigate('/profile-settings')}
+                onClick={() => navigateToTop('/profile-settings')}
                 className="flex-1 md:flex-none bg-primary-container text-on-primary px-5 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 shadow-lg shadow-orange-200 active:scale-95 transition-transform"
               >
                 <span className="material-symbols-outlined text-sm">edit</span>
@@ -131,7 +137,7 @@ export default function MyPage() {
               <div
                 key={name}
                 className="relative group rounded-3xl overflow-hidden shadow-sm border border-slate-100 bg-white cursor-pointer"
-                onClick={() => navigate('/restaurant/1')}
+                onClick={() => navigateToTop('/restaurant/1')}
               >
                 <div className="h-48 overflow-hidden">
                   <img src={img} alt={name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
@@ -162,7 +168,7 @@ export default function MyPage() {
               <article
                 key={title}
                 className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-slate-50 group flex flex-col h-full cursor-pointer"
-                onClick={() => navigate('/write-review')}
+                onClick={() => navigateToTop('/write-review')}
               >
                 <div className="h-48 relative overflow-hidden">
                   <img src={img} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
