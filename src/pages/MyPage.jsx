@@ -1,5 +1,85 @@
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
+import { useState } from "react";
+
+// ReviewCard 컴포넌트 분리
+function ReviewCard({ review, bestRestaurants, navigate }) {
+  const { title, restaurant, date, stars, desc, img } = review;
+
+  const handleRestaurantClick = (e) => {
+    e.stopPropagation();
+    const restaurantIndex = bestRestaurants.findIndex(
+      (r) => r.name === restaurant,
+    );
+    navigate(`/restaurant/${restaurantIndex !== -1 ? restaurantIndex + 1 : 1}`);
+  };
+
+  const handleEditClick = (e) => {
+    e.stopPropagation();
+    navigate("/write-review");
+  };
+
+  const handleCardClick = () => {
+    navigate("/write-review");
+  };
+
+  return (
+    <article
+      className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-slate-50 group flex flex-col h-full cursor-pointer"
+      onClick={handleCardClick}
+    >
+      <div className="h-48 relative overflow-hidden">
+        <img
+          src={img}
+          alt={title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        />
+        <div className="absolute top-3 right-3">
+          <button
+            onClick={handleEditClick}
+            className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-slate-400 hover:text-orange-500 transition-all"
+          >
+            <span className="material-symbols-outlined text-sm">edit</span>
+          </button>
+        </div>
+      </div>
+      <div className="p-5 flex flex-col flex-1">
+        <div className="flex items-center gap-0.5 text-orange-500 mb-2">
+          {[...Array(5)].map((_, i) => (
+            <span
+              key={i}
+              className="material-symbols-outlined text-sm"
+              style={{
+                fontVariationSettings: i < stars ? "'FILL' 1" : "'FILL' 0",
+                color: i < stars ? undefined : "#e2e2e4",
+              }}
+            >
+              star
+            </span>
+          ))}
+        </div>
+        <h4 className="font-[Epilogue] text-lg font-semibold text-on-surface mb-2 line-clamp-1">
+          {title}
+        </h4>
+        <p className="text-slate-500 text-sm line-clamp-2 mb-4">{desc}</p>
+        <div className="mt-auto pt-4 border-t border-slate-50 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-slate-100 overflow-hidden border border-slate-200 flex items-center justify-center">
+            <span className="material-symbols-outlined text-slate-400 text-sm">
+              restaurant
+            </span>
+          </div>
+          <span
+            onClick={handleRestaurantClick}
+            className="text-sm font-semibold text-on-surface cursor-pointer hover:text-orange-500 transition-colors"
+          >
+            {restaurant}
+          </span>
+          <time className="ml-auto text-xs text-slate-400">{date}</time>
+        </div>
+      </div>
+    </article>
+  );
+}
 
 const PROFILE_IMG =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuAvqvljU0AxRy4dCUoQ55jvVcj4jFtgNwQk5ACOhF4gRO2_FdVflIt2q-9WbqjpEySqL8mpn5PzVidLNXIxHUldKQaGiiR-vKtzi6jLI8sXwBi8hWz4vHjmYtyBo98DT52C9aq2WjwniFSrUFdlLwZ-CRpe7ZTGXbJ78YSHbPgrG_XGnlLRaz93nqWRGizaWBUhs0I3oLh7rMTbTOxvgRdCPW1Xpwhh6FxYA-Scf4-zX6qysKjd3DJRC-Y8zvh2lW0W9SlSXrTNz3Qn";
@@ -94,6 +174,7 @@ const tasteIdentity = [
 
 export default function MyPage() {
   const navigate = useNavigate();
+  const [isFollowing, setIsFollowing] = useState(false);
 
   return (
     <Layout>
@@ -107,15 +188,9 @@ export default function MyPage() {
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-            <div className="absolute bottom-6 right-6">
-              <button className="bg-white/20 backdrop-blur-md text-white border border-white/30 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-white/30 transition-all">
-                <span className="material-symbols-outlined text-sm">edit</span>
-                Edit Cover
-              </button>
-            </div>
           </div>
 
-          <div className="px-6 md:px-10 pb-6 md:pb-10 -mt-16 relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between">
+          <div className="px-6 md:px-10 pb-6 md:pb-10 -mt-16 pt-5 relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between">
             <div className="flex flex-col md:flex-row items-start md:items-end gap-5">
               <div className="w-32 h-32 md:w-36 md:h-36 rounded-3xl border-4 border-white overflow-hidden shadow-lg bg-white">
                 <img
@@ -136,7 +211,7 @@ export default function MyPage() {
             </div>
             <div className="mt-5 md:mt-0 flex gap-3 w-full md:w-auto">
               <button
-                onClick={() => navigate("/profile-settings")}
+                onClick={() => navigate("/mypage-settings")}
                 className="flex-1 md:flex-none bg-primary-container text-on-primary px-5 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 shadow-lg shadow-orange-200 active:scale-95 transition-transform"
               >
                 <span className="material-symbols-outlined text-sm">edit</span>
@@ -153,7 +228,6 @@ export default function MyPage() {
             {[
               { value: "128", label: "Reviews" },
               { value: "12.4k", label: "Followers" },
-              { value: "842", label: "Following" },
             ].map(({ value, label }, i) => (
               <div
                 key={label}
@@ -167,6 +241,25 @@ export default function MyPage() {
                 </p>
               </div>
             ))}
+            <button
+              onClick={() => setIsFollowing(!isFollowing)}
+              className={`px-8 py-3 rounded-xl font-bold transition-all active:scale-95 ${
+                isFollowing
+                  ? "bg-slate-100 text-slate-600 border border-slate-200 shadow-none" // 팔로우 중 상태
+                  : "bg-primary text-white shadow-lg shadow-orange-100 hover:brightness-110" // 팔로우 전 상태
+              }`}
+            >
+              {isFollowing ? (
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-sm">
+                    check
+                  </span>
+                  Following
+                </div>
+              ) : (
+                "Follow"
+              )}
+            </button>
           </div>
         </section>
 
@@ -209,9 +302,6 @@ export default function MyPage() {
             <h3 className="font-[Epilogue] text-3xl font-bold text-on-surface">
               Best Restaurants
             </h3>
-            <button className="text-primary text-sm font-semibold hover:underline">
-              View all favorites
-            </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {bestRestaurants.map(({ name, sub, badge, img }) => (
@@ -255,63 +345,13 @@ export default function MyPage() {
             </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {reviews.map(({ title, restaurant, date, stars, desc, img }) => (
-              <article
-                key={title}
-                className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-slate-50 group flex flex-col h-full cursor-pointer"
-                onClick={() => navigate("/write-review")}
-              >
-                <div className="h-48 relative overflow-hidden">
-                  <img
-                    src={img}
-                    alt={title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-3 right-3">
-                    <button className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-slate-400 hover:text-orange-500 transition-all">
-                      <span className="material-symbols-outlined text-sm">
-                        edit
-                      </span>
-                    </button>
-                  </div>
-                </div>
-                <div className="p-5 flex flex-col flex-1">
-                  <div className="flex items-center gap-0.5 text-orange-500 mb-2">
-                    {[...Array(5)].map((_, i) => (
-                      <span
-                        key={i}
-                        className="material-symbols-outlined text-sm"
-                        style={{
-                          fontVariationSettings:
-                            i < stars ? "'FILL' 1" : "'FILL' 0",
-                          color: i < stars ? undefined : "#e2e2e4",
-                        }}
-                      >
-                        star
-                      </span>
-                    ))}
-                  </div>
-                  <h4 className="font-[Epilogue] text-lg font-semibold text-on-surface mb-2 line-clamp-1">
-                    {title}
-                  </h4>
-                  <p className="text-slate-500 text-sm line-clamp-2 mb-4">
-                    {desc}
-                  </p>
-                  <div className="mt-auto pt-4 border-t border-slate-50 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-slate-100 overflow-hidden border border-slate-200 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-slate-400 text-sm">
-                        restaurant
-                      </span>
-                    </div>
-                    <span className="text-sm font-semibold text-on-surface">
-                      {restaurant}
-                    </span>
-                    <time className="ml-auto text-xs text-slate-400">
-                      {date}
-                    </time>
-                  </div>
-                </div>
-              </article>
+            {reviews.map((review) => (
+              <ReviewCard
+                key={review.title}
+                review={review}
+                bestRestaurants={bestRestaurants}
+                navigate={navigate}
+              />
             ))}
           </div>
         </section>
