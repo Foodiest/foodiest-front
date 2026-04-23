@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useGoogleLogin } from '@react-oauth/google';
 import mockUsers from '../data/mockUsers';
 import { loginWithKakao, loginWithGoogle } from '../utils/socialAuth';
 
@@ -14,24 +15,59 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  const processSocialLogin = (socialUser) => {
+    const existing = mockUsers.find(
+      u => u.socialId === socialUser.socialId || (socialUser.email && u.email === socialUser.email)
+    );
+
+    let userToSave;
+    if (existing) {
+      const { password: _, ...userWithoutPassword } = existing;
+      userToSave = {
+        ...userWithoutPassword,
+        nickname: socialUser.nickname || userWithoutPassword.nickname,
+        profileImage: socialUser.profileImage
+      };
+    } else {
+      // 신규 유저라도 즉시 로그인 정보 생성하여 로컬스토리지에 저장
+      userToSave = {
+        id: Date.now(),
+        userId: socialUser.email.split('@')[0] || `user_${socialUser.socialId.slice(-4)}`,
+        nickname: socialUser.nickname,
+        email: socialUser.email,
+        profileImage: socialUser.profileImage,
+        provider: socialUser.provider
+      };
+    }
+
+    localStorage.setItem('currentUser', JSON.stringify(userToSave));
+    localStorage.setItem("currentUserId", userToSave.userId);
+    localStorage.setItem("currentUserIdNo", userToSave.id);
+    navigate('/');
+  };
+
+
   const handleSocialLogin = async (loginFn) => {
     try {
       const socialUser = await loginFn();
-      const existing = mockUsers.find(
-        u => u.socialId === socialUser.socialId || (socialUser.email && u.email === socialUser.email)
-      );
-      if (existing) {
-        const { password: _, ...userWithoutPassword } = existing;
-        localStorage.setItem('currentUser', JSON.stringify({ ...userWithoutPassword, profileImage: socialUser.profileImage }));
-        navigate('/');
-      } else {
-        localStorage.setItem('socialSignupTemp', JSON.stringify(socialUser));
-        navigate('/signup');
-      }
+      processSocialLogin(socialUser);
     } catch (err) {
       setError(err.message || '소셜 로그인에 실패했습니다. 다시 시도해주세요.');
     }
   };
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        const socialUser = await loginWithGoogle(tokenResponse.access_token);
+        processSocialLogin(socialUser);
+      } catch (err) {
+        setError(err.message || '구글 로그인에 실패했습니다.');
+      }
+    },
+    onError: () => setError('구글 로그인에 실패했습니다.'),
+  });
+
 
   const handleLogin = e => {
     e.preventDefault();
@@ -179,7 +215,7 @@ export default function LoginPage() {
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
-                onClick={() => handleSocialLogin(loginWithGoogle)}
+                onClick={() => googleLogin()}
                 className="flex items-center justify-center gap-2 py-3 border border-outline-variant rounded-lg font-semibold text-sm hover:bg-surface-container-high transition-colors active:scale-95"
               >
                 <img src={GOOGLE_LOGO} alt="Google" className="w-5 h-5" />

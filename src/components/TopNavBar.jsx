@@ -34,11 +34,10 @@ export default function TopNavBar() {
               <Link
                 key={to}
                 to={to}
-                className={`font-medium transition-colors duration-200 ${
-                  isActive
+                className={`font-medium transition-colors duration-200 ${isActive
                     ? 'text-orange-600 font-bold border-b-2 border-orange-600'
                     : 'text-gray-600 hover:text-orange-600'
-                }`}
+                  }`}
               >
                 {label}
               </Link>

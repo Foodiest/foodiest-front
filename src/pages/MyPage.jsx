@@ -227,7 +227,7 @@ export default function MyPage() {
             <div className="flex flex-col md:flex-row items-end gap-5 text-left">
               <div className="w-36 h-36 rounded-3xl border-4 border-white overflow-hidden shadow-lg bg-white">
                 <img
-                  src={PROFILE_IMG}
+                  src={userDetail.profileImage || PROFILE_IMG}
                   alt="profile"
                   className="w-full h-full object-cover"
                 />
@@ -237,8 +237,9 @@ export default function MyPage() {
                   {userDetail.nickname || userDetail.userId}
                 </h2>
                 <p className="text-slate-500 text-sm mt-1">
-                  {userDetail.userId}
+                  {userDetail.email || userDetail.userId}
                 </p>
+
               </div>
             </div>
             <div className="flex gap-3">
@@ -272,11 +273,10 @@ export default function MyPage() {
             </div>
             <button
               onClick={() => setIsFollowing(!isFollowing)}
-              className={`rounded-xl font-bold transition-all active:scale-95 px-8 py-3 ${
-                isFollowing
+              className={`rounded-xl font-bold transition-all active:scale-95 px-8 py-3 ${isFollowing
                   ? "bg-slate-100 text-slate-600 border border-slate-200"
                   : "bg-primary text-white shadow-lg shadow-orange-100"
-              }`}
+                }`}
             >
               {isFollowing ? "Following" : "Follow"}
             </button>
