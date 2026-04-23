@@ -1,6 +1,127 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
+
+const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY;
+let kakaoScriptPromise = null;
+
+const loadKakaoMapSdk = () => {
+  if (typeof window === 'undefined') {
+    return Promise.reject(new Error('Kakao map is only available in browser.'));
+  }
+
+  if (window.kakao?.maps) {
+    return Promise.resolve(window.kakao);
+  }
+
+  if (kakaoScriptPromise) {
+    return kakaoScriptPromise;
+  }
+
+  kakaoScriptPromise = new Promise((resolve, reject) => {
+    if (!KAKAO_APP_KEY) {
+      reject(new Error('Missing VITE_KAKAO_MAP_APP_KEY environment variable.'));
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_APP_KEY}&autoload=false`;
+    script.async = true;
+    script.onload = () => {
+      if (!window.kakao?.maps) {
+        reject(new Error('Kakao SDK loaded but map object is unavailable. Check app key and allowed web domain.'));
+        return;
+      }
+      window.kakao.maps.load(() => resolve(window.kakao));
+    };
+    script.onerror = () => reject(new Error('Failed to load Kakao Map SDK.'));
+    document.head.appendChild(script);
+  });
+
+  kakaoScriptPromise = kakaoScriptPromise.catch(error => {
+    kakaoScriptPromise = null;
+    throw error;
+  });
+
+  return kakaoScriptPromise;
+};
+
+function KakaoMapView({ restaurants, selectedRestaurantId, onSelectRestaurant, className }) {
+  const mapElRef = useRef(null);
+  const mapRef = useRef(null);
+  const markersRef = useRef([]);
+  const [mapError, setMapError] = useState('');
+
+  useEffect(() => {
+    let isUnmounted = false;
+
+    loadKakaoMapSdk()
+      .then(kakao => {
+        if (isUnmounted || !mapElRef.current) {
+          return;
+        }
+
+        const firstRestaurant = restaurants[0];
+        const center = new kakao.maps.LatLng(firstRestaurant.y, firstRestaurant.x);
+        const map = new kakao.maps.Map(mapElRef.current, {
+          center,
+          level: 4,
+        });
+        mapRef.current = map;
+
+        markersRef.current = restaurants.map(restaurant => {
+          const marker = new kakao.maps.Marker({
+            map,
+            position: new kakao.maps.LatLng(restaurant.y, restaurant.x),
+            clickable: true,
+          });
+
+          kakao.maps.event.addListener(marker, 'click', () => onSelectRestaurant(restaurant.id));
+          return { id: restaurant.id, marker };
+        });
+      })
+      .catch(error => {
+        if (!isUnmounted) {
+          setMapError(error.message);
+        }
+      });
+
+    return () => {
+      isUnmounted = true;
+      markersRef.current.forEach(({ marker }) => marker.setMap(null));
+      markersRef.current = [];
+      mapRef.current = null;
+    };
+  }, [onSelectRestaurant, restaurants]);
+
+  useEffect(() => {
+    if (!window.kakao?.maps || !mapRef.current || !selectedRestaurantId) {
+      return;
+    }
+
+    const selected = restaurants.find(restaurant => restaurant.id === selectedRestaurantId);
+    if (!selected) {
+      return;
+    }
+
+    const selectedLatLng = new window.kakao.maps.LatLng(selected.y, selected.x);
+    mapRef.current.panTo(selectedLatLng);
+
+    markersRef.current.forEach(({ id, marker }) => {
+      marker.setZIndex(id === selectedRestaurantId ? 10 : 1);
+    });
+  }, [restaurants, selectedRestaurantId]);
+
+  if (mapError) {
+    return (
+      <div className={`${className} w-full bg-slate-100 flex items-center justify-center px-4 text-center text-sm text-red-500`}>
+        {mapError}
+      </div>
+    );
+  }
+
+  return <div ref={mapElRef} className={`${className} w-full`} />;
+}
 
 const restaurants = [
   {
@@ -17,6 +138,8 @@ const restaurants = [
     note: "Limited seating",
     quote: '"The portion sizes were generous and the waitstaff was incredibly attentive."',
     image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDbV0RFghqxJ3lMU65T3gmU91Hb6Mx5TewTu4Nl6OuqrzYLlp0LtnhJST9KJhwFTdx10i-07-5YZPfaGEGZmgn2iC741ofDyTb1SDLLYCPV0Dj7nzGXCgXoYhHR2LhlRe8l5i2_XHHsXdhZrniz3FHr5g8O3Qi3S69WX8SAleqKwhXGHv2evns6brXEL5eaoHzqX6CL8W6G564--ntDO0qo1vRg6kICXPMJG-nCEwwdailk3XGabsnujTUxeSRUD3RAj3-xRdqBRXA3",
+    x: 126.9784,
+    y: 37.5665,
   },
   {
     id: 2,
@@ -32,6 +155,8 @@ const restaurants = [
     note: "Pricey but worth it",
     quote: '"A true masterclass in minimalist dining and flavor balance."',
     image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBzUfzwLMQ32xHuDnvGV8J-QyTSOpMJNoPibvjsKk4axh9rixwT76n_RYoOqNt5eZNeYE1qHOF1RPhacE3sZyr-fZ6gpQAA7yx-7iVv0gtkekzaTYYsjwA1EfMMsygdrWrGxN3tbbRhFn2U3OborWQk9oeupPUufCk29ggypT949zsz-p15VtMWsJFiXG0WsVDEtsfUyayadS-l9pfC7Iu1VYfLTMxB507nBBwePxJ-kZIuYkZGZuv65aO1pptr4yxfBjFKg_ET7GDd",
+    x: 127.0276,
+    y: 37.4979,
   },
 ];
 
@@ -44,9 +169,24 @@ export default function HomePage() {
   const [selectedVibes, setSelectedVibes] = useState(['Quiet']);
   const [selectedTastes, setSelectedTastes] = useState(['Sweet']);
   const [selectedDietary, setSelectedDietary] = useState(['Nut-free']);
+  const [selectedRestaurantId, setSelectedRestaurantId] = useState(restaurants[0]?.id ?? null);
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
+
+  const selectedRestaurant = useMemo(
+    () => restaurants.find(restaurant => restaurant.id === selectedRestaurantId) ?? null,
+    [selectedRestaurantId]
+  );
 
   const toggle = (list, setList, item) => {
     setList(prev => prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]);
+  };
+
+  const handleGoToRestaurantDetail = restaurantId => {
+    navigate(`/restaurant/${restaurantId}`);
+    // Ensure the destination page starts from the top after route transition.
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    });
   };
 
   return (
@@ -169,6 +309,7 @@ export default function HomePage() {
             {restaurants.map(r => (
               <div
                 key={r.id}
+                onClick={() => setSelectedRestaurantId(r.id)}
                 className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 overflow-hidden flex flex-col md:flex-row h-auto md:h-64"
               >
                 <div className="md:w-1/3 relative">
@@ -210,7 +351,7 @@ export default function HomePage() {
                   <div className="flex justify-between items-center pt-3 border-t border-slate-50">
                     <span className="text-slate-600 text-sm italic truncate max-w-[60%]">{r.quote}</span>
                     <button
-                      onClick={() => navigate(`/restaurant/${r.id}`)}
+                      onClick={() => handleGoToRestaurantDetail(r.id)}
                       className="bg-primary text-white text-sm font-semibold px-5 py-2 rounded-lg hover:brightness-110 active:scale-95 transition-all ml-3 flex-shrink-0"
                     >
                       View Details
@@ -227,19 +368,26 @@ export default function HomePage() {
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden sticky top-24">
             <div className="p-4 border-b border-slate-100 flex justify-between items-center">
               <h3 className="font-semibold text-sm">Local View</h3>
-              <span className="text-primary text-xs cursor-pointer font-medium">Expand Map</span>
+              <button
+                type="button"
+                onClick={() => setIsMapExpanded(true)}
+                className="text-primary text-xs cursor-pointer font-medium"
+              >
+                Expand Map
+              </button>
             </div>
-            <div className="h-72 w-full relative bg-slate-200">
-              <img
-                className="w-full h-full object-cover"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBgNF3yF-AqTDts3yhKNsNC-HjqHx44nn_Uvdwf7whQGjy14AR6QO4zgAOz2HTJkeclucJ47PgNMZZbCEw-rZGGdzY_Z4mYu_khVDdjwKnHm0gvB1-dnhisCquEBBlIDg6B-7-D3KyyNtMDd4IzyVmdK0J18eGl-96elqH1WCrvmh1Ooba5Aok3gPyCa_JeKUTgswS8GsLHOMAb5XfN92O-vrBJg9pmf7ripAk_4_IMM5krNnD5tuUkmvGkUL3reR1fGLfPijDscPzv"
-                alt="map"
-              />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                <span className="material-symbols-outlined text-primary text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>location_on</span>
-              </div>
-            </div>
+            <KakaoMapView
+              className="h-72"
+              restaurants={restaurants}
+              selectedRestaurantId={selectedRestaurantId}
+              onSelectRestaurant={setSelectedRestaurantId}
+            />
             <div className="p-5">
+              {selectedRestaurant && (
+                <p className="text-xs text-slate-500 mb-3">
+                  Selected: <span className="font-semibold text-slate-700">{selectedRestaurant.name}</span>
+                </p>
+              )}
               <h4 className="font-semibold text-sm mb-3">Nearby Favorites</h4>
               <div className="space-y-3">
                 {[
@@ -261,6 +409,42 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {isMapExpanded && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 px-4 py-6 md:p-10"
+          onClick={() => setIsMapExpanded(false)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={event => {
+            if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+              setIsMapExpanded(false);
+            }
+          }}
+        >
+          <div
+            className="bg-white rounded-xl w-full max-w-6xl h-full max-h-[90vh] mx-auto overflow-hidden shadow-xl flex flex-col"
+            onClick={event => event.stopPropagation()}
+          >
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="font-semibold text-base">Expanded Local View</h3>
+              <button
+                type="button"
+                onClick={() => setIsMapExpanded(false)}
+                className="text-slate-600 hover:text-slate-900 text-sm font-medium"
+              >
+                Close
+              </button>
+            </div>
+            <KakaoMapView
+              className="h-full min-h-[420px]"
+              restaurants={restaurants}
+              selectedRestaurantId={selectedRestaurantId}
+              onSelectRestaurant={setSelectedRestaurantId}
+            />
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
