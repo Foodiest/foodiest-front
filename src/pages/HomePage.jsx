@@ -494,7 +494,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div className="flex justify-between items-center pt-3 border-t border-slate-50">
-                    <span className="text-slate-600 text-sm italic line-clamp-2 max-w-[70%]">
+                    <span className="text-slate-600 text-sm italic truncate max-w-[60%]">
                       {r.quote}
                     </span>
                     <button
