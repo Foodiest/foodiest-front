@@ -1,13 +1,29 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import mockUsers from '../data/mockUsers';
 
 const BG_IMG = "https://lh3.googleusercontent.com/aida-public/AB6AXuAEESejBsvrAH9V2Hra3qnLCX9NFGZ_dP9UhpxIyuNf-xvfdfX4MCTfK3sdrXGa1Gmaj1c6SRp06N0UIWs6cf2tJNwagmaGY18wxtbl2kkbqb1vy0Xmptj-XGF_h8mY7Qv3PbgbC_rKhffxMK0mh3jEauWglbpd65SXRqg-z3h5JryQ5uO0wfTQm_QMVz8eWExDBMzT-W3UipHgCcSiaOb8PWslKC6EeSzARN5Dd7hME0EJhAwAJSlZWVv7Va_UFfPgxOhPjruPu8LB";
 const GOOGLE_LOGO = "https://lh3.googleusercontent.com/aida-public/AB6AXuATt_UcM1PerdrYicyNIsNE3FxcIp_ixHQk-l3BA6QtzILOUkHCwI5aNmHRQu7FG0n_t3E8IVEAUob1k3OCkvxZo1L1Kwegq0y1ZRz-QWGrqlhRJspvTLAs0A0RcQVLOgtaGcBmvTREt1c0KN0tQLzG94x-W6vrF8Dyn7ilkvg62O0e_Khku1_OB5OGwuIqIfqO66S9bQTquNyQDAocnn6E6ISQrIV0y5CehyKzPDSrxeuK76s-8tj1n6kqHxGa2WPR8ghJh30E1nxa";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleLogin = e => {
+    e.preventDefault();
+    const user = mockUsers.find(
+      u => (u.email === identifier || u.userId === identifier) && u.password === password
+    );
+    if (!user) {
+      setError('아이디/이메일 또는 비밀번호가 올바르지 않습니다.');
+      return;
+    }
+    const { password: _, ...userWithoutPassword } = user;
+    localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
+    navigate('/');
+  };
 
   return (
     <div className="min-h-screen bg-surface flex flex-col">
@@ -37,7 +53,7 @@ export default function LoginPage() {
               <p className="text-base text-on-surface-variant">Access your culinary insights and favorites.</p>
             </div>
 
-            <form className="space-y-5" onSubmit={e => { e.preventDefault(); navigate('/'); }}>
+            <form className="space-y-5" onSubmit={handleLogin}>
               <div className="space-y-1.5">
                 <label className="block font-semibold text-sm text-on-surface-variant px-1">Username/Email</label>
                 <div className="relative">
@@ -46,8 +62,8 @@ export default function LoginPage() {
                     className="w-full pl-12 pr-4 py-4 bg-surface-container-low border-0 rounded-lg focus:ring-2 focus:ring-primary-container text-base"
                     placeholder="chef.jane@example.com"
                     type="text"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
+                    value={identifier}
+                    onChange={e => { setIdentifier(e.target.value); setError(''); }}
                   />
                 </div>
               </div>
@@ -64,10 +80,17 @@ export default function LoginPage() {
                     placeholder="••••••••"
                     type="password"
                     value={password}
-                    onChange={e => setPassword(e.target.value)}
+                    onChange={e => { setPassword(e.target.value); setError(''); }}
                   />
                 </div>
               </div>
+
+              {error && (
+                <p className="text-sm text-red-500 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-sm">error</span>
+                  {error}
+                </p>
+              )}
 
               <button
                 type="submit"

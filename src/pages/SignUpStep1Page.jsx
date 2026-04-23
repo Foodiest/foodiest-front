@@ -37,7 +37,11 @@ export default function SignUpStep1Page() {
 
           {/* Form */}
           <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-surface-variant/30">
-            <form className="space-y-6" onSubmit={e => { e.preventDefault(); navigate('/signup/step2'); }}>
+            <form className="space-y-6" onSubmit={e => {
+              e.preventDefault();
+              localStorage.setItem('signupTemp', JSON.stringify(form));
+              navigate('/signup/step2');
+            }}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* User ID */}
                 <div className="space-y-2">
