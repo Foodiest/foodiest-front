@@ -88,8 +88,7 @@ export default function SignUpStep1Page() {
                     name="nickname"
                     value={form.nickname}
                     onChange={handleChange}
-                    disabled={isSocial}
-                    className="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg px-4 py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg px-4 py-3 text-base"
                     placeholder="Enter your nickname"
                     type="text"
                   />

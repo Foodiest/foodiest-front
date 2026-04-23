@@ -23,6 +23,8 @@ export default function LoginPage() {
       if (existing) {
         const { password: _, ...userWithoutPassword } = existing;
         localStorage.setItem('currentUser', JSON.stringify({ ...userWithoutPassword, profileImage: socialUser.profileImage }));
+        localStorage.setItem('currentUserId', existing.userId);
+        localStorage.setItem('currentUserIdNo', existing.id);
         navigate('/');
       } else {
         localStorage.setItem('socialSignupTemp', JSON.stringify(socialUser));

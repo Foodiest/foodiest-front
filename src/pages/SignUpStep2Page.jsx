@@ -295,6 +295,8 @@ export default function SignUpStep2Page() {
                 allergies: selectedAllergies,
               };
               localStorage.setItem('currentUser', JSON.stringify(newUser));
+              localStorage.setItem('currentUserId', newUser.userId);
+              localStorage.setItem('currentUserIdNo', newUser.id ?? Date.now());
               localStorage.removeItem('signupTemp');
               localStorage.removeItem('socialSignupTemp');
               navigate('/');
