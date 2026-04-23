@@ -285,10 +285,8 @@ export default function SignUpStep2Page() {
           </button>
           <button
             onClick={() => {
-              const step1 = JSON.parse(
-                localStorage.getItem("signupTemp") || "{}",
-              );
-              const { password: _, ...rest } = step1;
+              const step1 = JSON.parse(localStorage.getItem('signupTemp') || '{}');
+              const { password: _, confirmPassword: __, ...rest } = step1;
               const newUser = {
                 ...rest,
                 vibes: selectedVibes,
@@ -296,9 +294,10 @@ export default function SignUpStep2Page() {
                 dietary: selectedDietary,
                 allergies: selectedAllergies,
               };
-              localStorage.setItem("currentUser", JSON.stringify(newUser));
-              localStorage.removeItem("signupTemp");
-              navigate("/");
+              localStorage.setItem('currentUser', JSON.stringify(newUser));
+              localStorage.removeItem('signupTemp');
+              localStorage.removeItem('socialSignupTemp');
+              navigate('/');
             }}
             className="px-8 py-4 bg-primary text-white font-semibold rounded-xl shadow-lg shadow-primary/20 hover:bg-surface-tint active:scale-95 transition-all"
           >

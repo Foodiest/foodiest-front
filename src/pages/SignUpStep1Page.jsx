@@ -3,7 +3,17 @@ import { useNavigate, Link } from 'react-router-dom';
 
 export default function SignUpStep1Page() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ userId: '', nickname: '', email: '', password: '', confirmPassword: '', phone: '' });
+  const socialTemp = JSON.parse(localStorage.getItem('socialSignupTemp') || 'null');
+  const isSocial = !!socialTemp;
+
+  const [form, setForm] = useState({
+    userId: '',
+    nickname: socialTemp?.nickname || '',
+    email: socialTemp?.email || '',
+    password: '',
+    confirmPassword: '',
+    phone: '',
+  });
 
   const [showPw, setShowPw] = useState(false);
 
@@ -40,7 +50,13 @@ export default function SignUpStep1Page() {
           <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-surface-variant/30">
             <form className="space-y-6" onSubmit={e => {
               e.preventDefault();
-              localStorage.setItem('signupTemp', JSON.stringify(form));
+              const payload = { ...form };
+              if (isSocial) {
+                payload.provider = socialTemp.provider;
+                payload.socialId = socialTemp.socialId;
+                payload.profileImage = socialTemp.profileImage;
+              }
+              localStorage.setItem('signupTemp', JSON.stringify(payload));
               navigate('/signup/step2');
             }}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -72,7 +88,8 @@ export default function SignUpStep1Page() {
                     name="nickname"
                     value={form.nickname}
                     onChange={handleChange}
-                    className="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg px-4 py-3 text-base"
+                    disabled={isSocial}
+                    className="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg px-4 py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="Enter your nickname"
                     type="text"
                   />
@@ -87,60 +104,66 @@ export default function SignUpStep1Page() {
                     name="email"
                     value={form.email}
                     onChange={handleChange}
-                    className="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg px-4 py-3 text-base"
+                    disabled={isSocial}
+                    className="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg px-4 py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="gourmet@example.com"
                     type="email"
                   />
+                  {isSocial && <p className="text-xs text-on-surface-variant">소셜 계정 이메일은 이메일 입력이 필요하지 않습니다.</p>}
                 </div>
 
-                {/* Password */}
-                <div className="space-y-2">
-                  <label className="font-semibold text-sm text-on-surface">Password</label>
-                  <div className="relative">
-                    <input
-                      name="password"
-                      value={form.password}
-                      onChange={handleChange}
-                      className="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg px-4 py-3 text-base"
-                      placeholder="••••••••"
-                      type={showPw ? 'text' : 'password'}
-                    />
-                    <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant">
-                      <span className="material-symbols-outlined text-sm">{showPw ? 'visibility_off' : 'visibility'}</span>
-                    </button>
-                  </div>
-                  <div className="flex gap-1 mt-1">
-                    {[1, 2, 3, 4].map(i => (
-                      <div key={i} className={`h-1 flex-1 rounded-full ${i <= pwStrength ? 'bg-primary' : 'bg-surface-container'}`} />
-                    ))}
-                  </div>
-                  {form.password && (
-                    <p className={`text-xs font-medium ${pwStrength >= 3 ? 'text-green-600' : 'text-primary'}`}>
-                      {pwStrength <= 1 ? 'Weak' : pwStrength <= 2 ? 'Medium Strength' : 'Strong'}
-                    </p>
-                  )}
-                </div>
-
-                {/* Confirm Password */}
-                <div className="space-y-2">
-                  <label className="font-semibold text-sm text-on-surface">Confirm Password</label>
-                  <div className="relative">
-                    <input
-                      name="confirmPassword"
-                      value={form.confirmPassword}
-                      onChange={handleChange}
-                      className="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg px-4 py-3 text-base"
-                      placeholder="••••••••"
-                      type="password"
-                    />
-                    {form.confirmPassword && (
-                      <div className={`absolute right-3 top-1/2 -translate-y-1/2 ${pwMatch ? 'text-error' : 'text-primary'}`}>
-                        <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>{pwMatch ? 'error' : 'check_circle'}</span>
-                      </div>
+                {/* Password - 소셜 로그인 시 생략 */}
+                {!isSocial && (
+                  <div className="space-y-2">
+                    <label className="font-semibold text-sm text-on-surface">Password</label>
+                    <div className="relative">
+                      <input
+                        name="password"
+                        value={form.password}
+                        onChange={handleChange}
+                        className="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg px-4 py-3 text-base"
+                        placeholder="••••••••"
+                        type={showPw ? 'text' : 'password'}
+                      />
+                      <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant">
+                        <span className="material-symbols-outlined text-sm">{showPw ? 'visibility_off' : 'visibility'}</span>
+                      </button>
+                    </div>
+                    <div className="flex gap-1 mt-1">
+                      {[1, 2, 3, 4].map(i => (
+                        <div key={i} className={`h-1 flex-1 rounded-full ${i <= pwStrength ? 'bg-primary' : 'bg-surface-container'}`} />
+                      ))}
+                    </div>
+                    {form.password && (
+                      <p className={`text-xs font-medium ${pwStrength >= 3 ? 'text-green-600' : 'text-primary'}`}>
+                        {pwStrength <= 1 ? 'Weak' : pwStrength <= 2 ? 'Medium Strength' : 'Strong'}
+                      </p>
                     )}
                   </div>
-                  {pwMatch && <p className="text-xs text-error">Passwords do not match.</p>}
-                </div>
+                )}
+
+                {/* Confirm Password - 소셜 로그인 시 생략 */}
+                {!isSocial && (
+                  <div className="space-y-2">
+                    <label className="font-semibold text-sm text-on-surface">Confirm Password</label>
+                    <div className="relative">
+                      <input
+                        name="confirmPassword"
+                        value={form.confirmPassword}
+                        onChange={handleChange}
+                        className="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg px-4 py-3 text-base"
+                        placeholder="••••••••"
+                        type="password"
+                      />
+                      {form.confirmPassword && (
+                        <div className={`absolute right-3 top-1/2 -translate-y-1/2 ${pwMatch ? 'text-error' : 'text-primary'}`}>
+                          <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>{pwMatch ? 'error' : 'check_circle'}</span>
+                        </div>
+                      )}
+                    </div>
+                    {pwMatch && <p className="text-xs text-error">Passwords do not match.</p>}
+                  </div>
+                )}
 
                 {/* Phone */}
                 <div className="space-y-2 md:col-span-2">
