@@ -50,6 +50,19 @@ export default function LoginPage() {
   const handleSocialLogin = async (loginFn) => {
     try {
       const socialUser = await loginFn();
+      const existing = mockUsers.find(
+        u => u.socialId === socialUser.socialId || (socialUser.email && u.email === socialUser.email)
+      );
+      if (existing) {
+        const { password: _, ...userWithoutPassword } = existing;
+        localStorage.setItem('currentUser', JSON.stringify({ ...userWithoutPassword, profileImage: socialUser.profileImage }));
+        localStorage.setItem('currentUserId', existing.userId);
+        localStorage.setItem('currentUserIdNo', existing.id);
+        navigate('/');
+      } else {
+        localStorage.setItem('socialSignupTemp', JSON.stringify(socialUser));
+        navigate('/signup');
+      }
       processSocialLogin(socialUser);
     } catch (err) {
       setError(err.message || '소셜 로그인에 실패했습니다. 다시 시도해주세요.');

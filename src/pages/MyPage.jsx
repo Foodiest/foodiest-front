@@ -137,37 +137,28 @@ export default function MyPage() {
     return data ? JSON.parse(data) : null;
   }, []);
 
-  const currentIdNo = Number(localStorage.getItem("currentUserIdNo"));
   const currentUserId =
     routeUserId || localStorage.getItem("currentUserId") || storedUser?.userId;
 
   // 2. 로그인 체크 및 강제 이동
   useEffect(() => {
-    if (!currentUserId && !currentIdNo) {
+    if (!currentUserId) {
       navigate("/login");
     }
-  }, [currentUserId, currentIdNo, navigate]);
+  }, [currentUserId, navigate]);
 
-  // 3. 유저 상세 정보 매칭 (숫자 ID 혹은 문자열 ID 기준)
+  // 3. 유저 상세 정보 매칭 (문자열 userId 기준)
   const userDetail = useMemo(() => {
     return (
-      mockUsers.find(
-        (user) =>
-          (currentIdNo && user.id === currentIdNo) ||
-          (currentUserId && user.userId === currentUserId),
-      ) || storedUser
+      mockUsers.find((user) => user.userId === currentUserId) || storedUser
     );
-  }, [currentIdNo, currentUserId, storedUser]);
+  }, [currentUserId, storedUser]);
 
   // 4. 본인 리뷰 필터링
   const myReviews = useMemo(() => {
     if (!userDetail) return [];
     return mockReviews
-      .filter(
-        (review) =>
-          review.userNo === userDetail.id ||
-          review.userId === userDetail.userId,
-      )
+      .filter((review) => review.userId === userDetail.userId)
       .map((review) => ({
         id: review.id,
         title:
