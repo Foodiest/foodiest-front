@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const BOT_AVATAR = "https://lh3.googleusercontent.com/aida/ADBb0uhgdS9Km4YxwB88MNTMHnn4j8G-ASnaNTYMBqJS8ZC8INfRc-LID6Tk2HsUaMWaBsDsTPLDCQAoClGVu1rbQsJcd8AUXQdjzqgK3PCywCqLKcLkTrgyK17BOWvVVZZcoHnQtLt2qU7ldmuCm5o3VGDL9nITIkKeuHO22Eto9eBFFkumX0Y9mihLKPk72ce7Vs_Mgk4n-Hp2GvztFUCqihJNN-TvU0nhIdwD64r83TnBj7WuhIhs_r1DSFhf";
 
@@ -11,6 +11,7 @@ export default function AIChatBot() {
   const [isLoading, setIsLoading] = useState(false);
   const [apiKey, setApiKey] = useState(() => sessionStorage.getItem('groq_api_key') || '');
   const [showApiKeyInput, setShowApiKeyInput] = useState(() => !sessionStorage.getItem('groq_api_key'));
+  const messagesContainerRef = useRef(null);
 
   const suggestions = [
     '조용한 카페 추천해줘',
@@ -121,6 +122,14 @@ export default function AIChatBot() {
     }
   };
 
+  useEffect(() => {
+    if (!isOpen || !messagesContainerRef.current) return;
+    messagesContainerRef.current.scrollTo({
+      top: messagesContainerRef.current.scrollHeight,
+      behavior: 'smooth',
+    });
+  }, [messages, isLoading, isOpen]);
+
   return (
     <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end">
       {/* Chat Window */}
@@ -144,7 +153,7 @@ export default function AIChatBot() {
           </div>
 
           {/* Messages */}
-          <div className="h-80 overflow-y-auto p-4 bg-slate-50 space-y-3">
+          <div ref={messagesContainerRef} className="h-80 overflow-y-auto p-4 bg-slate-50 space-y-3">
             {showApiKeyInput && (
               <div className="bg-white border border-orange-200 rounded-xl p-3 shadow-sm">
                 <p className="text-xs font-semibold text-slate-700 mb-2">Groq API Key 입력</p>
@@ -209,11 +218,11 @@ export default function AIChatBot() {
                 <div className="flex flex-wrap gap-2">
                   {suggestions.map((s, i) => (
                     <button
-                      key={i}
+                      key={i + 1}
                       onClick={() => sendMessage(s)}
                       className="px-3 py-1.5 bg-white border border-orange-200 text-primary font-medium text-xs rounded-full shadow-sm hover:bg-orange-50 transition-all active:scale-95"
                     >
-                      {s}
+                      {`${i + 1}. ${s}`}
                     </button>
                   ))}
                 </div>
