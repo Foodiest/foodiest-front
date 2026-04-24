@@ -1,11 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  searchRestaurants,
-  getNearbyRestaurants,
-} from "../data/mockRestaurants";
+import { getAll, search as searchDB } from "../services/restaurantService";
+import botAvatar from "../assets/chatbot.png";
 
-const BOT_AVATAR =
-  "https://lh3.googleusercontent.com/aida/ADBb0uhgdS9Km4YxwB88MNTMHnn4j8G-ASnaNTYMBqJS8ZC8INfRc-LID6Tk2HsUaMWaBsDsTPLDCQAoClGVu1rbQsJcd8AUXQdjzqgK3PCywCqLKcLkTrgyK17BOWvVVZZcoHnQtLt2qU7ldmuCm5o3VGDL9nITIkKeuHO22Eto9eBFFkumX0Y9mihLKPk72ce7Vs_Mgk4n-Hp2GvztFUCqihJNN-TvU0nhIdwD64r83TnBj7WuhIhs_r1DSFhf";
+function calcDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+const BOT_AVATAR = botAvatar;
 
 export default function AIChatBot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -101,52 +110,55 @@ export default function AIChatBot() {
       let relevantRestaurants = [];
 
       if (userLocation) {
-        // 위치가 있으면 근처 맞집 우선 + 키워드 검색
-        const keywordResults = searchRestaurants(
-          userMsg,
-          userLocation.lat,
-          userLocation.lng,
-        );
-        const nearbyResults = getNearbyRestaurants(
-          userLocation.lat,
-          userLocation.lng,
-          50,
-          10,
-        );
+        const [keywordResults, allRestaurants] = await Promise.all([
+          searchDB(userMsg),
+          getAll(),
+        ]);
+        const nearbyResults = allRestaurants
+          .map((r) => ({ ...r, distanceKm: calcDistance(userLocation.lat, userLocation.lng, r.y, r.x) }))
+          .filter((r) => r.distanceKm <= 50)
+          .sort((a, b) => a.distanceKm - b.distanceKm)
+          .slice(0, 10);
 
-        // 키워드 결과가 있으면 우선, 없으면 근처 맛집
         relevantRestaurants =
           keywordResults.length > 0
-            ? keywordResults.slice(0, 5)
+            ? keywordResults.slice(0, 5).map((r) => ({ ...r, distanceKm: calcDistance(userLocation.lat, userLocation.lng, r.y, r.x) }))
             : nearbyResults;
       } else {
-        // 위치 없으면 키워드 검색만
-        relevantRestaurants = searchRestaurants(userMsg).slice(0, 5);
+        const results = await searchDB(userMsg);
+        relevantRestaurants = results.slice(0, 5);
       }
 
       // 맛집 정보를 텍스트로 변환
       const restaurantContext = relevantRestaurants
         .map((r) => {
-          const distanceText = r.distance
-            ? ` (${r.distance.toFixed(1)}km 거리)`
+          const distanceText = r.distanceKm != null
+            ? ` (${r.distanceKm.toFixed(1)}km 거리)`
             : "";
-          const hoursText = r.hours?.weekday || r.hours || "영업시간 미제공";
+          const hoursText = r.hours?.weekday || "영업시간 미제공";
 
-          // 음식 종류를 한글로 변환
           const cuisineMap = {
             Italian: "이탈리안",
             Japanese: "일식",
+            "Japanese Ramen": "라멘",
             Indian: "인도 요리",
             French: "프렌치",
             American: "아메리칸",
+            "American Burgers": "버거",
             Korean: "한식",
             Chinese: "중식",
             Mexican: "멕시칸",
+            Spanish: "스페인 요리",
+            Mediterranean: "지중해 요리",
+            Thai: "태국 요리",
+            Brunch: "브런치",
+            "Wine Bar": "와인바",
+            "Organic Kitchen": "오가닉 키친",
           };
           const cuisineKR = cuisineMap[r.cuisine] || r.cuisine;
 
           return `**${r.name}**${distanceText} (${cuisineKR})
-- 주소: ${r.distance ? `${r.distance.toFixed(1)}km 거리` : "위치 정보 없음"}
+- 거리: ${r.distanceKm != null ? `${r.distanceKm.toFixed(1)}km` : "위치 정보 없음"}
 - 전화: ${r.phone || "전화번호 미제공"}
 - 평점: ${r.rating}/5.0
 - 가격대: ${r.price}

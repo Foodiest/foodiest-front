@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-
 import { useNavigate, useSearchParams } from "react-router-dom";
-
 import Layout from "../components/Layout";
-
-import { mockReviews } from "../data/mockReviews";
+import { create, update, getByRestaurant } from "../services/reviewService";
+import { uploadReviewImage } from "../services/storageService";
+import { useAuth } from "../contexts/AuthContext";
 
 const keywordGroups = [
   {
@@ -40,10 +39,12 @@ const keywordGroups = [
 
 export default function WriteReviewPage() {
   const navigate = useNavigate();
+  const { session } = useAuth();
 
   const [searchParams] = useSearchParams();
 
   const reviewId = searchParams.get("reviewId");
+  const restaurantId = Number(searchParams.get("restaurantId")) || 1;
 
   const isEditMode = !!reviewId;
 
@@ -64,26 +65,19 @@ export default function WriteReviewPage() {
   const [images, setImages] = useState([]);
 
   // Load review data if in edit mode
-
   useEffect(() => {
-    if (isEditMode) {
-      const review = mockReviews.find((r) => r.id === reviewId);
-
+    if (!isEditMode) return;
+    (async () => {
+      const reviews = await getByRestaurant(restaurantId);
+      const review = reviews.find((r) => r.id === reviewId);
       if (review) {
         setRating(review.rating);
-
-        setReviewText(review.reviewText);
-
-        setSelectedKeywords(review.keywords);
-
-        const existingImages = review.images.map((src, idx) => ({
-          id: `edit-${idx}-${Date.now()}`, // idx를 넣어 id가 중복되지 않게 함
-          src,
-        }));
-        setImages(existingImages);
+        setReviewText(review.review_text);
+        setSelectedKeywords(review.keywords ?? { Vibe: [], Taste: [], Service: [] });
+        setImages(review.images.map((src, idx) => ({ id: `edit-${idx}`, src })));
       }
-    }
-  }, [isEditMode, reviewId]);
+    })();
+  }, [isEditMode, reviewId, restaurantId]);
 
   const toggleKw = (category, item) => {
     setSelectedKeywords((prev) => {
@@ -111,8 +105,8 @@ export default function WriteReviewPage() {
     const selectedFiles = files.slice(0, allowedCount);
 
     const newImages = selectedFiles.map((file, idx) => ({
-      id: `new-${idx}-${Date.now()}`, // 여기서도 idx와 접두사를 활용
-      src: URL.createObjectURL(file),
+      id: `new-${idx}-${Date.now()}`,
+      src: URL.createObjectURL(file), // 미리보기용 임시 URL
       file,
     }));
 
@@ -124,45 +118,33 @@ export default function WriteReviewPage() {
     setImages((prev) => prev.filter((image) => image.id !== id));
   };
 
-  const handleSubmit = () => {
-    // 1. 로컬스토리지에서 현재 로그인한 유저 정보를 정확히 가져옵니다.
-    const currentUserNo = Number(localStorage.getItem("currentUserIdNo")) || 1;
-    const currentUserId = localStorage.getItem("currentUserId") || "hyuk_dev";
+  const handleSubmit = async () => {
+    if (!session) {
+      navigate('/login');
+      return;
+    }
 
-    // 2. 입력된 데이터를 정리합니다.
-    const updatedContent = {
+    // file이 있는 신규 이미지는 Storage에 업로드, 기존 URL은 그대로 사용
+    const uploadedImages = await Promise.all(
+      images.map(async (img) => {
+        if (img.file) return await uploadReviewImage(img.file);
+        return img.src;
+      })
+    );
+
+    const payload = {
       reviewText,
       rating,
-      images: images.map((img) => img.src),
+      images: uploadedImages,
       keywords: selectedKeywords,
-      date: new Date().toISOString(), // 수정 시점 날짜 업데이트 (선택 사항)
     };
 
     if (isEditMode) {
-      // [수정 모드]
-      const index = mockReviews.findIndex((r) => r.id === reviewId);
-      if (index !== -1) {
-        // 🔥 핵심: 기존 데이터(...mockReviews[index])를 유지하여 userNo, userId가 유실되지 않게 합니다.
-        mockReviews[index] = {
-          ...mockReviews[index], // 원본의 id, userNo, userId, restaurant 등 보존
-          ...updatedContent, // 수정된 내용만 덮어쓰기
-        };
-        console.log("Review updated successfully:", mockReviews[index]);
-      }
+      await update(reviewId, payload);
     } else {
-      // [신규 등록 모드]
-      const newReview = {
-        id: `review-${Date.now()}`,
-        userNo: currentUserNo,
-        userId: currentUserId,
-        restaurant: "L'Anima Trattoria",
-        ...updatedContent,
-      };
-      mockReviews.unshift(newReview); // 최신순을 위해 맨 앞에 추가
-      console.log("New review submitted:", newReview);
+      await create({ restaurantId, ...payload });
     }
 
-    // 3. 완료 후 마이페이지로 이동
     navigate("/mypage");
   };
 

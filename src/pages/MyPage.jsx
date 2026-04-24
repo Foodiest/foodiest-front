@@ -1,11 +1,8 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState, useMemo, useEffect } from "react";
 import Layout from "../components/Layout";
-
-// 데이터 임포트
-import mockUsers from "../data/mockUsers";
-import { mockReviews } from "../data/mockReviews";
-import { restaurants as mockRestaurantsData } from "../data/mockRestaurants";
+import { useAuth } from "../contexts/AuthContext";
+import { getByUser } from "../services/reviewService";
 
 /**
  * 리뷰 카드 컴포넌트
@@ -15,31 +12,24 @@ function ReviewCard({ review, navigate }) {
     id,
     title,
     restaurant: restaurantName,
+    restaurantId,
     date,
     stars,
     desc,
     img,
   } = review;
 
-  // 1. 식당 이름을 기반으로 mockRestaurants에서 실제 식당 ID 찾기
-  const restaurantId = useMemo(() => {
-    const found = mockRestaurantsData.find((r) => r.name === restaurantName);
-    return found ? found.id : null;
-  }, [restaurantName]);
-
-  // 2. 식당 상세 페이지로 이동 핸들러
   const handleRestaurantClick = (e) => {
-    e.stopPropagation(); // 카드 클릭 이벤트로 전파 방지
+    e.stopPropagation();
     if (restaurantId) {
       navigate(`/restaurant/${restaurantId}`);
       window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     }
   };
 
-  // 3. 리뷰 수정 페이지로 이동 핸들러 (연필 아이콘 전용)
   const handleEditClick = (e) => {
-    e.stopPropagation(); // 카드 클릭 이벤트로 전파 방지
-    navigate(`/write-review?reviewId=${id}`);
+    e.stopPropagation();
+    navigate(`/write-review?reviewId=${id}&restaurantId=${restaurantId}`);
   };
 
   return (
@@ -128,77 +118,42 @@ const bestRestaurants = [
 
 export default function MyPage() {
   const navigate = useNavigate();
-  const { userId: routeUserId } = useParams();
+  const { session, profile, isLoading } = useAuth();
   const [isFollowing, setIsFollowing] = useState(false);
+  const [myReviews, setMyReviews] = useState([]);
 
-  // 1. 로컬스토리지에서 로그인된 유저 정보 가져오기
-  const storedUser = useMemo(() => {
-    const data = localStorage.getItem("currentUser");
-    return data ? JSON.parse(data) : null;
-  }, []);
-
-  const currentUserId =
-    routeUserId || localStorage.getItem("currentUserId") || storedUser?.userId;
-
-  // 2. 로그인 체크 및 강제 이동
   useEffect(() => {
-    if (!currentUserId) {
-      navigate("/login");
-    }
-  }, [currentUserId, navigate]);
+    if (!isLoading && !session) navigate("/login");
+  }, [isLoading, session, navigate]);
 
-  // 3. 유저 상세 정보 매칭 (문자열 userId 기준)
-  const userDetail = useMemo(() => {
-    return (
-      mockUsers.find((user) => user.userId === currentUserId) || storedUser
-    );
-  }, [currentUserId, storedUser]);
+  useEffect(() => {
+    if (!profile) return;
+    getByUser(profile.id).then((reviews) => {
+      setMyReviews(reviews.map((r) => ({
+        id: r.id,
+        title: r.review_text.length > 20 ? r.review_text.slice(0, 20) + "..." : r.review_text,
+        restaurant: r.restaurants?.name ?? '',
+        restaurantId: r.restaurant_id,
+        date: new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase(),
+        stars: r.rating,
+        desc: r.review_text,
+        img: r.images?.[0] || "https://via.placeholder.com/400",
+      })));
+    });
+  }, [session]);
 
-  // 4. 본인 리뷰 필터링
-  const myReviews = useMemo(() => {
-    if (!userDetail) return [];
-    return mockReviews
-      .filter((review) => review.userId === userDetail.userId)
-      .map((review) => ({
-        id: review.id,
-        title:
-          review.reviewText.length > 20
-            ? review.reviewText.slice(0, 20) + "..."
-            : review.reviewText,
-        restaurant: review.restaurant,
-        date: new Date(review.date)
-          .toLocaleDateString("en-US", { month: "short", day: "numeric" })
-          .toUpperCase(),
-        stars: review.rating,
-        desc: review.reviewText,
-        img: review.images?.[0] || "https://via.placeholder.com/400",
-      }));
-  }, [userDetail]);
-
-  // 5. 취향 정체성 태그 데이터 구성
   const tasteIdentityTags = useMemo(() => {
-    if (!userDetail) return [];
+    if (!profile) return [];
     return [
-      ...(userDetail.vibes || []).map((v) => ({
-        label: v,
-        icon: "auto_awesome",
-        color: "bg-white text-secondary border-secondary-container/30",
-      })),
-      ...(userDetail.flavors || []).map((f) => ({
-        label: f,
-        icon: "restaurant",
-        color:
-          "bg-primary-fixed/50 text-on-primary-fixed-variant border-primary-fixed",
-      })),
-      ...(userDetail.dietary || []).map((d) => ({
-        label: d,
-        icon: "eco",
-        color: "bg-tertiary-fixed text-on-tertiary-fixed border-tertiary",
-      })),
+      ...(profile.vibes || []).map((v) => ({ label: v, icon: "auto_awesome", color: "bg-white text-secondary border-secondary-container/30" })),
+      ...(profile.flavors || []).map((f) => ({ label: f, icon: "restaurant", color: "bg-primary-fixed/50 text-on-primary-fixed-variant border-primary-fixed" })),
+      ...(profile.dietary || []).map((d) => ({ label: d, icon: "eco", color: "bg-tertiary-fixed text-on-tertiary-fixed border-tertiary" })),
     ];
-  }, [userDetail]);
+  }, [profile]);
 
-  if (!userDetail) return null;
+  if (isLoading || !profile) return null;
+
+  const userDetail = profile;
 
   return (
     <Layout>
@@ -218,17 +173,17 @@ export default function MyPage() {
             <div className="flex flex-col md:flex-row items-end gap-5 text-left">
               <div className="w-36 h-36 rounded-3xl border-4 border-white overflow-hidden shadow-lg bg-white">
                 <img
-                  src={userDetail.profileImage || PROFILE_IMG}
+                  src={userDetail.profile_image || PROFILE_IMG}
                   alt="profile"
                   className="w-full h-full object-cover"
                 />
               </div>
               <div className="mb-2">
                 <h2 className="font-[Epilogue] text-white md:text-on-surface text-2xl md:text-4xl font-bold">
-                  {userDetail.nickname || userDetail.userId}
+                  {userDetail.nickname || userDetail.user_id}
                 </h2>
                 <p className="text-slate-500 text-sm mt-1">
-                  {userDetail.email || userDetail.userId}
+                  {userDetail.email || userDetail.user_id}
                 </p>
 
               </div>

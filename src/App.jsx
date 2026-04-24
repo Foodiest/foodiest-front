@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { AuthProvider } from './contexts/AuthContext';
 import HomePage from './pages/HomePage';
 import RestaurantDetailPage from './pages/RestaurantDetailPage';
 import WriteReviewPage from './pages/WriteReviewPage';
@@ -11,12 +12,14 @@ import SignUpStep2Page from './pages/SignUpStep2Page';
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import MyPageSettingsPage from './pages/MyPageSettingsPage';
 import SavedPage from './pages/SavedPage';
+import EditProfilePage from './pages/EditProfilePage';
 
 function App() {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   return (
     <GoogleOAuthProvider clientId={clientId}>
+      <AuthProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<HomePage />} />
@@ -30,8 +33,10 @@ function App() {
           <Route path="/profile-settings" element={<ProfileSettingsPage />} />
           <Route path="/mypage-settings" element={<MyPageSettingsPage />} />
           <Route path="/saved" element={<SavedPage />} />
+          <Route path="/edit-profile" element={<EditProfilePage />} />
         </Routes>
       </BrowserRouter>
+      </AuthProvider>
     </GoogleOAuthProvider>
   );
 }

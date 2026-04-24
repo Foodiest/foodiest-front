@@ -1,31 +1,46 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import logoUrl from '../assets/logo.png';
+import { useAuth } from '../contexts/AuthContext';
+import { signOut } from '../services/authService';
 
-const LOGO_URL =
-  'https://lh3.googleusercontent.com/aida/ADBb0ui3TDTpTeFMuqXORvtln5ch7904DywC7IySsW8ACfAhikZiX-XCHWeOZX5nhAuUbaVvf414JmXvTp1UQZ60cCLE_bnd5698IHAw2Tg4zMzXP43lRA9Z0A9Vx80KvxEFOv_TdXR6Yjh_-85CLl6vREjQErp9l9FBUNe7XDa_D5KS11KGWgKyYI1EIiN8keoUzfF78HfhR6Ps5aR6-W4v3eqhSA0c5uwWLD1ZuzhgYDuS2wiCYQyVKDmh0kg';
+const LOGO_URL = logoUrl;
 
 export default function TopNavBar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+  const { isLoggedIn, profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
-  const handleLogout = () => {
-    localStorage.removeItem('currentUser');
+  const handleLogout = async () => {
+    await signOut();
     navigate('/login');
   };
 
   const navLinks = [
     { to: '/', label: 'Explore' },
     { to: '/saved', label: 'Saved', requireAuth: true },
-    { to: '/collections', label: 'Collections' },
-    { to: '/admin', label: 'Analytics' },
+    ...(isAdmin ? [{ to: '/admin', label: 'Analytics' }] : []),
   ];
 
   const handleNavClick = (e, link) => {
-    if (link.requireAuth && !currentUser) {
+    if (link.requireAuth && !isLoggedIn) {
       e.preventDefault();
       navigate('/login');
     }
   };
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    };
+    if (menuOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuOpen]);
 
   return (
     <nav className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
@@ -62,21 +77,47 @@ export default function TopNavBar() {
         </div>
 
         <div className="flex items-center space-x-4">
-          {currentUser ? (
+          {isLoggedIn ? (
             <>
               <button className="active:scale-95 transition-transform">
                 <span className="material-symbols-outlined text-gray-600">
                   notifications
                 </span>
               </button>
-              <Link
-                to="/mypage"
-                className="active:scale-95 transition-transform"
-              >
-                <span className="material-symbols-outlined text-gray-600">
-                  account_circle
-                </span>
-              </Link>
+
+              {/* 프로필 버튼 + 플로팅 메뉴 */}
+              <div className="relative" ref={menuRef}>
+                <button
+                  onClick={() => setMenuOpen((prev) => !prev)}
+                  className="active:scale-95 transition-transform"
+                >
+                  <span className="material-symbols-outlined text-gray-600">
+                    account_circle
+                  </span>
+                </button>
+
+                {menuOpen && (
+                  <div className="absolute right-0 top-10 w-44 bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden z-50">
+                    <Link
+                      to="/mypage"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-sm">person</span>
+                      마이페이지
+                    </Link>
+                    <Link
+                      to="/edit-profile"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-orange-50 hover:text-orange-600 transition-colors border-t border-slate-50"
+                    >
+                      <span className="material-symbols-outlined text-sm">edit</span>
+                      기본 정보 수정
+                    </Link>
+                  </div>
+                )}
+              </div>
+
               <button
                 onClick={handleLogout}
                 className="text-sm font-semibold text-gray-600 hover:text-orange-600 transition-colors active:scale-95"

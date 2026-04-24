@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { vibes, flavors, dietary, allergies } from "../data/mockFilters";
+import { signUp } from "../services/authService";
+import { supabase } from "../lib/supabase";
 
 export default function SignUpStep2Page() {
   const navigate = useNavigate();
@@ -8,6 +10,8 @@ export default function SignUpStep2Page() {
   const [selectedFlavors, setSelectedFlavors] = useState(["Sweet Treats"]);
   const [selectedDietary, setSelectedDietary] = useState(["Vegan"]);
   const [selectedAllergies, setSelectedAllergies] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const toggle = (list, setList, item) => {
     setList((prev) =>
@@ -284,27 +288,59 @@ export default function SignUpStep2Page() {
             Back to Account Details
           </button>
           <button
-            onClick={() => {
-              const step1 = JSON.parse(localStorage.getItem('signupTemp') || '{}');
-              const { password: _, confirmPassword: __, ...rest } = step1;
-              const newUser = {
-                ...rest,
-                vibes: selectedVibes,
-                flavors: selectedFlavors,
-                dietary: selectedDietary,
-                allergies: selectedAllergies,
-              };
-              localStorage.setItem('currentUser', JSON.stringify(newUser));
-              localStorage.setItem('currentUserId', newUser.userId);
-              localStorage.setItem('currentUserIdNo', newUser.id ?? Date.now());
-              localStorage.removeItem('signupTemp');
-              localStorage.removeItem('socialSignupTemp');
-              navigate('/');
+            onClick={async () => {
+              setError('');
+              setLoading(true);
+              try {
+                const step1 = JSON.parse(localStorage.getItem('signupTemp') || '{}');
+                const socialTemp = JSON.parse(localStorage.getItem('socialSignupTemp') || 'null');
+
+                if (socialTemp) {
+                  // 카카오 소셜 회원가입: 이메일+생성된 패스워드로 등록
+                  await signUp({
+                    userId: step1.userId,
+                    nickname: step1.nickname,
+                    email: socialTemp.email,
+                    password: `kakao_${socialTemp.socialId}`,
+                    phone: step1.phone,
+                    vibes: selectedVibes,
+                    flavors: selectedFlavors,
+                    dietary: selectedDietary,
+                    allergies: selectedAllergies,
+                  });
+                  await supabase.auth.signInWithPassword({
+                    email: socialTemp.email,
+                    password: `kakao_${socialTemp.socialId}`,
+                  });
+                } else {
+                  await signUp({
+                    userId: step1.userId,
+                    nickname: step1.nickname,
+                    email: step1.email,
+                    password: step1.password,
+                    phone: step1.phone,
+                    vibes: selectedVibes,
+                    flavors: selectedFlavors,
+                    dietary: selectedDietary,
+                    allergies: selectedAllergies,
+                  });
+                }
+
+                localStorage.removeItem('signupTemp');
+                localStorage.removeItem('socialSignupTemp');
+                navigate('/');
+              } catch (err) {
+                setError(err.message || '회원가입에 실패했습니다.');
+              } finally {
+                setLoading(false);
+              }
             }}
-            className="px-8 py-4 bg-primary text-white font-semibold rounded-xl shadow-lg shadow-primary/20 hover:bg-surface-tint active:scale-95 transition-all"
+            disabled={loading}
+            className="px-8 py-4 bg-primary text-white font-semibold rounded-xl shadow-lg shadow-primary/20 hover:bg-surface-tint active:scale-95 transition-all disabled:opacity-60"
           >
-            Complete Registration
+            {loading ? '처리 중...' : 'Complete Registration'}
           </button>
+          {error && <p className="text-sm text-red-500 text-center">{error}</p>}
         </div>
       </main>
 
