@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import logoUrl from '../assets/logo.png';
 
-const LOGO_URL =
-  'https://lh3.googleusercontent.com/aida/ADBb0ui3TDTpTeFMuqXORvtln5ch7904DywC7IySsW8ACfAhikZiX-XCHWeOZX5nhAuUbaVvf414JmXvTp1UQZ60cCLE_bnd5698IHAw2Tg4zMzXP43lRA9Z0A9Vx80KvxEFOv_TdXR6Yjh_-85CLl6vREjQErp9l9FBUNe7XDa_D5KS11KGWgKyYI1EIiN8keoUzfF78HfhR6Ps5aR6-W4v3eqhSA0c5uwWLD1ZuzhgYDuS2wiCYQyVKDmh0kg';
+const LOGO_URL = logoUrl;
 
 export default function TopNavBar() {
   const location = useLocation();

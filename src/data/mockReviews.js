@@ -4,25 +4,14 @@ export const scores = [
   { label: "Mood", value: 92 },
 ];
 
-export const mockReview = {
-  userName: "Elena Martinez",
-  userInitials: "EM",
-  date: "2 days ago",
-  status: "Local Guide",
-  rating: 5,
-  content:
-    '"The Cacio e Pepe was life-changing. We sat in a corner booth and could actually hear each other speak. The AI recommendation was spot on about the quiet vibe!"',
-  images: [
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuAGrKERkAoI4x2VQxH3TC3zd4gK_6TAjyvhvkYrBW3hrZGjE5SDBNJEuSXLJB74A84iybZnN7lssT39Yn2wVTghJ52TxCrxq1_eK6NqxUTf1MfRWOfAPHXxPL-wWgJRRG1hj3SO1P_xhmDLbwfzSrEYWJQb1a-uiqBIpsE-s8TXZeNCA2RSiR6EqqCK__8PGCyPOieAp_a4WWyfdRnyNZT-e6FNOtwLbIBXXSLZTeLjG4ohKjPvMSD3HnYDQypWgfKYNa4C4_O1NZ0UsdHihq",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuDiJOprzucmBE7R6FGTUTwUNNjH-WMdA3rRA_-PSydHn52ztS4Z_lvxZj9Mc7wZcKSuz8VuTMkJkJqO5p1lmKjhk2OqGVjTnUwZYfri1vBLBAfIuMDdycEMlKvN8VEJqWx-8lUwvrkbSHeIrupiV4h_vp4AqBXax2e53z3nzburM05_9NbERnJxiEeofIm0YD0o-Eg2fQnJu-69beU_RXNlLGU3Tgx-J9edmVAPcPnUNdaDA3rDQlJBf6rLOIay0rM1_JI2xovrX3eO",
-  ],
-};
-
 export const mockReviews = [
   {
     id: "rev-1-1",
     userNo: 1,
     userId: "hyuk_dev",
+    userName: "Hyuk Dev",
+    userInitials: "HD",
+    status: "Local Guide",
     restaurant: "L'Anima Trattoria",
     reviewText:
       "트러플 파스타의 풍미가 정말 깊어요. 조용한 분위기 덕분에 대화하기 좋습니다.",
@@ -41,6 +30,9 @@ export const mockReviews = [
     id: "rev-1-2",
     userNo: 1,
     userId: "hyuk_dev",
+    userName: "Hyuk Dev",
+    userInitials: "HD",
+    status: "Local Guide",
     restaurant: "Zenith Sushi",
     reviewText:
       "미니멀한 인테리어와 신선한 사시미가 인상적입니다. 정갈한 맛이네요.",
@@ -55,6 +47,9 @@ export const mockReviews = [
     id: "rev-1-3",
     userNo: 1,
     userId: "hyuk_dev",
+    userName: "Hyuk Dev",
+    userInitials: "HD",
+    status: "Local Guide",
     restaurant: "Wild & Raw",
     reviewText:
       "유기농 재료라 그런지 속이 편해요. 식물원 같은 분위기도 맘에 듭니다.",
@@ -75,6 +70,9 @@ export const mockReviews = [
     id: "rev-2-1",
     userNo: 2,
     userId: "jane_gourmet",
+    userName: "Jane Gourmet",
+    userInitials: "JG",
+    status: "Foodie",
     restaurant: "Neon Sips",
     reviewText:
       "칵테일 비주얼이 대박! 음악 소리가 좀 크지만 친구들과 즐겁게 놀기 좋아요.",
@@ -89,6 +87,9 @@ export const mockReviews = [
     id: "rev-2-2",
     userNo: 2,
     userId: "jane_gourmet",
+    userName: "Jane Gourmet",
+    userInitials: "JG",
+    status: "Foodie",
     restaurant: "Taco Theory",
     reviewText:
       "살사 소스가 진짜 맵고 맛있어요! 타코 속재료가 꽉 차서 든든합니다.",
@@ -103,6 +104,9 @@ export const mockReviews = [
     id: "rev-2-3",
     userNo: 2,
     userId: "jane_gourmet",
+    userName: "Jane Gourmet",
+    userInitials: "JG",
+    status: "Foodie",
     restaurant: "The Daily Grind",
     reviewText:
       "디저트가 정말 달콤해요. 공부하러 오기엔 조금 시끄러울 수 있어요.",
@@ -119,6 +123,9 @@ export const mockReviews = [
     id: "rev-3-1",
     userNo: 3,
     userId: "admin",
+    userName: "Admin",
+    userInitials: "AD",
+    status: "Local Guide",
     restaurant: "L'Anima Trattoria",
     reviewText:
       "비즈니스 미팅하기 최적의 장소입니다. 서버들이 매우 전문적입니다.",
@@ -137,6 +144,9 @@ export const mockReviews = [
     id: "rev-3-2",
     userNo: 3,
     userId: "admin",
+    userName: "Admin",
+    userInitials: "AD",
+    status: "Local Guide",
     restaurant: "Zenith Sushi",
     reviewText:
       "조용하고 정중한 서비스가 돋보입니다. 가격만큼의 가치를 하네요.",
@@ -151,6 +161,9 @@ export const mockReviews = [
     id: "rev-3-3",
     userNo: 3,
     userId: "admin",
+    userName: "Admin",
+    userInitials: "AD",
+    status: "Local Guide",
     restaurant: "Wild & Raw",
     reviewText: "전반적으로 깔끔하지만 간이 조금 심심할 수 있습니다.",
     rating: 4,

@@ -3,9 +3,9 @@ import {
   searchRestaurants,
   getNearbyRestaurants,
 } from "../data/mockRestaurants";
+import botAvatar from "../assets/chatbot.png";
 
-const BOT_AVATAR =
-  "https://lh3.googleusercontent.com/aida/ADBb0uhgdS9Km4YxwB88MNTMHnn4j8G-ASnaNTYMBqJS8ZC8INfRc-LID6Tk2HsUaMWaBsDsTPLDCQAoClGVu1rbQsJcd8AUXQdjzqgK3PCywCqLKcLkTrgyK17BOWvVVZZcoHnQtLt2qU7ldmuCm5o3VGDL9nITIkKeuHO22Eto9eBFFkumX0Y9mihLKPk72ce7Vs_Mgk4n-Hp2GvztFUCqihJNN-TvU0nhIdwD64r83TnBj7WuhIhs_r1DSFhf";
+const BOT_AVATAR = botAvatar;
 
 export default function AIChatBot() {
   const [isOpen, setIsOpen] = useState(false);

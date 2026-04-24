@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { kpiCards, flaggedReviews, trendingKeywords, userGrowth, navItems, LOGO_URL, ADMIN_AVATAR } from '../data/mockAdminData';
+import { kpiCards, flaggedReviews, trendingKeywords, userGrowth, navItems, ADMIN_AVATAR } from '../data/mockAdminData';
+import LOGO_URL from '../assets/logo.png';
 
 
 

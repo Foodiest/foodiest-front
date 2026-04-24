@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { restaurants } from '../data/mockRestaurants';
 import { popularDishes } from '../data/mockMenus';
-import { scores, mockReview, nlpKeywords } from '../data/mockReviews';
+import { scores, mockReviews, nlpKeywords } from '../data/mockReviews';
 import { useParams } from 'react-router-dom';
 import { isSaved, toggleSaved } from '../data/mockSavedRestaurants';
 
@@ -114,6 +114,7 @@ export default function RestaurantDetailPage() {
 
   const restaurant = restaurants.find(r => r.id === parseInt(id)) || restaurants[0];
   const restaurantLocation = { x: restaurant.x, y: restaurant.y };
+  const featuredReview = mockReviews.find(r => r.restaurant === restaurant.name) ?? mockReviews[0];
 
   const [copyToast, setCopyToast] = useState(false);
 
@@ -314,28 +315,28 @@ export default function RestaurantDetailPage() {
             <div className="bg-white p-5 rounded-lg shadow-sm">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">{mockReview.userInitials}</div>
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">{featuredReview.userInitials}</div>
                   <div>
                     <h4 className="font-semibold text-sm">
                       <button
                         onClick={handleGoToMyPage}
                         className="hover:underline hover:text-primary transition-colors"
                       >
-                        {mockReview.userName}
+                        {featuredReview.userName}
                       </button>
                     </h4>
-                    <p className="text-xs text-on-surface-variant">{mockReview.date} • {mockReview.status}</p>
+                    <p className="text-xs text-on-surface-variant">{featuredReview.date} • {featuredReview.status}</p>
                   </div>
                 </div>
                 <div className="flex text-primary">
-                  {[...Array(mockReview.rating)].map((_, i) => (
+                  {[...Array(featuredReview.rating)].map((_, i) => (
                     <span key={i} className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                   ))}
                 </div>
               </div>
-              <p className="text-base mb-4">{mockReview.content}</p>
+              <p className="text-base mb-4">{featuredReview.reviewText}</p>
               <div className="flex gap-3 overflow-x-auto pb-1">
-                {mockReview.images.map((img, i) => (
+                {featuredReview.images.map((img, i) => (
                   <img key={i} src={img} alt="review" className="w-20 h-20 object-cover rounded-lg flex-shrink-0" />
                 ))}
               </div>
