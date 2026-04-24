@@ -1,19 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { restaurants } from '../data/mockRestaurants';
-import { getSavedIds, toggleSaved } from '../data/mockSavedRestaurants';
+import { useAuth } from '../contexts/AuthContext';
+import { getSavedIds, toggleSaved } from '../services/savedService';
+import { getAll } from '../services/restaurantService';
+import defaultRestaurantImg from '../assets/default-restaurant.svg';
 
 export default function SavedPage() {
   const navigate = useNavigate();
-  const userIdNo = Number(localStorage.getItem('currentUserIdNo'));
-  const [savedIds, setSavedIds] = useState(() => getSavedIds(userIdNo));
+  const { session, isLoading } = useAuth();
+  const [savedIds, setSavedIds] = useState([]);
+  const [allRestaurants, setAllRestaurants] = useState([]);
 
-  const savedRestaurants = restaurants.filter(r => savedIds.includes(r.id));
+  useEffect(() => {
+    if (!isLoading && !session) navigate('/login');
+  }, [isLoading, session, navigate]);
 
-  const handleUnsave = (restaurantId) => {
-    const updated = toggleSaved(userIdNo, restaurantId);
-    setSavedIds(updated);
+  useEffect(() => {
+    if (!session) return;
+    getSavedIds().then(setSavedIds);
+    getAll().then(setAllRestaurants);
+  }, [session]);
+
+  const savedRestaurants = allRestaurants.filter(r => savedIds.includes(r.id));
+
+  const handleUnsave = async (restaurantId) => {
+    await toggleSaved(restaurantId);
+    setSavedIds(prev => prev.filter(id => id !== restaurantId));
   };
 
   return (
@@ -48,9 +61,10 @@ export default function SavedPage() {
                   onClick={() => navigate(`/restaurant/${restaurant.id}`)}
                 >
                   <img
-                    src={restaurant.image}
+                    src={restaurant.image || defaultRestaurantImg}
                     alt={restaurant.name}
                     className="w-full h-48 object-cover"
+                    onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }}
                   />
                   {restaurant.badge && (
                     <span className="absolute top-3 left-3 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">

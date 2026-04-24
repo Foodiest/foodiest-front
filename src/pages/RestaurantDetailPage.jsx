@@ -1,11 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { restaurants } from '../data/mockRestaurants';
-import { popularDishes } from '../data/mockMenus';
-import { scores, mockReviews, nlpKeywords } from '../data/mockReviews';
-import { useParams } from 'react-router-dom';
-import { isSaved, toggleSaved } from '../data/mockSavedRestaurants';
+import { getById } from '../services/restaurantService';
+import { getByRestaurant } from '../services/reviewService';
+import { useAuth } from '../contexts/AuthContext';
+import { isSaved as isSavedService, toggleSaved as toggleSavedService } from '../services/savedService';
+import defaultRestaurantImg from '../assets/default-restaurant.svg';
+
+const popularDishes = [
+  { name: 'Signature Dish', price: '₩28,000', desc: 'Chef\'s daily selection using the freshest seasonal ingredients.', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBtLh1NYpD8QI9ZAlSIh6ro1uhnW8KKtq244wpGDLTECRQmqHpdjbmfiMtCHH_CnowDIL1pAuzMqmqFvkmK_9_7hxqDrzNXlAM80ROwjcpzhyGKn4dvOTCOEtbiSuBPVEu_2p843aJViWGH9qh0xC5hUmbrg8zkxwVwdsqb3OPCHcXqup0e-YmylykNTg4iYBTOdGshaS1DQcD2Rm1uNTWiYAsx73taEt3-t5mEfa9v3G6tl34I_4YuieUfyVlCnyJg2OwftROktxg_' },
+  { name: 'Chef\'s Special', price: '₩32,000', desc: 'A rotating menu item based on what the chef finds inspiring each week.', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDWfiTamkqsO7J-p2pjn_rBQZjm25m7UARi9O5Mu4sSC0hY00aWr7dIaThsPOoq41-okk6iybbx9CTPhjUlmq43YK8WdswzT4lLAZaFc23J2-qBd9_pHKXXnkpBI7ZHR4ms_-HgpY9hC78UeOvkChUJFz6zAjsLUY5cbyPl8ZVRPxGiVItrs5nP2zy-22TKLoUQjHAqZVae_JDS9LxP0lHqRtF93eAEppC2a1wqVXjwK91sM6-3-vC4b9GeSB573R4KK5m1qEJdAOei' },
+  { name: 'House Favorite', price: '₩24,000', desc: 'A beloved classic that regulars keep coming back for, perfected over years.', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDvzp1mVk2qPX231Hyp9yTkS5ysLEaXNZlES_hj7DmJQ66i1SDKM_Xwayg374qG4OWy7kHf1wLpbYXjhSeWIRA1q7ZXTPVEvZ6Ln3YZRRivBY7oD4fPmkITP2Jav8doC9zVzUNdehVIMSzTBItSayO90fYD6CnuVotRvTUrQEY2FKY4H_PPqOzvlgwp_p7WPmpPOh2u0HoHhGBDMP30lEqhc-m2rNLyE7opfijNqgbIf9L5AdqITXFtuu40i_ELPnb5qGroIf2ij10P' },
+  { name: 'Seasonal Dessert', price: '₩14,000', desc: 'A light and refreshing sweet ending crafted with seasonal fruits and local dairy.', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDCHccFkc2uCwTcGjfOMhFy-sPVDo65WJGA7hUis74RATxXWmfXzDS2Qcff7hacPldcnzIysc_KjaY2ZoNH9J4F87LsQQmPdW9jVV-5RUqEz9JxhyJxrQDJtMJIiBbdFoCVqobulcX9TFTBQSVMePEfahLfPvxm1QKTw7YifgoHHUKcGZ4N4STv4e2wH942hAL-7fIgDtNQG_JeeXovvAuAExAB8L0KYPi1yhKlz1wDOmUL6Pf3Wa1IJJ1tbuyvIgJyFl0jksI-oCCl' },
+];
 
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY;
@@ -111,12 +118,31 @@ const bentoImages = [
 export default function RestaurantDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
 
-  const restaurant = restaurants.find(r => r.id === parseInt(id)) || restaurants[0];
-  const restaurantLocation = { x: restaurant.x, y: restaurant.y };
-  const featuredReview = mockReviews.find(r => r.restaurant === restaurant.name) ?? mockReviews[0];
-
+  const [restaurant, setRestaurant] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [copyToast, setCopyToast] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const restaurantId = parseInt(id);
+    Promise.all([
+      getById(restaurantId),
+      getByRestaurant(restaurantId),
+    ])
+      .then(([r, rv]) => {
+        setRestaurant(r);
+        setReviews(rv);
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  useEffect(() => {
+    if (!isLoggedIn || !restaurant) return;
+    isSavedService(restaurant.id).then(setSaved);
+  }, [isLoggedIn, restaurant]);
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href).then(() => {
@@ -125,26 +151,50 @@ export default function RestaurantDetailPage() {
     });
   };
 
-  const userIdNo = Number(localStorage.getItem('currentUserIdNo'));
-  const isLoggedIn = !!localStorage.getItem('currentUser');
-  const [saved, setSaved] = useState(() => isLoggedIn ? isSaved(userIdNo, restaurant.id) : false);
-
-  const handleSaveToggle = () => {
+  const handleSaveToggle = async () => {
     if (!isLoggedIn) {
       navigate('/login');
       return;
     }
-    const updated = toggleSaved(userIdNo, restaurant.id);
-    setSaved(updated.includes(restaurant.id));
+    const nowSaved = await toggleSavedService(restaurant.id);
+    setSaved(nowSaved);
   };
 
-  const handleGoToMyPage = () => {
-    navigate('/mypage');
-    // Route transition happens asynchronously in SPA; scroll on next frame.
-    window.requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-    });
-  };
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-96 text-slate-400">
+          <span className="material-symbols-outlined text-4xl animate-spin mr-3">refresh</span>
+          <p>식당 정보를 불러오는 중...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!restaurant) {
+    return (
+      <Layout>
+        <div className="flex flex-col items-center justify-center h-96 text-slate-400 gap-4">
+          <span className="material-symbols-outlined text-5xl">search_off</span>
+          <p className="text-lg font-medium">식당 정보를 찾을 수 없습니다.</p>
+          <button onClick={() => navigate('/')} className="bg-primary text-white px-6 py-2 rounded-lg text-sm font-semibold">홈으로 돌아가기</button>
+        </div>
+      </Layout>
+    );
+  }
+
+  const restaurantLocation = { x: restaurant.x, y: restaurant.y };
+  const reviewCount = reviews.length;
+
+  const scores = [
+    { label: 'Taste', value: reviews.length ? Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 20) : 0 },
+    { label: 'Service', value: reviews.length ? Math.min(100, Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 18) + 5) : 0 },
+    { label: 'Mood', value: reviews.length ? Math.min(100, Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 17) + 8) : 0 },
+  ];
+
+  const nlpKeywords = reviews.length
+    ? [...new Set(reviews.flatMap((r) => Object.values(r.keywords || {}).flat()))].slice(0, 8)
+    : ['Authentic flavors', 'Great atmosphere', 'Friendly service'];
 
   return (
     <Layout>
@@ -152,16 +202,16 @@ export default function RestaurantDetailPage() {
       <section className="max-w-7xl mx-auto w-full px-6 py-4">
         <div className="grid grid-cols-4 grid-rows-2 gap-3 mb-6" style={{ gridTemplateRows: 'repeat(2, 200px)' }}>
           <div className="col-span-2 row-span-2 relative overflow-hidden rounded-lg">
-            <img src={bentoImages[0]} alt="restaurant" className="w-full h-full object-cover" />
+            <img src={bentoImages[0] || defaultRestaurantImg} alt="restaurant" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
           </div>
           <div className="col-span-1 row-span-1 relative overflow-hidden rounded-lg">
-            <img src={bentoImages[1]} alt="dish" className="w-full h-full object-cover" />
+            <img src={bentoImages[1] || defaultRestaurantImg} alt="dish" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
           </div>
           <div className="col-span-1 row-span-1 relative overflow-hidden rounded-lg">
-            <img src={bentoImages[2]} alt="cocktail" className="w-full h-full object-cover" />
+            <img src={bentoImages[2] || defaultRestaurantImg} alt="cocktail" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
           </div>
           <div className="col-span-2 row-span-1 relative overflow-hidden rounded-lg">
-            <img src={bentoImages[3]} alt="chef" className="w-full h-full object-cover" />
+            <img src={bentoImages[3] || defaultRestaurantImg} alt="chef" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
           </div>
         </div>
 
@@ -172,7 +222,7 @@ export default function RestaurantDetailPage() {
             <div className="flex items-center gap-3 text-sm font-medium">
               <span className="flex items-center text-primary">
                 <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                {restaurant.rating} (842 Reviews)
+                {restaurant.rating} ({reviewCount} Reviews)
               </span>
               <span className="text-on-surface-variant">•</span>
               <span className="text-on-surface-variant">{restaurant.cuisine}</span>
@@ -257,7 +307,7 @@ export default function RestaurantDetailPage() {
                 <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'wght' 700" }}>psychology</span>
                 AI Review Analysis
               </h2>
-              <span className="text-xs text-on-surface-variant">Based on 800+ reviews</span>
+              <span className="text-xs text-on-surface-variant">Based on {reviewCount} review{reviewCount !== 1 ? 's' : ''}</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
               <div className="space-y-4">
@@ -312,35 +362,46 @@ export default function RestaurantDetailPage() {
           {/* Reviews */}
           <div>
             <h2 className="font-[Epilogue] text-2xl font-semibold mb-5">What diners are saying</h2>
-            <div className="bg-white p-5 rounded-lg shadow-sm">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">{featuredReview.userInitials}</div>
-                  <div>
-                    <h4 className="font-semibold text-sm">
-                      <button
-                        onClick={handleGoToMyPage}
-                        className="hover:underline hover:text-primary transition-colors"
-                      >
-                        {featuredReview.userName}
-                      </button>
-                    </h4>
-                    <p className="text-xs text-on-surface-variant">{featuredReview.date} • {featuredReview.status}</p>
-                  </div>
-                </div>
-                <div className="flex text-primary">
-                  {[...Array(featuredReview.rating)].map((_, i) => (
-                    <span key={i} className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                  ))}
-                </div>
+            {reviews.length === 0 ? (
+              <div className="bg-white p-8 rounded-lg shadow-sm text-center text-slate-400">
+                <span className="material-symbols-outlined text-3xl mb-2 block">rate_review</span>
+                <p>아직 리뷰가 없습니다. 첫 번째 리뷰를 남겨보세요!</p>
               </div>
-              <p className="text-base mb-4">{featuredReview.reviewText}</p>
-              <div className="flex gap-3 overflow-x-auto pb-1">
-                {featuredReview.images.map((img, i) => (
-                  <img key={i} src={img} alt="review" className="w-20 h-20 object-cover rounded-lg flex-shrink-0" />
-                ))}
+            ) : (
+              <div className="space-y-4">
+                {reviews.map((review) => {
+                  const nickname = review.users?.nickname ?? '익명';
+                  const initials = nickname.slice(0, 2).toUpperCase();
+                  const dateStr = new Date(review.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' });
+                  return (
+                    <div key={review.id} className="bg-white p-5 rounded-lg shadow-sm">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">{initials}</div>
+                          <div>
+                            <h4 className="font-semibold text-sm">{nickname}</h4>
+                            <p className="text-xs text-on-surface-variant">{dateStr}</p>
+                          </div>
+                        </div>
+                        <div className="flex text-primary">
+                          {[...Array(review.rating)].map((_, i) => (
+                            <span key={i} className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-base mb-4">{review.review_text}</p>
+                      {review.images?.length > 0 && (
+                        <div className="flex gap-3 overflow-x-auto pb-1">
+                          {review.images.map((img, i) => (
+                            <img key={i} src={img} alt="review" className="w-20 h-20 object-cover rounded-lg flex-shrink-0" />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            </div>
+            )}
           </div>
         </div>
 

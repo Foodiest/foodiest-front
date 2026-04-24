@@ -1,8 +1,32 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
-import { restaurants, nearbyFavorites } from "../data/mockRestaurants";
+import { getAll } from "../services/restaurantService";
 import { vibes, flavors, dietary } from "../data/mockFilters";
+import defaultRestaurantImg from "../assets/default-restaurant.svg";
+
+const nearbyFavorites = [
+  {
+    name: "The Daily Grind",
+    sub: "0.2 miles • Coffee",
+    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuB6KO-M3xKogRmdAQc3tuFwF0Ifa-4Nvv0FB2agawLXLE4kt5hZG_SfvdzLPpMMODoZVDnZSzHdCxZV-wCUEzqiNZ2ZCZmYRnZuViu--wwHNbgbO92n9Dwr2nJf64hl3ZsOPgI44wxFUBJkg6UrnZ7r3jU3BPR7aG-RACAXhwQNRysAfF6Oe9IeosgimB0djze3lxIN1E23RY7zR7xvNRs3y4MFCtk2CzucuOpw3Tbl0lv_YMA3hGs3iWzsjQvrz3MqasK1TnqLpRf5",
+  },
+  {
+    name: "선셋 브런치 클럽",
+    sub: "0.5 miles • Brunch",
+    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCHmDnYklZfS2ovFicfL3qOTQgj0DGWejlakVViEcksvnKsVjtdJ3mPWYvZV6ycd5Ggy-_QJ7Fx69dEAtecAM7bQT1FBDND4SUGMQ8GnXezodjCHiPwxYusXpPQ-3uF9C6BVglpIsSdgNd98DARCu6s1pzD2LFvmFA9XyiRLrAsGvR5dhk7-FCvFMifTQrF03fQpmbfg02bChaqCSDVaNs6WpRxt2ji4LBBhP6W4vl9Fr9gQsAjlU-Nm5XThu_e0OK9wENkvjBibqo3",
+  },
+];
+
+function calcMatch(restaurant, userVibes, userFlavors, userDietary) {
+  const total = userVibes.length + userFlavors.length + userDietary.length;
+  if (total === 0) return null;
+  const matched =
+    userVibes.filter((v) => restaurant.vibes?.includes(v)).length +
+    userFlavors.filter((f) => restaurant.flavors?.includes(f)).length +
+    userDietary.filter((d) => restaurant.dietary?.includes(d)).length;
+  return Math.round((matched / total) * 100);
+}
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY;
 let kakaoScriptPromise = null;
@@ -155,21 +179,29 @@ function KakaoMapView({
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
-  const [selectedVibes, setSelectedVibes] = useState(currentUser?.vibes ?? []);
-  const [selectedFlavors, setSelectedFlavors] = useState(
-    currentUser?.flavors ?? [],
-  );
-  const [selectedDietary, setSelectedDietary] = useState(
-    currentUser?.dietary ?? [],
-  );
+  const [restaurants, setRestaurants] = useState([]);
+  const [loadingRestaurants, setLoadingRestaurants] = useState(true);
+  const [selectedVibes, setSelectedVibes] = useState([]);
+  const [selectedFlavors, setSelectedFlavors] = useState([]);
+  const [selectedDietary, setSelectedDietary] = useState([]);
+
+  useEffect(() => {
+    getAll()
+      .then(setRestaurants)
+      .finally(() => setLoadingRestaurants(false));
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [selectedRestaurantId, setSelectedRestaurantId] = useState(
-    restaurants[0]?.id ?? null,
-  );
+  const [selectedRestaurantId, setSelectedRestaurantId] = useState(null);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
+
+  useEffect(() => {
+    if (restaurants.length > 0 && !selectedRestaurantId) {
+      setSelectedRestaurantId(restaurants[0].id);
+    }
+  }, [restaurants, selectedRestaurantId]);
 
   const toggle = (list, setList, item) => {
     setList((prev) =>
@@ -177,28 +209,31 @@ export default function HomePage() {
     );
   };
 
-  const filteredRestaurants = useMemo(
-    () =>
-      restaurants.filter((r) => {
-        const q = searchQuery.toLowerCase();
+  const filteredRestaurants = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return restaurants
+      .filter((r) => {
         const searchMatch =
           q === "" ||
           r.name.toLowerCase().includes(q) ||
-          r.cuisine.toLowerCase().includes(q) ||
-          r.tags.some((t) => t.toLowerCase().includes(q));
+          (r.cuisine || "").toLowerCase().includes(q) ||
+          (r.tags || []).some((t) => t.toLowerCase().includes(q));
         const vibeMatch =
           selectedVibes.length === 0 ||
-          selectedVibes.every((v) => r.vibes.includes(v));
+          selectedVibes.every((v) => (r.vibes || []).includes(v));
         const flavorMatch =
           selectedFlavors.length === 0 ||
-          selectedFlavors.every((f) => r.flavors.includes(f));
+          selectedFlavors.every((f) => (r.flavors || []).includes(f));
         const dietaryMatch =
           selectedDietary.length === 0 ||
-          selectedDietary.every((d) => r.dietary.includes(d));
+          selectedDietary.every((d) => (r.dietary || []).includes(d));
         return searchMatch && vibeMatch && flavorMatch && dietaryMatch;
-      }),
-    [searchQuery, selectedVibes, selectedFlavors, selectedDietary],
-  );
+      })
+      .map((r) => ({
+        ...r,
+        match: calcMatch(r, selectedVibes, selectedFlavors, selectedDietary),
+      }));
+  }, [restaurants, searchQuery, selectedVibes, selectedFlavors, selectedDietary]);
 
   const effectiveSelectedRestaurantId = useMemo(() => {
     if (filteredRestaurants.some((r) => r.id === selectedRestaurantId)) {
@@ -364,7 +399,13 @@ export default function HomePage() {
           </div>
 
           <div className="space-y-6">
-            {filteredRestaurants.length === 0 && (
+            {loadingRestaurants && (
+              <div className="bg-white rounded-xl border border-slate-100 p-12 text-center text-slate-400">
+                <span className="material-symbols-outlined text-4xl mb-3 block animate-spin">refresh</span>
+                <p className="font-medium">식당 목록을 불러오는 중...</p>
+              </div>
+            )}
+            {!loadingRestaurants && filteredRestaurants.length === 0 && (
               <div className="bg-white rounded-xl border border-slate-100 p-12 text-center text-slate-400">
                 <span className="material-symbols-outlined text-4xl mb-3 block">
                   search_off
@@ -381,17 +422,20 @@ export default function HomePage() {
               <div
                 key={r.id}
                 onClick={() => setSelectedRestaurantId(r.id)}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 overflow-hidden flex flex-col md:flex-row h-auto md:h-[19rem]"
+                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 overflow-hidden flex flex-col md:flex-row h-auto md:min-h-[19rem]"
               >
-                <div className="md:w-1/3 relative">
+                <div className="md:w-1/3 min-w-0 relative min-h-[12rem] md:min-h-0">
                   <img
-                    src={r.image}
+                    src={r.image || defaultRestaurantImg}
                     alt={r.name}
                     className="w-full h-full object-cover"
+                    onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }}
                   />
-                  <div className="absolute top-4 left-4 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                    {r.match}% Match
-                  </div>
+                  {r.match !== null && (
+                    <div className="absolute top-4 left-4 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                      {r.match}% Match
+                    </div>
+                  )}
                 </div>
                 <div className="p-6 md:w-2/3 flex flex-col justify-between">
                   <div>
