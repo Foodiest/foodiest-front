@@ -58,6 +58,8 @@ export default function WriteReviewPage() {
   });
 
   const [images, setImages] = useState([]);
+  const [negativeReviews, setNegativeReviews] = useState([]);
+  const [negativeInput, setNegativeInput] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -72,9 +74,21 @@ export default function WriteReviewPage() {
         setReviewText(review.review_text);
         setSelectedKeywords(review.keywords ?? { Vibe: [], Taste: [], Service: [] });
         setImages(review.images.map((src, idx) => ({ id: `edit-${idx}`, src })));
+        setNegativeReviews(review.negative_keywords ?? []);
       }
     })();
   }, [isEditMode, reviewId, restaurantId]);
+
+  const addNegativeReview = () => {
+    const trimmed = negativeInput.trim();
+    if (!trimmed) return;
+    setNegativeReviews((prev) => [...prev, trimmed]);
+    setNegativeInput("");
+  };
+
+  const removeNegativeReview = (idx) => {
+    setNegativeReviews((prev) => prev.filter((_, i) => i !== idx));
+  };
 
   const toggleKw = (category, item) => {
     setSelectedKeywords((prev) => {
@@ -144,6 +158,7 @@ export default function WriteReviewPage() {
       rating,
       images: uploadedImages,
       keywords: selectedKeywords,
+      negative_reviews: negativeReviews,
     };
 
     if (isEditMode) {
@@ -214,8 +229,29 @@ export default function WriteReviewPage() {
             {/* Rating & Text */}
 
             <div className="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant">
-              <div className="mb-5 text-center py-3 border-b border-surface-container">
-                <p className="font-semibold text-sm mb-2 text-on-surface">
+              <div className="mb-5 py-3 border-b border-surface-container">
+                <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-4">
+                  <p className="text-xs font-bold text-amber-700 mb-2.5 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-sm">info</span>
+                    별점 가이드
+                  </p>
+                  <div className="space-y-1.5">
+                    {[
+                      { star: 1, label: "다시 가고 싶지 않은 가게" },
+                      { star: 2, label: "가격에 맞는 서비스를 받지 못한 가게" },
+                      { star: 3, label: "종종 찾아갈 만한 가게" },
+                      { star: 4, label: "자주 찾거나 만족도가 매우 높은 가게" },
+                      { star: 5, label: "이 가게를 경험하기 위해 충분한 돈이나 시간을 쓸 가치가 있는 가게" },
+                    ].map(({ star, label }) => (
+                      <div key={star} className={`flex items-start gap-2 text-xs ${star === rating ? "font-semibold text-amber-800" : "text-amber-600/80"}`}>
+                        <span className="flex-shrink-0 w-5 text-right">{star}★</span>
+                        <span>{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="font-semibold text-sm mb-2 text-on-surface text-center">
                   식사는 어떠셨나요?
                 </p>
 
@@ -317,6 +353,55 @@ export default function WriteReviewPage() {
                 사진은 1장당 최대 10MB까지 업로드 가능합니다. 현재{" "}
                 {images.length}장 업로드됨.
               </p>
+            </div>
+
+            {/* Negative Review */}
+            <div className="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-red-100">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="material-symbols-outlined text-red-400 text-base">thumb_down</span>
+                <h3 className="font-semibold text-sm text-on-surface">부정적인 키워드</h3>
+                <span className="ml-auto text-xs text-slate-400">{negativeReviews.length}개</span>
+              </div>
+
+              {negativeReviews.length > 0 && (
+                <div className="space-y-2 mb-3">
+                  {negativeReviews.map((item, idx) => (
+                    <div key={idx} className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-lg px-3 py-2.5">
+                      <span className="text-red-400 mt-0.5 flex-shrink-0">
+                        <span className="material-symbols-outlined text-sm">remove_circle</span>
+                      </span>
+                      <span className="text-sm text-red-800 flex-1 leading-relaxed">{item}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeNegativeReview(idx)}
+                        className="text-red-300 hover:text-red-500 transition-colors flex-shrink-0 mt-0.5"
+                      >
+                        <span className="material-symbols-outlined text-sm">close</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={negativeInput}
+                  onChange={(e) => setNegativeInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNegativeReview(); } }}
+                  placeholder="불편했던 점을 한 단어로 표현해주세요"
+                  className="flex-1 bg-surface px-3 py-2.5 rounded-lg border border-outline-variant focus:border-red-300 focus:ring-1 focus:ring-red-200 outline-none text-sm placeholder:text-outline"
+                />
+                <button
+                  type="button"
+                  onClick={addNegativeReview}
+                  disabled={!negativeInput.trim()}
+                  className="w-10 h-10 rounded-lg bg-red-100 text-red-500 hover:bg-red-200 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors flex-shrink-0"
+                >
+                  <span className="material-symbols-outlined text-sm">add</span>
+                </button>
+              </div>
+              <p className="text-[11px] text-outline mt-2">Enter 키 또는 + 버튼으로 추가할 수 있습니다.</p>
             </div>
           </div>
 

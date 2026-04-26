@@ -2,6 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(curl *)",
+      "Bash(supabase --version)",
       "WebFetch(domain:unsplash.com)",
       "WebSearch",
       "mcp__supabase__execute_sql"
