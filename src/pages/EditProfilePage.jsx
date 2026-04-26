@@ -10,6 +10,7 @@ export default function EditProfilePage() {
   const { profile, isLoading, session, refreshProfile } = useAuth();
 
   const [nickname, setNickname] = useState("");
+  const [bio, setBio] = useState("");
   const [selectedVibes, setSelectedVibes] = useState([]);
   const [selectedFlavors, setSelectedFlavors] = useState([]);
   const [selectedDietary, setSelectedDietary] = useState([]);
@@ -25,6 +26,7 @@ export default function EditProfilePage() {
   useEffect(() => {
     if (profile) {
       setNickname(profile.nickname ?? "");
+      setBio(profile.bio ?? "");
       setSelectedVibes(profile.vibes ?? []);
       setSelectedFlavors(profile.flavors ?? []);
       setSelectedDietary(profile.dietary ?? []);
@@ -49,6 +51,7 @@ export default function EditProfilePage() {
     try {
       await updateProfile({
         nickname: nickname.trim(),
+        bio: bio.trim(),
         vibes: selectedVibes,
         flavors: selectedFlavors,
         dietary: selectedDietary,
@@ -102,6 +105,18 @@ export default function EditProfilePage() {
                   className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition-colors"
                 />
                 <p className="text-xs text-slate-400 mt-1 text-right">{nickname.length}/20</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">프로필 설명</label>
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  maxLength={150}
+                  rows={3}
+                  placeholder="나를 소개하는 한 줄을 작성해보세요"
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition-colors resize-none"
+                />
+                <p className="text-xs text-slate-400 mt-1 text-right">{bio.length}/150</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">이메일</label>

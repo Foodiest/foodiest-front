@@ -27,6 +27,7 @@ function App() {
           <Route path="/write-review" element={<WriteReviewPage />} />
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/mypage" element={<MyPage />} />
+          <Route path="/mypage/:userId" element={<MyPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUpStep1Page />} />
           <Route path="/signup/step2" element={<SignUpStep2Page />} />

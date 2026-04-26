@@ -99,7 +99,7 @@ export default function TopNavBar() {
                 {menuOpen && (
                   <div className="absolute right-0 top-10 w-44 bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden z-50">
                     <Link
-                      to="/mypage"
+                      to={profile?.user_id ? `/mypage/${profile.user_id}` : "/mypage"}
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
                     >

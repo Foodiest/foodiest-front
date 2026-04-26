@@ -371,15 +371,26 @@ export default function RestaurantDetailPage() {
               <div className="space-y-4">
                 {reviews.map((review) => {
                   const nickname = review.users?.nickname ?? '익명';
+                  const reviewerUserId = review.users?.user_id;
+                  const profileImage = review.users?.profile_image;
                   const initials = nickname.slice(0, 2).toUpperCase();
                   const dateStr = new Date(review.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' });
+                  const handleAuthorClick = () => reviewerUserId && navigate(`/mypage/${reviewerUserId}`);
                   return (
                     <div key={review.id} className="bg-white p-5 rounded-lg shadow-sm">
                       <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">{initials}</div>
+                        <div
+                          className="flex items-center gap-3 cursor-pointer group/author"
+                          onClick={handleAuthorClick}
+                        >
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-primary/20 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0 group-hover/author:ring-2 group-hover/author:ring-primary/40 transition-all">
+                            {profileImage
+                              ? <img src={profileImage} alt={nickname} className="w-full h-full object-cover" />
+                              : <span>{initials}</span>
+                            }
+                          </div>
                           <div>
-                            <h4 className="font-semibold text-sm">{nickname}</h4>
+                            <h4 className="font-semibold text-sm group-hover/author:text-primary transition-colors">{nickname}</h4>
                             <p className="text-xs text-on-surface-variant">{dateStr}</p>
                           </div>
                         </div>
