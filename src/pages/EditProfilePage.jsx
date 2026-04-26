@@ -134,15 +134,15 @@ export default function EditProfilePage() {
           <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
             <h2 className="font-[Epilogue] text-lg font-semibold text-on-surface mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-secondary">mood</span>
-              Dining Vibe
+              다이닝 분위기
             </h2>
             <div className="flex flex-wrap gap-2.5">
               {vibes.map((v) => {
-                const active = selectedVibes.includes(v.label);
+                const active = selectedVibes.includes(v.value);
                 return (
                   <button
-                    key={v.label}
-                    onClick={() => toggle(setSelectedVibes, v.label)}
+                    key={v.value}
+                    onClick={() => toggle(setSelectedVibes, v.value)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-all active:scale-95 ${
                       active
                         ? "bg-primary-container text-white border-primary-container shadow-sm"
@@ -166,15 +166,15 @@ export default function EditProfilePage() {
           <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
             <h2 className="font-[Epilogue] text-lg font-semibold text-on-surface mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-secondary">restaurant_menu</span>
-              Flavor Profile
+              맛 프로필
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {flavors.map(({ label, icon }) => {
-                const active = selectedFlavors.includes(label);
+              {flavors.map(({ label, value, icon }) => {
+                const active = selectedFlavors.includes(value);
                 return (
                   <div
-                    key={label}
-                    onClick={() => toggle(setSelectedFlavors, label)}
+                    key={value}
+                    onClick={() => toggle(setSelectedFlavors, value)}
                     className={`flex items-center justify-between p-3 border rounded-xl cursor-pointer transition-colors ${
                       active
                         ? "border-primary-container bg-orange-50"
@@ -201,15 +201,15 @@ export default function EditProfilePage() {
           <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
             <h2 className="font-[Epilogue] text-lg font-semibold text-on-surface mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-secondary">health_and_safety</span>
-              Dietary Requirements
+              식이 요건
             </h2>
             <div className="flex flex-wrap gap-2.5">
               {dietary.map((item) => {
-                const active = selectedDietary.includes(item.label);
+                const active = selectedDietary.includes(item.value);
                 return (
                   <button
-                    key={item.label}
-                    onClick={() => toggle(setSelectedDietary, item.label)}
+                    key={item.value}
+                    onClick={() => toggle(setSelectedDietary, item.value)}
                     className={`flex items-center gap-2 px-4 py-2.5 border-2 rounded-xl transition-all active:scale-95 ${
                       active
                         ? "border-primary-container bg-orange-50 shadow-sm"
@@ -235,15 +235,15 @@ export default function EditProfilePage() {
           <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
             <h2 className="font-[Epilogue] text-lg font-semibold text-on-surface mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-secondary">warning</span>
-              Allergy Information
+              알레르기 정보
             </h2>
             <div className="flex flex-wrap gap-2.5">
               {allergies.map((item) => {
-                const active = selectedAllergies.includes(item);
+                const active = selectedAllergies.includes(item.value);
                 return (
                   <button
-                    key={item}
-                    onClick={() => toggle(setSelectedAllergies, item)}
+                    key={item.value}
+                    onClick={() => toggle(setSelectedAllergies, item.value)}
                     className={`flex items-center gap-2 px-4 py-2.5 border-2 rounded-xl transition-all active:scale-95 ${
                       active
                         ? "border-primary-container bg-orange-50 shadow-sm"
@@ -256,7 +256,7 @@ export default function EditProfilePage() {
                       nutrition
                     </span>
                     <span className={`font-medium text-sm ${active ? "text-on-primary-container" : "text-slate-600"}`}>
-                      {item}
+                      {item.label}
                     </span>
                   </button>
                 );

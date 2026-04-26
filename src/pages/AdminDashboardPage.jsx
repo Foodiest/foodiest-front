@@ -17,7 +17,7 @@ export default function AdminDashboardPage() {
             </div>
             <div>
               <h1 className="text-lg font-bold text-slate-900">Foodiest</h1>
-              <p className="text-xs text-slate-500">Expert Concierge Service</p>
+              <p className="text-xs text-slate-500">전문 컨시어지 서비스</p>
             </div>
           </div>
           <nav className="space-y-1">
@@ -40,7 +40,7 @@ export default function AdminDashboardPage() {
         <div className="absolute bottom-8 left-6 right-6">
           <button className="w-full bg-primary py-3 rounded-xl text-white font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
             <span className="material-symbols-outlined text-sm">add</span>
-            Generate Report
+            리포트 생성
           </button>
         </div>
       </aside>
@@ -52,7 +52,7 @@ export default function AdminDashboardPage() {
           <div className="flex items-center flex-1 max-w-xl">
             <div className="relative w-full">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
-              <input className="w-full pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm" placeholder="Search insights..." type="text" />
+              <input className="w-full pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm" placeholder="인사이트 검색..." type="text" />
             </div>
           </div>
           <div className="flex items-center gap-6">
@@ -63,8 +63,8 @@ export default function AdminDashboardPage() {
             <div className="h-8 w-px bg-slate-200"></div>
             <div className="flex items-center gap-3 cursor-pointer">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-slate-900">Admin Profile</p>
-                <p className="text-xs text-slate-500">Master Administrator</p>
+                <p className="text-sm font-bold text-slate-900">어드민 프로필</p>
+                <p className="text-xs text-slate-500">최고 관리자</p>
               </div>
               <img src={ADMIN_AVATAR} alt="Admin" className="w-10 h-10 rounded-full border-2 border-primary/20" />
             </div>
@@ -74,8 +74,8 @@ export default function AdminDashboardPage() {
         {/* Content */}
         <main className="pt-24 px-8 pb-12">
           <div className="mb-8">
-            <h2 className="font-[Epilogue] text-2xl font-semibold text-slate-900">Dashboard Insights</h2>
-            <p className="text-slate-500 text-sm mt-1">Review real-time metrics and intelligence summaries for Gourmet Intelligence.</p>
+            <h2 className="font-[Epilogue] text-2xl font-semibold text-slate-900">대시보드 인사이트</h2>
+            <p className="text-slate-500 text-sm mt-1">Foodiest의 실시간 지표와 인사이트를 확인하세요.</p>
           </div>
 
           {/* KPI Cards */}
@@ -101,10 +101,10 @@ export default function AdminDashboardPage() {
             {/* Line Chart */}
             <div className="col-span-12 lg:col-span-8 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
               <div className="flex justify-between items-center mb-6">
-                <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900">Weekly Review Trends</h4>
+                <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900">주간 리뷰 트렌드</h4>
                 <select className="text-xs font-medium bg-surface-container-low border-none rounded-lg focus:ring-0">
-                  <option>Last 7 Days</option>
-                  <option>Last 30 Days</option>
+                  <option>최근 7일</option>
+                  <option>최근 30일</option>
                 </select>
               </div>
               <div className="h-48 relative flex items-end justify-between gap-2 pt-4">
@@ -131,7 +131,7 @@ export default function AdminDashboardPage() {
 
             {/* Pie Chart */}
             <div className="col-span-12 lg:col-span-4 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-              <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900 mb-5">Sentiment Analysis</h4>
+              <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900 mb-5">감정 분석</h4>
               <div className="flex flex-col items-center">
                 <div className="relative w-40 h-40 mb-5">
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
@@ -142,14 +142,14 @@ export default function AdminDashboardPage() {
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className="text-2xl font-bold text-slate-900">70%</span>
-                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Positive</span>
+                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">긍정</span>
                   </div>
                 </div>
                 <div className="w-full space-y-2">
                   {[
-                    { color: 'bg-primary', label: 'Positive', pct: '70%' },
-                    { color: 'bg-secondary', label: 'Neutral', pct: '20%' },
-                    { color: 'bg-red-300', label: 'Negative', pct: '10%' },
+                    { color: 'bg-primary', label: '긍정', pct: '70%' },
+                    { color: 'bg-secondary', label: '중립', pct: '20%' },
+                    { color: 'bg-red-300', label: '부정', pct: '10%' },
                   ].map(({ color, label, pct }) => (
                     <div key={label} className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
@@ -169,14 +169,14 @@ export default function AdminDashboardPage() {
             {/* Flagged Table */}
             <div className="col-span-12 lg:col-span-9 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
               <div className="p-5 border-b border-slate-50 flex justify-between items-center">
-                <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900">Flagged Reports</h4>
-                <button className="text-primary font-medium text-sm hover:underline">View All Actions</button>
+                <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900">신고된 리뷰</h4>
+                <button className="text-primary font-medium text-sm hover:underline">전체 보기</button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead className="bg-surface-container-low text-slate-500 text-[10px] font-semibold uppercase tracking-wider">
                     <tr>
-                      {['User', 'Restaurant', 'Reason', 'Date', 'Status', 'Action'].map(h => (
+                      {['유저', '식당', '사유', '날짜', '상태', '액션'].map(h => (
                         <th key={h} className="px-5 py-3">{h}</th>
                       ))}
                     </tr>
@@ -200,17 +200,17 @@ export default function AdminDashboardPage() {
                         <td className="px-5 py-4">
                           {status === 'pending' ? (
                             <span className="flex items-center gap-1.5 text-xs text-orange-600 font-medium">
-                              <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span> Pending
+                              <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span> 대기중
                             </span>
                           ) : (
                             <span className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
-                              <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> Resolved
+                              <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> 처리됨
                             </span>
                           )}
                         </td>
                         <td className="px-5 py-4">
                           <button className={`text-sm font-medium ${status === 'pending' ? 'text-secondary hover:underline' : 'text-slate-400'}`}>
-                            {status === 'pending' ? 'Review' : 'Archive'}
+                            {status === 'pending' ? '검토' : '보관'}
                           </button>
                         </td>
                       </tr>
@@ -224,7 +224,7 @@ export default function AdminDashboardPage() {
             <div className="col-span-12 lg:col-span-3 space-y-5">
               {/* Keywords */}
               <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
-                <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900 mb-3">Trending NLP Keywords</h4>
+                <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900 mb-3">인기 NLP 키워드</h4>
                 <div className="flex flex-wrap gap-2">
                   {trendingKeywords.map((kw, i) => (
                     <span
@@ -243,13 +243,13 @@ export default function AdminDashboardPage() {
 
               {/* User Growth */}
               <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
-                <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900 mb-4">User Growth</h4>
+                <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900 mb-4">유저 성장</h4>
                 <div className="space-y-4">
                   {userGrowth.map(({ month, value, pct, color }) => (
                     <div key={month}>
                       <div className="flex justify-between text-xs font-medium mb-1">
                         <span className="text-slate-500">{month}</span>
-                        <span className="text-slate-900 font-bold">{value.toLocaleString()} New</span>
+                        <span className="text-slate-900 font-bold">{value.toLocaleString()} 신규</span>
                       </div>
                       <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                         <div className={`${color} h-full rounded-full`} style={{ width: `${pct}%` }} />
@@ -258,7 +258,7 @@ export default function AdminDashboardPage() {
                   ))}
                 </div>
                 <button className="w-full mt-5 py-2 border-2 border-secondary text-secondary rounded-lg font-medium text-sm hover:bg-secondary/5 transition-colors">
-                  View Growth Report
+                  성장 리포트 보기
                 </button>
               </div>
             </div>

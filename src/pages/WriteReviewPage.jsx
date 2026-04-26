@@ -8,31 +8,26 @@ import { useAuth } from "../contexts/AuthContext";
 const keywordGroups = [
   {
     category: "Vibe",
-
+    displayCategory: "분위기",
     icon: "auto_awesome",
-
     items: ["Quiet", "Sophisticated", "Vibrant", "Minimalist"],
-
+    itemLabels: { Quiet: "조용한", Sophisticated: "세련된", Vibrant: "활기찬", Minimalist: "미니멀" },
     defaults: ["Sophisticated"],
   },
-
   {
     category: "Taste",
-
+    displayCategory: "맛",
     icon: "restaurant",
-
     items: ["Spicy", "Savory", "Umami-rich", "Authentic"],
-
+    itemLabels: { Spicy: "매콤한", Savory: "고소한", "Umami-rich": "감칠맛", Authentic: "정통" },
     defaults: ["Umami-rich"],
   },
-
   {
     category: "Service",
-
+    displayCategory: "서비스",
     icon: "room_service",
-
     items: ["Friendly", "Fast", "Attentive", "Valet Park"],
-
+    itemLabels: { Friendly: "친절한", Fast: "빠른", Attentive: "세심한", "Valet Park": "발렛파킹" },
     defaults: ["Friendly"],
   },
 ];
@@ -208,7 +203,7 @@ export default function WriteReviewPage() {
 
                 <div>
                   <span className="text-xs font-semibold text-primary uppercase tracking-wider">
-                    Current Reviewing
+                    현재 리뷰 작성 중
                   </span>
 
                   <h2 className="font-[Epilogue] text-xl font-semibold text-on-surface">
@@ -420,18 +415,18 @@ export default function WriteReviewPage() {
                 </span>
 
                 <h3 className="font-[Epilogue] text-lg font-semibold text-on-surface">
-                  Intelligence Keywords
+                  AI 키워드
                 </h3>
               </div>
 
               <div className="space-y-5">
-                {keywordGroups.map(({ category, icon, items }) => (
+                {keywordGroups.map(({ category, displayCategory, icon, items, itemLabels }) => (
                   <div key={category} className="space-y-2">
                     <h4 className="font-semibold text-sm text-primary flex items-center gap-1">
                       <span className="material-symbols-outlined text-sm">
                         {icon}
                       </span>{" "}
-                      {category}
+                      {displayCategory}
                     </h4>
 
                     <div className="flex flex-wrap gap-2">
@@ -450,7 +445,7 @@ export default function WriteReviewPage() {
                                 : "bg-surface-container text-on-surface hover:bg-primary-container hover:text-white"
                             }`}
                           >
-                            {item}
+                            {itemLabels[item] || item}
                           </button>
                         );
                       })}
@@ -525,7 +520,7 @@ export default function WriteReviewPage() {
 
               <div>
                 <h4 className="font-semibold text-sm text-on-secondary-container">
-                  Premium Insight
+                  프리미엄 인사이트
                 </h4>
 
                 <p className="text-xs text-on-secondary-container/80 mt-1">

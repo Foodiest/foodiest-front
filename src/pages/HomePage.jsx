@@ -2,21 +2,140 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import { getAll } from "../services/restaurantService";
-import { vibes, flavors, dietary } from "../data/mockFilters";
+import { vibes, flavors, dietary, filterLabelMap, cuisineMap } from "../data/mockFilters";
 import defaultRestaurantImg from "../assets/default-restaurant.svg";
 
 const nearbyFavorites = [
   {
     name: "The Daily Grind",
-    sub: "0.2 miles • Coffee",
+    sub: "0.2km • 커피",
     img: "https://lh3.googleusercontent.com/aida-public/AB6AXuB6KO-M3xKogRmdAQc3tuFwF0Ifa-4Nvv0FB2agawLXLE4kt5hZG_SfvdzLPpMMODoZVDnZSzHdCxZV-wCUEzqiNZ2ZCZmYRnZuViu--wwHNbgbO92n9Dwr2nJf64hl3ZsOPgI44wxFUBJkg6UrnZ7r3jU3BPR7aG-RACAXhwQNRysAfF6Oe9IeosgimB0djze3lxIN1E23RY7zR7xvNRs3y4MFCtk2CzucuOpw3Tbl0lv_YMA3hGs3iWzsjQvrz3MqasK1TnqLpRf5",
   },
   {
     name: "선셋 브런치 클럽",
-    sub: "0.5 miles • Brunch",
+    sub: "0.5km • 브런치",
     img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCHmDnYklZfS2ovFicfL3qOTQgj0DGWejlakVViEcksvnKsVjtdJ3mPWYvZV6ycd5Ggy-_QJ7Fx69dEAtecAM7bQT1FBDND4SUGMQ8GnXezodjCHiPwxYusXpPQ-3uF9C6BVglpIsSdgNd98DARCu6s1pzD2LFvmFA9XyiRLrAsGvR5dhk7-FCvFMifTQrF03fQpmbfg02bChaqCSDVaNs6WpRxt2ji4LBBhP6W4vl9Fr9gQsAjlU-Nm5XThu_e0OK9wENkvjBibqo3",
   },
 ];
+
+function RestaurantCard({ r, selectedVibes, selectedFlavors, selectedDietary, onSelect, onDetail }) {
+  const allImgs = [r.image, ...(r.sub_images || [])].filter(Boolean);
+  const [imgIdx, setImgIdx] = useState(0);
+
+  const prev = (e) => {
+    e.stopPropagation();
+    setImgIdx((i) => (i - 1 + allImgs.length) % allImgs.length);
+  };
+  const next = (e) => {
+    e.stopPropagation();
+    setImgIdx((i) => (i + 1) % allImgs.length);
+  };
+
+  return (
+    <div
+      onClick={onSelect}
+      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 overflow-hidden flex flex-col md:flex-row h-auto md:min-h-[19rem]"
+    >
+      <div className="md:w-1/3 min-w-0 relative min-h-[12rem] md:min-h-0">
+        <img
+          src={allImgs[imgIdx] || defaultRestaurantImg}
+          alt={r.name}
+          className="w-full h-full object-cover"
+          onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }}
+        />
+        {allImgs.length > 1 && (
+          <>
+            <button
+              onClick={prev}
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm">chevron_left</span>
+            </button>
+            <button
+              onClick={next}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm">chevron_right</span>
+            </button>
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+              {allImgs.map((_, i) => (
+                <span
+                  key={i}
+                  className={`w-1.5 h-1.5 rounded-full ${i === imgIdx ? 'bg-white' : 'bg-white/50'}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+        {r.match !== null && (
+          <div className="absolute top-4 left-4 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+            {r.match}% 매칭
+          </div>
+        )}
+      </div>
+      <div className="p-6 md:w-2/3 flex flex-col justify-between">
+        <div>
+          <div className="flex justify-between items-start mb-1">
+            <h3 className="font-[Epilogue] text-xl font-semibold">{r.name}</h3>
+            <div className="flex items-center text-tertiary">
+              <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+              <span className="font-semibold text-sm ml-1">{r.rating}</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 mb-2">
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-orange-500 text-white shadow-sm uppercase">
+              <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>military_tech</span>
+              {r.badge}
+            </span>
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-600 border border-red-100 uppercase">
+              <span className="material-symbols-outlined text-[12px]">priority_high</span>
+              {r.event}
+            </span>
+          </div>
+          <p className="text-slate-500 text-xs mb-3">{cuisineMap[r.cuisine] || r.cuisine}</p>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {r.tags.map((tag) => (
+              <span key={tag} className="bg-secondary-container/20 text-on-secondary-container px-3 py-1 rounded-full text-xs flex items-center gap-1">
+                <span className="material-symbols-outlined text-xs">auto_awesome</span>
+                {tag}
+              </span>
+            ))}
+            <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs flex items-center">{r.note}</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {r.vibes.map((v) => (
+              <span key={v} className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${selectedVibes.includes(v) ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-indigo-50 text-indigo-500 border-indigo-100'}`}>
+                <span className="material-symbols-outlined text-[12px]">mood</span>
+                {filterLabelMap[v] || v}
+              </span>
+            ))}
+            {r.flavors.map((f) => (
+              <span key={f} className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${selectedFlavors.includes(f) ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-50 text-amber-500 border-amber-100'}`}>
+                <span className="material-symbols-outlined text-[12px]">restaurant_menu</span>
+                {filterLabelMap[f] || f}
+              </span>
+            ))}
+            {r.dietary.map((d) => (
+              <span key={d} className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${selectedDietary.includes(d) ? 'bg-green-500 text-white border-green-500' : 'bg-green-50 text-green-600 border-green-100'}`}>
+                <span className="material-symbols-outlined text-[12px]">eco</span>
+                {filterLabelMap[d] || d}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="flex justify-between items-center pt-3 border-t border-slate-50">
+          <span className="text-slate-600 text-sm italic truncate max-w-[60%]">{r.quote}</span>
+          <button
+            onClick={(e) => { e.stopPropagation(); onDetail(); }}
+            className="bg-primary text-white text-sm font-semibold px-5 py-2 rounded-lg hover:brightness-110 active:scale-95 transition-all ml-3 flex-shrink-0"
+          >
+            상세보기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function calcMatch(restaurant, userVibes, userFlavors, userDietary) {
   const total = userVibes.length + userFlavors.length + userDietary.length;
@@ -271,10 +390,10 @@ export default function HomePage() {
         </div>
         <div className="relative z-10 w-full max-w-4xl px-6 text-center">
           <h1 className="font-[Epilogue] text-[48px] font-bold leading-tight text-white mb-4">
-            Precision Dining for the Discerning Palate
+            나만의 취향에 맞는 정밀한 다이닝
           </h1>
           <p className="text-white/90 text-lg mb-8">
-            AI-driven insights mapped to your personal taste profile.
+            AI 기반 인사이트로 나만의 맛집 지도를 완성하세요.
           </p>
 
           {/* Search Bar */}
@@ -285,14 +404,14 @@ export default function HomePage() {
               </span>
               <input
                 className="w-full border-none focus:ring-0 text-base py-3 outline-none"
-                placeholder="Cuisine, restaurant, or keyword..."
+                placeholder="음식 종류, 식당명, 키워드..."
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <button className="bg-primary-container text-white font-semibold px-8 py-3 rounded-lg hover:brightness-110 transition-all active:scale-95">
-              Find Restaurants
+              식당 찾기
             </button>
           </div>
         </div>
@@ -307,17 +426,17 @@ export default function HomePage() {
                 <span className="material-symbols-outlined text-secondary">
                   mood
                 </span>
-                Vibe
+                분위기
               </h3>
               <div className="flex flex-wrap gap-2">
                 {vibes.map((v) => (
                   <button
-                    key={v.label}
+                    key={v.value}
                     onClick={() =>
-                      toggle(selectedVibes, setSelectedVibes, v.label)
+                      toggle(selectedVibes, setSelectedVibes, v.value)
                     }
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${
-                      selectedVibes.includes(v.label)
+                      selectedVibes.includes(v.value)
                         ? "border-orange-100 bg-orange-50 text-orange-600"
                         : "border-slate-200 text-slate-600 hover:border-orange-200"
                     }`}
@@ -332,17 +451,17 @@ export default function HomePage() {
                 <span className="material-symbols-outlined text-secondary">
                   restaurant_menu
                 </span>
-                Flavor Profile
+                맛 프로필
               </h3>
               <div className="flex flex-wrap gap-2">
                 {flavors.map((f) => (
                   <button
-                    key={f.label}
+                    key={f.value}
                     onClick={() =>
-                      toggle(selectedFlavors, setSelectedFlavors, f.label)
+                      toggle(selectedFlavors, setSelectedFlavors, f.value)
                     }
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${
-                      selectedFlavors.includes(f.label)
+                      selectedFlavors.includes(f.value)
                         ? "border-orange-100 bg-orange-50 text-orange-600"
                         : "border-slate-200 text-slate-600 hover:border-orange-200"
                     }`}
@@ -357,17 +476,17 @@ export default function HomePage() {
                 <span className="material-symbols-outlined text-secondary">
                   medical_services
                 </span>
-                Dietary Needs
+                식이 요건
               </h3>
               <div className="flex flex-wrap gap-2">
                 {dietary.map((d) => (
                   <button
-                    key={d.label}
+                    key={d.value}
                     onClick={() =>
-                      toggle(selectedDietary, setSelectedDietary, d.label)
+                      toggle(selectedDietary, setSelectedDietary, d.value)
                     }
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${
-                      selectedDietary.includes(d.label)
+                      selectedDietary.includes(d.value)
                         ? "border-orange-100 bg-orange-50 text-orange-600"
                         : "border-slate-200 text-slate-600 hover:border-orange-200"
                     }`}
@@ -388,12 +507,10 @@ export default function HomePage() {
           <div className="flex justify-between items-end mb-6">
             <div>
               <h2 className="font-[Epilogue] text-2xl font-semibold text-on-surface">
-                Recommended for You
+                맞춤 추천
               </h2>
               <p className="text-slate-500 text-sm mt-1">
-                {filteredRestaurants.length} result
-                {filteredRestaurants.length !== 1 ? "s" : ""} matching your
-                filters
+                {filteredRestaurants.length}개의 결과
               </p>
             </div>
           </div>
@@ -411,145 +528,23 @@ export default function HomePage() {
                   search_off
                 </span>
                 <p className="font-medium">
-                  No restaurants match the selected filters.
+                  선택한 필터에 맞는 식당이 없습니다.
                 </p>
                 <p className="text-sm mt-1">
-                  Try adjusting your vibe, taste, or dietary preferences.
+                  분위기, 맛, 식이 조건을 조정해보세요.
                 </p>
               </div>
             )}
             {filteredRestaurants.map((r) => (
-              <div
+              <RestaurantCard
                 key={r.id}
-                onClick={() => setSelectedRestaurantId(r.id)}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 overflow-hidden flex flex-col md:flex-row h-auto md:min-h-[19rem]"
-              >
-                <div className="md:w-1/3 min-w-0 relative min-h-[12rem] md:min-h-0">
-                  <img
-                    src={r.image || defaultRestaurantImg}
-                    alt={r.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }}
-                  />
-                  {r.match !== null && (
-                    <div className="absolute top-4 left-4 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                      {r.match}% Match
-                    </div>
-                  )}
-                </div>
-                <div className="p-6 md:w-2/3 flex flex-col justify-between">
-                  <div>
-                    <div className="flex justify-between items-start mb-1">
-                      <h3 className="font-[Epilogue] text-xl font-semibold">
-                        {r.name}
-                      </h3>
-                      <div className="flex items-center text-tertiary">
-                        <span
-                          className="material-symbols-outlined text-sm"
-                          style={{ fontVariationSettings: "'FILL' 1" }}
-                        >
-                          star
-                        </span>
-                        <span className="font-semibold text-sm ml-1">
-                          {r.rating}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-orange-500 text-white shadow-sm uppercase">
-                        <span
-                          className="material-symbols-outlined text-[14px]"
-                          style={{ fontVariationSettings: "'FILL' 1" }}
-                        >
-                          military_tech
-                        </span>
-                        {r.badge}
-                      </span>
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-600 border border-red-100 uppercase">
-                        <span className="material-symbols-outlined text-[12px]">
-                          priority_high
-                        </span>
-                        {r.event}
-                      </span>
-                    </div>
-                    <p className="text-slate-500 text-xs mb-3">{r.cuisine}</p>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {r.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="bg-secondary-container/20 text-on-secondary-container px-3 py-1 rounded-full text-xs flex items-center gap-1"
-                        >
-                          <span className="material-symbols-outlined text-xs">
-                            auto_awesome
-                          </span>
-                          {tag}
-                        </span>
-                      ))}
-                      <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs">
-                        {r.note}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {r.vibes.map((v) => (
-                        <span
-                          key={v}
-                          className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
-                            selectedVibes.includes(v)
-                              ? "bg-indigo-500 text-white border-indigo-500"
-                              : "bg-indigo-50 text-indigo-500 border-indigo-100"
-                          }`}
-                        >
-                          <span className="material-symbols-outlined text-[12px]">
-                            mood
-                          </span>
-                          {v}
-                        </span>
-                      ))}
-                      {r.flavors.map((f) => (
-                        <span
-                          key={f}
-                          className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
-                            selectedFlavors.includes(f)
-                              ? "bg-amber-500 text-white border-amber-500"
-                              : "bg-amber-50 text-amber-500 border-amber-100"
-                          }`}
-                        >
-                          <span className="material-symbols-outlined text-[12px]">
-                            restaurant_menu
-                          </span>
-                          {f}
-                        </span>
-                      ))}
-                      {r.dietary.map((d) => (
-                        <span
-                          key={d}
-                          className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
-                            selectedDietary.includes(d)
-                              ? "bg-green-500 text-white border-green-500"
-                              : "bg-green-50 text-green-600 border-green-100"
-                          }`}
-                        >
-                          <span className="material-symbols-outlined text-[12px]">
-                            eco
-                          </span>
-                          {d}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center pt-3 border-t border-slate-50">
-                    <span className="text-slate-600 text-sm italic truncate max-w-[60%]">
-                      {r.quote}
-                    </span>
-                    <button
-                      onClick={() => handleGoToRestaurantDetail(r.id)}
-                      className="bg-primary text-white text-sm font-semibold px-5 py-2 rounded-lg hover:brightness-110 active:scale-95 transition-all ml-3 flex-shrink-0"
-                    >
-                      View Details
-                    </button>
-                  </div>
-                </div>
-              </div>
+                r={r}
+                selectedVibes={selectedVibes}
+                selectedFlavors={selectedFlavors}
+                selectedDietary={selectedDietary}
+                onSelect={() => setSelectedRestaurantId(r.id)}
+                onDetail={() => handleGoToRestaurantDetail(r.id)}
+              />
             ))}
           </div>
         </div>
@@ -558,13 +553,13 @@ export default function HomePage() {
         <div className="lg:col-span-4">
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden sticky top-24">
             <div className="p-4 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-semibold text-sm">Local View</h3>
+              <h3 className="font-semibold text-sm">주변 지도</h3>
               <button
                 type="button"
                 onClick={() => setIsMapExpanded(true)}
                 className="text-primary text-xs cursor-pointer font-medium"
               >
-                Expand Map
+                지도 확대
               </button>
             </div>
             <KakaoMapView
@@ -576,13 +571,13 @@ export default function HomePage() {
             <div className="p-5">
               {selectedRestaurant && (
                 <p className="text-xs text-slate-500 mb-3">
-                  Selected:{" "}
+                  선택됨:{" "}
                   <span className="font-semibold text-slate-700">
                     {selectedRestaurant.name}
                   </span>
                 </p>
               )}
-              <h4 className="font-semibold text-sm mb-3">Nearby Favorites</h4>
+              <h4 className="font-semibold text-sm mb-3">주변 인기 맛집</h4>
               <div className="space-y-3">
                 {nearbyFavorites.map((item) => (
                   <div key={item.name} className="flex items-center gap-3">
@@ -628,13 +623,13 @@ export default function HomePage() {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="font-semibold text-base">Expanded Local View</h3>
+              <h3 className="font-semibold text-base">지도 확대 보기</h3>
               <button
                 type="button"
                 onClick={() => setIsMapExpanded(false)}
                 className="text-slate-600 hover:text-slate-900 text-sm font-medium"
               >
-                Close
+                닫기
               </button>
             </div>
             <KakaoMapView
