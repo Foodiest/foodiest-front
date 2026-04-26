@@ -109,6 +109,20 @@ function KakaoLocationMiniMap({ x, y }) {
   return <div ref={mapElementRef} className="w-full h-full" />;
 }
 
+const kwLabelMap = {
+  Quiet: "조용한", Sophisticated: "세련된", Vibrant: "활기찬", Minimalist: "미니멀",
+  Romantic: "로맨틱", Cozy: "아늑한", Noisy: "시끄러운", Crowded: "복잡한", Dark: "어두운",
+  Spicy: "매콤한", Savory: "고소한", "Umami-rich": "감칠맛", Authentic: "정통",
+  Sweet: "달콤한", Fresh: "신선한", Bland: "싱거운", Oily: "기름진", Overpriced: "가성비 낮음",
+  Friendly: "친절한", Fast: "빠른", Attentive: "세심한", "Valet Park": "발렛파킹",
+  Slow: "느린", Rude: "불친절한", "Long Wait": "대기 긺",
+  Lively: "활기찬",
+};
+
+const negativeKwSet = new Set([
+  "Noisy", "Crowded", "Dark", "Bland", "Oily", "Overpriced", "Slow", "Rude", "Long Wait"
+]);
+
 const bentoImages = [
   'https://lh3.googleusercontent.com/aida-public/AB6AXuBtLh1NYpD8QI9ZAlSIh6ro1uhnW8KKtq244wpGDLTECRQmqHpdjbmfiMtCHH_CnowDIL1pAuzMqmqFvkmK_9_7hxqDrzNXlAM80ROwjcpzhyGKn4dvOTCOEtbiSuBPVEu_2p843aJViWGH9qh0xC5hUmbrg8zkxwVwdsqb3OPCHcXqup0e-YmylykNTg4iYBTOdGshaS1DQcD2Rm1uNTWiYAsx73taEt3-t5mEfa9v3G6tl34I_4YuieUfyVlCnyJg2OwftROktxg_',
   'https://lh3.googleusercontent.com/aida-public/AB6AXuDWfiTamkqsO7J-p2pjn_rBQZjm25m7UARi9O5Mu4sSC0hY00aWr7dIaThsPOoq41-okk6iybbx9CTPhjUlmq43YK8WdswzT4lLAZaFc23J2-qBd9_pHKXXnkpBI7ZHR4ms_-HgpY9hC78UeOvkChUJFz6zAjsLUY5cbyPl8ZVRPxGiVItrs5nP2zy-22TKLoUQjHAqZVae_JDS9LxP0lHqRtF93eAEppC2a1wqVXjwK91sM6-3-vC4b9GeSB573R4KK5m1qEJdAOei',
@@ -126,6 +140,24 @@ export default function RestaurantDetailPage() {
   const [loading, setLoading] = useState(true);
   const [copyToast, setCopyToast] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [sortOrder, setSortOrder] = useState('latest');
+  const [lightbox, setLightbox] = useState({ open: false, images: [], index: 0 });
+
+  const openLightbox = (images, index) => setLightbox({ open: true, images, index });
+  const closeLightbox = () => setLightbox(prev => ({ ...prev, open: false }));
+  const prevImage = () => setLightbox(prev => ({ ...prev, index: (prev.index - 1 + prev.images.length) % prev.images.length }));
+  const nextImage = () => setLightbox(prev => ({ ...prev, index: (prev.index + 1) % prev.images.length }));
+
+  useEffect(() => {
+    if (!lightbox.open) return;
+    const handler = (e) => {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') prevImage();
+      if (e.key === 'ArrowRight') nextImage();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [lightbox.open]);
 
   useEffect(() => {
     const restaurantId = parseInt(id);
@@ -362,7 +394,40 @@ export default function RestaurantDetailPage() {
 
           {/* Reviews */}
           <div>
-            <h2 className="font-[Epilogue] text-2xl font-semibold mb-5">손님들의 이야기</h2>
+            <div className="flex flex-wrap justify-between items-center gap-3 mb-5">
+              <h2 className="font-[Epilogue] text-2xl font-semibold">손님들의 이야기</h2>
+              <div className="flex items-center gap-2">
+                <div className="flex rounded-lg border border-outline-variant overflow-hidden text-xs font-semibold">
+                  {[
+                    { value: 'latest', label: '최신순' },
+                    { value: 'high', label: '별점 높은순' },
+                    { value: 'low', label: '별점 낮은순' },
+                  ].map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => setSortOrder(value)}
+                      className={`px-3 py-1.5 transition-colors ${
+                        sortOrder === value
+                          ? 'bg-secondary text-white'
+                          : 'bg-white text-on-surface-variant hover:bg-surface-container'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => {
+                    if (!isLoggedIn) { navigate('/login'); return; }
+                    navigate(`/write-review?restaurantId=${id}`);
+                  }}
+                  className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-all flex items-center gap-1.5 active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-sm">rate_review</span>
+                  리뷰 쓰기
+                </button>
+              </div>
+            </div>
             {reviews.length === 0 ? (
               <div className="bg-white p-8 rounded-lg shadow-sm text-center text-slate-400">
                 <span className="material-symbols-outlined text-3xl mb-2 block">rate_review</span>
@@ -370,7 +435,11 @@ export default function RestaurantDetailPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {reviews.map((review) => {
+                {[...reviews].sort((a, b) => {
+                  if (sortOrder === 'high') return b.rating - a.rating;
+                  if (sortOrder === 'low') return a.rating - b.rating;
+                  return new Date(b.created_at) - new Date(a.created_at);
+                }).map((review) => {
                   const nickname = review.users?.nickname ?? '익명';
                   const reviewerUserId = review.users?.user_id;
                   const profileImage = review.users?.profile_image;
@@ -401,11 +470,46 @@ export default function RestaurantDetailPage() {
                           ))}
                         </div>
                       </div>
-                      <p className="text-base mb-4">{review.review_text}</p>
+                      {(() => {
+                        const allKws = Object.entries(review.keywords || {}).filter(([k]) => k !== '_negative').flatMap(([, v]) => v);
+                        if (!allKws.length) return null;
+                        const customNegatives = new Set(review.keywords._negative || []);
+                        const positiveKws = allKws.filter(kw => !negativeKwSet.has(kw) && !customNegatives.has(kw));
+                        const negativeKws = allKws.filter(kw => negativeKwSet.has(kw) || customNegatives.has(kw));
+                        return (
+                          <div className="flex flex-col gap-1.5 mb-4">
+                            {positiveKws.length > 0 && (
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {positiveKws.map((kw, i) => (
+                                  <span key={i} className="px-2.5 py-1 rounded-full text-xs font-medium bg-secondary/10 text-secondary border border-secondary/20">
+                                    {kwLabelMap[kw] ?? kw}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {negativeKws.length > 0 && (
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {negativeKws.map((kw, i) => (
+                                  <span key={i} className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-500 border border-red-200">
+                                    {kwLabelMap[kw] ?? kw}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                      <p className="text-base mb-3">{review.review_text}</p>
                       {review.images?.length > 0 && (
                         <div className="flex gap-3 overflow-x-auto pb-1">
                           {review.images.map((img, i) => (
-                            <img key={i} src={img} alt="review" className="w-20 h-20 object-cover rounded-lg flex-shrink-0" />
+                            <img
+                              key={i}
+                              src={img}
+                              alt="review"
+                              className="w-20 h-20 object-cover rounded-lg flex-shrink-0 cursor-pointer hover:opacity-90 hover:scale-105 transition-all"
+                              onClick={() => openLightbox(review.images, i)}
+                            />
                           ))}
                         </div>
                       )}
@@ -476,6 +580,62 @@ export default function RestaurantDetailPage() {
           </div>
         </aside>
       </main>
+      {/* Lightbox */}
+      {lightbox.open && (
+        <div
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
+          onClick={closeLightbox}
+        >
+          {/* 닫기 */}
+          <button
+            onClick={closeLightbox}
+            className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
+          >
+            <span className="material-symbols-outlined text-4xl">close</span>
+          </button>
+
+          {/* 이전 */}
+          {lightbox.images.length > 1 && (
+            <button
+              onClick={e => { e.stopPropagation(); prevImage(); }}
+              className="absolute left-4 text-white/80 hover:text-white transition-colors bg-black/30 rounded-full p-1"
+            >
+              <span className="material-symbols-outlined text-4xl">chevron_left</span>
+            </button>
+          )}
+
+          {/* 이미지 */}
+          <img
+            src={lightbox.images[lightbox.index]}
+            alt="확대 이미지"
+            className="max-w-[90vw] max-h-[85vh] object-contain rounded-xl shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          />
+
+          {/* 다음 */}
+          {lightbox.images.length > 1 && (
+            <button
+              onClick={e => { e.stopPropagation(); nextImage(); }}
+              className="absolute right-4 text-white/80 hover:text-white transition-colors bg-black/30 rounded-full p-1"
+            >
+              <span className="material-symbols-outlined text-4xl">chevron_right</span>
+            </button>
+          )}
+
+          {/* 페이지 인디케이터 */}
+          {lightbox.images.length > 1 && (
+            <div className="absolute bottom-5 flex gap-2">
+              {lightbox.images.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={e => { e.stopPropagation(); setLightbox(prev => ({ ...prev, index: i })); }}
+                  className={`w-2 h-2 rounded-full transition-all ${i === lightbox.index ? 'bg-white scale-125' : 'bg-white/40'}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </Layout>
   );
 }

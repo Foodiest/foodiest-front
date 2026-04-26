@@ -10,27 +10,59 @@ const keywordGroups = [
     category: "Vibe",
     displayCategory: "분위기",
     icon: "auto_awesome",
-    items: ["Quiet", "Sophisticated", "Vibrant", "Minimalist"],
-    itemLabels: { Quiet: "조용한", Sophisticated: "세련된", Vibrant: "활기찬", Minimalist: "미니멀" },
-    defaults: ["Sophisticated"],
+    positive: [
+      { value: "Quiet", label: "조용한" },
+      { value: "Sophisticated", label: "세련된" },
+      { value: "Vibrant", label: "활기찬" },
+      { value: "Minimalist", label: "미니멀" },
+      { value: "Romantic", label: "로맨틱" },
+      { value: "Cozy", label: "아늑한" },
+    ],
+    negative: [
+      { value: "Noisy", label: "시끄러운" },
+      { value: "Crowded", label: "복잡한" },
+      { value: "Dark", label: "어두운" },
+    ],
   },
   {
     category: "Taste",
     displayCategory: "맛",
     icon: "restaurant",
-    items: ["Spicy", "Savory", "Umami-rich", "Authentic"],
-    itemLabels: { Spicy: "매콤한", Savory: "고소한", "Umami-rich": "감칠맛", Authentic: "정통" },
-    defaults: ["Umami-rich"],
+    positive: [
+      { value: "Spicy", label: "매콤한" },
+      { value: "Savory", label: "고소한" },
+      { value: "Umami-rich", label: "감칠맛" },
+      { value: "Authentic", label: "정통" },
+      { value: "Sweet", label: "달콤한" },
+      { value: "Fresh", label: "신선한" },
+    ],
+    negative: [
+      { value: "Bland", label: "싱거운" },
+      { value: "Oily", label: "기름진" },
+      { value: "Overpriced", label: "가성비 낮음" },
+    ],
   },
   {
     category: "Service",
     displayCategory: "서비스",
     icon: "room_service",
-    items: ["Friendly", "Fast", "Attentive", "Valet Park"],
-    itemLabels: { Friendly: "친절한", Fast: "빠른", Attentive: "세심한", "Valet Park": "발렛파킹" },
-    defaults: ["Friendly"],
+    positive: [
+      { value: "Friendly", label: "친절한" },
+      { value: "Fast", label: "빠른" },
+      { value: "Attentive", label: "세심한" },
+      { value: "Valet Park", label: "발렛파킹" },
+    ],
+    negative: [
+      { value: "Slow", label: "느린" },
+      { value: "Rude", label: "불친절한" },
+      { value: "Long Wait", label: "대기 긺" },
+    ],
   },
 ];
+
+const allPresetValues = new Set(
+  keywordGroups.flatMap(g => [...g.positive, ...g.negative].map(i => i.value))
+);
 
 export default function WriteReviewPage() {
   const navigate = useNavigate();
@@ -51,15 +83,17 @@ export default function WriteReviewPage() {
 
   const [selectedKeywords, setSelectedKeywords] = useState({
     Vibe: ["Sophisticated"],
-
     Taste: ["Umami-rich"],
-
     Service: ["Friendly"],
+    _negative: [],
   });
 
   const [images, setImages] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [customKeywords, setCustomKeywords] = useState({ Vibe: [], Taste: [], Service: [] });
+  const [customInputs, setCustomInputs] = useState({ Vibe: '', Taste: '', Service: '' });
+  const [customInputModes, setCustomInputModes] = useState({ Vibe: 'positive', Taste: 'positive', Service: 'positive' });
 
   // Load review data if in edit mode
   useEffect(() => {
@@ -70,7 +104,15 @@ export default function WriteReviewPage() {
       if (review) {
         setRating(review.rating);
         setReviewText(review.review_text);
-        setSelectedKeywords(review.keywords ?? { Vibe: [], Taste: [], Service: [] });
+        const kws = review.keywords ?? { Vibe: [], Taste: [], Service: [] };
+        setSelectedKeywords(kws);
+        const detected = { Vibe: [], Taste: [], Service: [] };
+        Object.keys(detected).forEach(cat => {
+          (kws[cat] || []).forEach(kw => {
+            if (!allPresetValues.has(kw)) detected[cat].push(kw);
+          });
+        });
+        setCustomKeywords(detected);
         setImages(review.images.map((src, idx) => ({ id: `edit-${idx}`, src })));
       }
     })();
@@ -79,15 +121,36 @@ export default function WriteReviewPage() {
   const toggleKw = (category, item) => {
     setSelectedKeywords((prev) => {
       const list = prev[category];
-
       return {
         ...prev,
-
         [category]: list.includes(item)
           ? list.filter((i) => i !== item)
           : [...list, item],
       };
     });
+  };
+
+  const addCustomKeyword = (category) => {
+    const val = customInputs[category].trim();
+    if (!val) return;
+    if (selectedKeywords[category]?.includes(val)) return;
+    const isNeg = customInputModes[category] === 'negative';
+    setCustomKeywords(prev => ({ ...prev, [category]: [...prev[category], val] }));
+    setSelectedKeywords(prev => ({
+      ...prev,
+      [category]: [...(prev[category] || []), val],
+      _negative: isNeg ? [...(prev._negative || []), val] : (prev._negative || []),
+    }));
+    setCustomInputs(prev => ({ ...prev, [category]: '' }));
+  };
+
+  const removeCustomKeyword = (category, kw) => {
+    setCustomKeywords(prev => ({ ...prev, [category]: prev[category].filter(k => k !== kw) }));
+    setSelectedKeywords(prev => ({
+      ...prev,
+      [category]: prev[category].filter(k => k !== kw),
+      _negative: (prev._negative || []).filter(k => k !== kw),
+    }));
   };
 
   const handleImageClick = () => {
@@ -335,35 +398,116 @@ export default function WriteReviewPage() {
               </div>
 
               <div className="space-y-5">
-                {keywordGroups.map(({ category, displayCategory, icon, items, itemLabels }) => (
+                {keywordGroups.map(({ category, displayCategory, icon, positive, negative }) => (
                   <div key={category} className="space-y-2">
                     <h4 className="font-semibold text-sm text-primary flex items-center gap-1">
-                      <span className="material-symbols-outlined text-sm">
-                        {icon}
-                      </span>{" "}
+                      <span className="material-symbols-outlined text-sm">{icon}</span>
                       {displayCategory}
                     </h4>
 
-                    <div className="flex flex-wrap gap-2">
-                      {items.map((item) => {
-                        const active =
-                          selectedKeywords[category]?.includes(item);
-
+                    {/* 긍정 키워드 */}
+                    <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wide">긍정적</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {positive.map(({ value, label }) => {
+                        const active = selectedKeywords[category]?.includes(value);
                         return (
                           <button
-                            key={item}
+                            key={value}
                             type="button"
-                            onClick={() => toggleKw(category, item)}
+                            onClick={() => toggleKw(category, value)}
                             className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-all ${
                               active
-                                ? "bg-primary-container text-white"
-                                : "bg-surface-container text-on-surface hover:bg-primary-container hover:text-white"
+                                ? "bg-secondary text-white"
+                                : "bg-surface-container text-on-surface hover:bg-secondary hover:text-white"
                             }`}
                           >
-                            {itemLabels[item] || item}
+                            {label}
                           </button>
                         );
                       })}
+                    </div>
+
+                    {/* 부정 키워드 */}
+                    <p className="text-[10px] font-semibold text-red-400 uppercase tracking-wide">부정적</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {negative.map(({ value, label }) => {
+                        const active = selectedKeywords[category]?.includes(value);
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => toggleKw(category, value)}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-all ${
+                              active
+                                ? "bg-red-400 text-white"
+                                : "bg-surface-container text-on-surface hover:bg-red-400 hover:text-white"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* 커스텀 키워드 */}
+                    {customKeywords[category]?.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {customKeywords[category].map(kw => {
+                          const isNeg = (selectedKeywords._negative || []).includes(kw);
+                          return (
+                            <span
+                              key={kw}
+                              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium ${
+                                isNeg
+                                  ? 'bg-red-50 text-red-500 border border-red-200'
+                                  : 'bg-secondary/10 text-secondary border border-secondary/20'
+                              }`}
+                            >
+                              {kw}
+                              <button
+                                type="button"
+                                onClick={() => removeCustomKeyword(category, kw)}
+                                className="ml-0.5 hover:opacity-70 transition-opacity"
+                              >
+                                <span className="material-symbols-outlined text-[12px]">close</span>
+                              </button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* 직접 입력 */}
+                    <div className="flex gap-1 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setCustomInputModes(prev => ({
+                          ...prev,
+                          [category]: prev[category] === 'positive' ? 'negative' : 'positive',
+                        }))}
+                        className={`shrink-0 px-2 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                          customInputModes[category] === 'negative'
+                            ? 'bg-red-50 text-red-500 border-red-200'
+                            : 'bg-secondary/10 text-secondary border-secondary/20'
+                        }`}
+                      >
+                        {customInputModes[category] === 'negative' ? '부정' : '긍정'}
+                      </button>
+                      <input
+                        type="text"
+                        value={customInputs[category]}
+                        onChange={e => setCustomInputs(prev => ({ ...prev, [category]: e.target.value }))}
+                        onKeyDown={e => e.key === 'Enter' && addCustomKeyword(category)}
+                        placeholder="직접 입력 후 Enter"
+                        className="flex-1 text-xs px-2.5 py-1.5 border border-outline-variant rounded-lg bg-surface focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => addCustomKeyword(category)}
+                        className="px-2.5 py-1.5 bg-surface-container rounded-lg text-on-surface-variant hover:bg-primary-container hover:text-white transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-sm">add</span>
+                      </button>
                     </div>
                   </div>
                 ))}
