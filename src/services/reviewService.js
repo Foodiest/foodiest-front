@@ -21,7 +21,7 @@ export async function getByUser(userId) {
   return data;
 }
 
-export async function create({ restaurantId, reviewText, rating, images, keywords }) {
+export async function create({ restaurantId, reviewText, rating, images, keywords, negative_reviews }) {
   const userId = await getMyUserId();
   if (!userId) throw new Error('로그인이 필요합니다.');
 
@@ -37,6 +37,7 @@ export async function create({ restaurantId, reviewText, rating, images, keyword
       rating,
       images: images ?? [],
       keywords: keywords ?? {},
+      negative_keywords: negative_reviews ?? [],
     })
     .select()
     .single();
@@ -44,13 +45,13 @@ export async function create({ restaurantId, reviewText, rating, images, keyword
   return data;
 }
 
-export async function update(reviewId, { reviewText, rating, images, keywords }) {
+export async function update(reviewId, { reviewText, rating, images, keywords, negative_reviews }) {
   const userId = await getMyUserId();
   if (!userId) throw new Error('로그인이 필요합니다.');
 
   const { data, error } = await supabase
     .from('reviews')
-    .update({ review_text: reviewText, rating, images, keywords })
+    .update({ review_text: reviewText, rating, images, keywords, negative_keywords: negative_reviews ?? [] })
     .eq('id', reviewId)
     .eq('user_id', userId)
     .select()
