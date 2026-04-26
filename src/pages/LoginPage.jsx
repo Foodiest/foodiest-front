@@ -88,7 +88,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-surface flex flex-col">
       <header className="fixed top-0 w-full z-50 bg-white border-b border-slate-100 flex items-center justify-between px-6 py-4 shadow-sm font-[Epilogue]">
         <Link to="/" className="text-lg font-bold tracking-tight text-slate-900">Foodiest</Link>
-        <div className="text-slate-500 text-sm font-medium cursor-pointer hover:bg-slate-50 px-3 py-1 rounded-lg">Help</div>
+        <div className="text-slate-500 text-sm font-medium cursor-pointer hover:bg-slate-50 px-3 py-1 rounded-lg">도움말</div>
       </header>
 
       <main className="flex-1 flex items-center justify-center p-4 mt-16">
@@ -99,21 +99,21 @@ export default function LoginPage() {
             style={{ backgroundImage: `url(${BG_IMG})` }}
           >
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-10 text-white">
-              <h2 className="font-[Epilogue] text-4xl font-bold mb-2">The Expert Concierge</h2>
-              <p className="text-lg opacity-90 max-w-xs">Data-driven dining experiences tailored to your sophisticated palate.</p>
+              <h2 className="font-[Epilogue] text-4xl font-bold mb-2">전문 컨시어지</h2>
+              <p className="text-lg opacity-90 max-w-xs">데이터 기반으로 당신의 입맛에 맞춘 다이닝 경험.</p>
             </div>
           </div>
 
           {/* Form Panel */}
           <div className="p-8 md:p-16 flex flex-col justify-center">
             <div className="mb-8">
-              <h1 className="font-[Epilogue] text-3xl font-semibold text-on-surface mb-1">Welcome Back</h1>
-              <p className="text-base text-on-surface-variant">Access your culinary insights and favorites.</p>
+              <h1 className="font-[Epilogue] text-3xl font-semibold text-on-surface mb-1">다시 오셨군요</h1>
+              <p className="text-base text-on-surface-variant">나의 맛집 인사이트와 즐겨찾기를 확인하세요.</p>
             </div>
 
             <form className="space-y-5" onSubmit={handleLogin}>
               <div className="space-y-1.5">
-                <label className="block font-semibold text-sm text-on-surface-variant px-1">Username/Email</label>
+                <label className="block font-semibold text-sm text-on-surface-variant px-1">아이디/이메일</label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">person</span>
                   <input
@@ -128,8 +128,8 @@ export default function LoginPage() {
 
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center px-1">
-                  <label className="font-semibold text-sm text-on-surface-variant">Password</label>
-                  <a href="#" className="text-xs text-secondary hover:underline">Forgot Password?</a>
+                  <label className="font-semibold text-sm text-on-surface-variant">비밀번호</label>
+                  <a href="#" className="text-xs text-secondary hover:underline">비밀번호를 잊으셨나요?</a>
                 </div>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">lock</span>
@@ -155,14 +155,14 @@ export default function LoginPage() {
                 disabled={loading}
                 className="w-full bg-primary-container text-white py-4 rounded-lg font-[Epilogue] font-semibold flex items-center justify-center gap-2 shadow-md hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-60"
               >
-                {loading ? '로그인 중...' : 'Login'}
+                {loading ? '로그인 중...' : '로그인'}
                 <span className="material-symbols-outlined">arrow_forward</span>
               </button>
             </form>
 
             <div className="my-6 flex items-center gap-4">
               <div className="h-px bg-surface-variant flex-1"></div>
-              <span className="text-xs font-medium text-outline">OR CONTINUE WITH</span>
+              <span className="text-xs font-medium text-outline">또는 소셜 계정으로</span>
               <div className="h-px bg-surface-variant flex-1"></div>
             </div>
 
@@ -187,8 +187,8 @@ export default function LoginPage() {
             </div>
 
             <p className="mt-6 text-center text-base text-on-surface-variant">
-              New to Foodiest?{' '}
-              <Link to="/signup" className="text-primary-container font-semibold hover:underline ml-1">Sign up</Link>
+              처음 오셨나요?{' '}
+              <Link to="/signup" className="text-primary-container font-semibold hover:underline ml-1">회원가입</Link>
             </p>
           </div>
         </div>

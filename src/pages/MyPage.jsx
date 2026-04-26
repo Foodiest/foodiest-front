@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useState, useMemo, useEffect } from "react";
 import Layout from "../components/Layout";
 import { useAuth } from "../contexts/AuthContext";
+import { filterLabelMap, cuisineMap } from "../data/mockFilters";
 import { getByUser } from "../services/reviewService";
 import { getById as getRestaurantById } from "../services/restaurantService";
 import { follow, unfollow, checkIsFollowing, getFollowing, getFollowersCount } from "../services/followService";
@@ -215,18 +216,18 @@ export default function MyPage() {
     if (!viewedProfile) return [];
     return [
       ...(viewedProfile.vibes || []).map((v) => ({
-        label: v,
+        label: filterLabelMap[v] || v,
         icon: "auto_awesome",
         color: "bg-white text-secondary border-secondary-container/30",
       })),
       ...(viewedProfile.flavors || []).map((f) => ({
-        label: f,
+        label: filterLabelMap[f] || f,
         icon: "restaurant",
         color:
           "bg-primary-fixed/50 text-on-primary-fixed-variant border-primary-fixed",
       })),
       ...(viewedProfile.dietary || []).map((d) => ({
-        label: d,
+        label: filterLabelMap[d] || d,
         icon: "eco",
         color: "bg-tertiary-fixed text-on-tertiary-fixed border-tertiary",
       })),
@@ -281,7 +282,7 @@ export default function MyPage() {
                   className="bg-primary-container text-on-primary px-5 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-lg shadow-orange-200 active:scale-95 transition-transform"
                 >
                   <span className="material-symbols-outlined text-sm">edit</span>
-                  Edit Profile
+                  프로필 수정
                 </button>
               ) : null}
             </div>
@@ -294,7 +295,7 @@ export default function MyPage() {
                 {reviews.length}
               </p>
               <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">
-                Reviews
+                리뷰
               </p>
             </div>
             <div className="border-x border-slate-100 px-6">
@@ -302,7 +303,7 @@ export default function MyPage() {
                 {followersCount.toLocaleString()}
               </p>
               <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">
-                Followers
+                팔로워
               </p>
             </div>
             {isOwnProfile ? (
@@ -323,7 +324,7 @@ export default function MyPage() {
                     : "bg-primary text-white shadow-lg shadow-orange-100"
                 }`}
               >
-                {isFollowing ? "Following" : "Follow"}
+                {isFollowing ? "팔로잉" : "팔로우"}
               </button>
             )}
           </div>
@@ -336,7 +337,7 @@ export default function MyPage() {
               <span className="material-symbols-outlined text-secondary">
                 psychology
               </span>
-              {isOwnProfile ? "My" : `${viewedProfile.nickname || viewedProfile.user_id}'s`} Taste Identity
+              {isOwnProfile ? "나의" : `${viewedProfile.nickname || viewedProfile.user_id}의`} 취향 정체성
             </h3>
             <div className="flex flex-wrap gap-3">
               {tasteIdentityTags.map((tag, i) => (
@@ -354,7 +355,7 @@ export default function MyPage() {
                 <span className="material-symbols-outlined text-sm">
                   search
                 </span>
-                Discovering...
+                탐색 중...
               </div>
             </div>
           </div>
@@ -364,7 +365,7 @@ export default function MyPage() {
         {bestRestaurants.length > 0 && (
           <section className="mt-16 text-left">
             <h3 className="font-[Epilogue] text-3xl font-bold text-on-surface mb-7">
-              Best Restaurants
+              베스트 식당
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {bestRestaurants.map((r, idx) => (
@@ -377,14 +378,14 @@ export default function MyPage() {
                     <span className="material-symbols-outlined text-slate-300 text-5xl">restaurant</span>
                   </div>
                   <div className="absolute top-4 left-4 bg-primary-container text-on-primary px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-md">
-                    #{idx + 1} Pick
+                    #{idx + 1} 픽
                   </div>
                   <div className="p-5 text-left">
                     <h4 className="font-[Epilogue] text-lg font-semibold text-on-surface">
                       {r.name}
                     </h4>
                     <p className="text-slate-500 text-xs mt-1">
-                      {r.cuisine}{r.price ? ` • ${r.price}` : ""}
+                      {cuisineMap[r.cuisine] || r.cuisine}{r.price ? ` • ${r.price}` : ""}
                     </p>
                   </div>
                 </div>
@@ -398,11 +399,11 @@ export default function MyPage() {
           <div className="flex items-center justify-between mb-7">
             <h3 className="font-[Epilogue] text-3xl font-bold text-on-surface text-left">
               {isOwnProfile
-                ? "My Review Journal"
-                : `${viewedProfile.nickname || viewedProfile.user_id}'s Reviews`}
+                ? "나의 리뷰 일지"
+                : `${viewedProfile.nickname || viewedProfile.user_id}의 리뷰`}
             </h3>
             <button className="flex items-center gap-2 text-sm font-medium text-slate-500 border border-slate-200 px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors">
-              Latest First
+              최신순
               <span className="material-symbols-outlined text-sm">
                 expand_more
               </span>
@@ -422,7 +423,7 @@ export default function MyPage() {
           ) : (
             <div className="py-20 text-center border-2 border-dashed border-slate-100 rounded-3xl">
               <p className="text-slate-400 italic">
-                No reviews yet.
+                아직 리뷰가 없습니다.
               </p>
             </div>
           )}

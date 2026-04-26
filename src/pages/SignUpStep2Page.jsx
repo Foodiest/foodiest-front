@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { vibes, flavors, dietary, allergies } from "../data/mockFilters";
+// allergies는 이제 { label, value } 객체 배열
 import { signUp } from "../services/authService";
 import { supabase } from "../lib/supabase";
 
@@ -31,10 +32,10 @@ export default function SignUpStep2Page() {
         </Link>
         <div className="flex items-center gap-4">
           <span className="text-sm font-medium text-surface-variant">
-            Step 2 of 2
+            2단계 / 2
           </span>
           <button className="text-secondary text-sm font-medium hover:text-primary">
-            Help
+            도움말
           </button>
         </div>
       </header>
@@ -46,11 +47,10 @@ export default function SignUpStep2Page() {
             <div className="bg-primary h-full w-full rounded-full" />
           </div>
           <h1 className="font-[Epilogue] text-3xl font-semibold text-on-surface mt-5">
-            Personalize Your Palate
+            취향을 설정해보세요
           </h1>
           <p className="text-lg text-on-surface-variant mt-1">
-            Tell us what fuels your appetite. Our expert concierge uses these
-            insights to curate your perfect dining map.
+            당신의 식성을 알려주세요. 전문 컨시어지가 이 정보를 바탕으로 맞춤 맛집을 추천해드립니다.
           </p>
         </div>
 
@@ -62,17 +62,17 @@ export default function SignUpStep2Page() {
                 mood
               </span>
               <h2 className="font-[Epilogue] text-xl font-semibold text-on-surface">
-                Dining Vibe
+                다이닝 분위기
               </h2>
             </div>
             <div className="flex flex-wrap gap-3">
               {vibes.map((v) => {
-                const active = selectedVibes.includes(v.label);
+                const active = selectedVibes.includes(v.value);
                 return (
                   <button
-                    key={v.label}
+                    key={v.value}
                     onClick={() =>
-                      toggle(selectedVibes, setSelectedVibes, v.label)
+                      toggle(selectedVibes, setSelectedVibes, v.value)
                     }
                     className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-all active:scale-95 ${
                       active
@@ -101,8 +101,7 @@ export default function SignUpStep2Page() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
                 <p className="text-white text-xs">
-                  Expert Pick: Places with a "Lively" atmosphere are trending
-                  tonight.
+                  전문가 픽: 오늘 밤 '활기찬' 분위기의 장소가 인기를 끌고 있습니다.
                 </p>
               </div>
             </div>
@@ -115,17 +114,17 @@ export default function SignUpStep2Page() {
                 restaurant_menu
               </span>
               <h2 className="font-[Epilogue] text-xl font-semibold text-on-surface">
-                Flavor Profile
+                맛 프로필
               </h2>
             </div>
             <div className="space-y-3">
-              {flavors.map(({ label, icon }) => {
-                const active = selectedFlavors.includes(label);
+              {flavors.map(({ label, value, icon }) => {
+                const active = selectedFlavors.includes(value);
                 return (
                   <div
-                    key={label}
+                    key={value}
                     onClick={() =>
-                      toggle(selectedFlavors, setSelectedFlavors, label)
+                      toggle(selectedFlavors, setSelectedFlavors, value)
                     }
                     className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
                       active
@@ -159,21 +158,21 @@ export default function SignUpStep2Page() {
                   health_and_safety
                 </span>
                 <h2 className="font-[Epilogue] text-xl font-semibold text-on-surface">
-                  Dietary Requirements
+                  식이 요건
                 </h2>
               </div>
               <span className="text-xs font-medium text-on-surface-variant bg-surface-container px-3 py-1 rounded-full">
-                Select all that apply
+                해당하는 것을 모두 선택하세요
               </span>
             </div>
             <div className="flex gap-3 overflow-x-auto pb-2">
               {dietary.map((item) => {
-                const active = selectedDietary.includes(item.label);
+                const active = selectedDietary.includes(item.value);
                 return (
                   <button
-                    key={item.label}
+                    key={item.value}
                     onClick={() =>
-                      toggle(selectedDietary, setSelectedDietary, item.label)
+                      toggle(selectedDietary, setSelectedDietary, item.value)
                     }
                     className={`flex-none flex items-center gap-2 px-5 py-3 border-2 rounded-xl cursor-pointer transition-all ${
                       active
@@ -208,21 +207,21 @@ export default function SignUpStep2Page() {
                   warning
                 </span>
                 <h2 className="font-[Epilogue] text-xl font-semibold text-on-surface">
-                  Allergy Information
+                  알레르기 정보
                 </h2>
               </div>
               <span className="text-xs font-medium text-on-surface-variant bg-surface-container px-3 py-1 rounded-full">
-                Select all that apply
+                해당하는 것을 모두 선택하세요
               </span>
             </div>
             <div className="flex gap-3 overflow-x-auto pb-2">
               {allergies.map((item) => {
-                const active = selectedAllergies.includes(item);
+                const active = selectedAllergies.includes(item.value);
                 return (
                   <button
-                    key={item}
+                    key={item.value}
                     onClick={() =>
-                      toggle(selectedAllergies, setSelectedAllergies, item)
+                      toggle(selectedAllergies, setSelectedAllergies, item.value)
                     }
                     className={`flex-none flex items-center gap-2 px-5 py-3 border-2 rounded-xl cursor-pointer transition-all ${
                       active
@@ -236,7 +235,7 @@ export default function SignUpStep2Page() {
                       nutrition
                     </span>
                     <span className="font-semibold text-sm whitespace-nowrap">
-                      {item}
+                      {item.label}
                     </span>
                   </button>
                 );
@@ -249,23 +248,22 @@ export default function SignUpStep2Page() {
             <div className="flex flex-col md:flex-row gap-6 items-center">
               <div className="flex-1">
                 <h3 className="font-[Epilogue] text-xl font-semibold text-on-secondary-container">
-                  Intelligence Engine Active
+                  AI 추천 엔진 활성화
                 </h3>
                 <p className="text-base text-on-secondary-fixed-variant mt-1">
-                  Based on your selections, we've identified 142 restaurants in
-                  your area that match your unique profile.
+                  선택하신 내용을 바탕으로 주변 142개의 맛집을 찾았습니다.
                 </p>
               </div>
               <div className="flex-none w-full md:w-64 space-y-3">
                 <div className="bg-white/60 backdrop-blur p-3 rounded-lg flex items-center justify-between">
-                  <span className="text-xs font-medium">Match Accuracy</span>
+                  <span className="text-xs font-medium">매칭 정확도</span>
                   <span className="font-semibold text-sm text-primary">
                     94%
                   </span>
                 </div>
                 <div className="bg-white/60 backdrop-blur p-3 rounded-lg">
                   <div className="flex justify-between mb-1">
-                    <span className="text-xs font-medium">Personal Fit</span>
+                    <span className="text-xs font-medium">개인 맞춤도</span>
                   </div>
                   <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                     <div
@@ -285,7 +283,7 @@ export default function SignUpStep2Page() {
             className="font-medium text-sm text-on-surface-variant hover:text-on-surface flex items-center gap-2 transition-colors"
           >
             <span className="material-symbols-outlined">arrow_back</span>
-            Back to Account Details
+            계정 정보로 돌아가기
           </button>
           <button
             onClick={async () => {
@@ -338,7 +336,7 @@ export default function SignUpStep2Page() {
             disabled={loading}
             className="px-8 py-4 bg-primary text-white font-semibold rounded-xl shadow-lg shadow-primary/20 hover:bg-surface-tint active:scale-95 transition-all disabled:opacity-60"
           >
-            {loading ? '처리 중...' : 'Complete Registration'}
+            {loading ? '처리 중...' : '회원가입 완료'}
           </button>
           {error && <p className="text-sm text-red-500 text-center">{error}</p>}
         </div>
@@ -353,7 +351,7 @@ export default function SignUpStep2Page() {
           check_circle
         </span>
         <span className="text-sm font-semibold text-white">
-          Preferences autosaved
+          취향이 자동 저장되었습니다
         </span>
       </div>
     </div>
