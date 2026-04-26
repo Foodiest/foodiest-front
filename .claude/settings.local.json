@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "WebFetch(domain:unsplash.com)",
+      "WebSearch",
+      "mcp__supabase__execute_sql"
     ]
   }
 }

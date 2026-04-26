@@ -18,6 +18,125 @@ const nearbyFavorites = [
   },
 ];
 
+function RestaurantCard({ r, selectedVibes, selectedFlavors, selectedDietary, onSelect, onDetail }) {
+  const allImgs = [r.image, ...(r.sub_images || [])].filter(Boolean);
+  const [imgIdx, setImgIdx] = useState(0);
+
+  const prev = (e) => {
+    e.stopPropagation();
+    setImgIdx((i) => (i - 1 + allImgs.length) % allImgs.length);
+  };
+  const next = (e) => {
+    e.stopPropagation();
+    setImgIdx((i) => (i + 1) % allImgs.length);
+  };
+
+  return (
+    <div
+      onClick={onSelect}
+      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 overflow-hidden flex flex-col md:flex-row h-auto md:min-h-[19rem]"
+    >
+      <div className="md:w-1/3 min-w-0 relative min-h-[12rem] md:min-h-0">
+        <img
+          src={allImgs[imgIdx] || defaultRestaurantImg}
+          alt={r.name}
+          className="w-full h-full object-cover"
+          onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }}
+        />
+        {allImgs.length > 1 && (
+          <>
+            <button
+              onClick={prev}
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm">chevron_left</span>
+            </button>
+            <button
+              onClick={next}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm">chevron_right</span>
+            </button>
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+              {allImgs.map((_, i) => (
+                <span
+                  key={i}
+                  className={`w-1.5 h-1.5 rounded-full ${i === imgIdx ? 'bg-white' : 'bg-white/50'}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+        {r.match !== null && (
+          <div className="absolute top-4 left-4 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+            {r.match}% 매칭
+          </div>
+        )}
+      </div>
+      <div className="p-6 md:w-2/3 flex flex-col justify-between">
+        <div>
+          <div className="flex justify-between items-start mb-1">
+            <h3 className="font-[Epilogue] text-xl font-semibold">{r.name}</h3>
+            <div className="flex items-center text-tertiary">
+              <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+              <span className="font-semibold text-sm ml-1">{r.rating}</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 mb-2">
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-orange-500 text-white shadow-sm uppercase">
+              <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>military_tech</span>
+              {r.badge}
+            </span>
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-600 border border-red-100 uppercase">
+              <span className="material-symbols-outlined text-[12px]">priority_high</span>
+              {r.event}
+            </span>
+          </div>
+          <p className="text-slate-500 text-xs mb-3">{cuisineMap[r.cuisine] || r.cuisine}</p>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {r.tags.map((tag) => (
+              <span key={tag} className="bg-secondary-container/20 text-on-secondary-container px-3 py-1 rounded-full text-xs flex items-center gap-1">
+                <span className="material-symbols-outlined text-xs">auto_awesome</span>
+                {tag}
+              </span>
+            ))}
+            <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs flex items-center">{r.note}</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {r.vibes.map((v) => (
+              <span key={v} className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${selectedVibes.includes(v) ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-indigo-50 text-indigo-500 border-indigo-100'}`}>
+                <span className="material-symbols-outlined text-[12px]">mood</span>
+                {filterLabelMap[v] || v}
+              </span>
+            ))}
+            {r.flavors.map((f) => (
+              <span key={f} className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${selectedFlavors.includes(f) ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-50 text-amber-500 border-amber-100'}`}>
+                <span className="material-symbols-outlined text-[12px]">restaurant_menu</span>
+                {filterLabelMap[f] || f}
+              </span>
+            ))}
+            {r.dietary.map((d) => (
+              <span key={d} className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${selectedDietary.includes(d) ? 'bg-green-500 text-white border-green-500' : 'bg-green-50 text-green-600 border-green-100'}`}>
+                <span className="material-symbols-outlined text-[12px]">eco</span>
+                {filterLabelMap[d] || d}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="flex justify-between items-center pt-3 border-t border-slate-50">
+          <span className="text-slate-600 text-sm italic truncate max-w-[60%]">{r.quote}</span>
+          <button
+            onClick={(e) => { e.stopPropagation(); onDetail(); }}
+            className="bg-primary text-white text-sm font-semibold px-5 py-2 rounded-lg hover:brightness-110 active:scale-95 transition-all ml-3 flex-shrink-0"
+          >
+            상세보기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function calcMatch(restaurant, userVibes, userFlavors, userDietary) {
   const total = userVibes.length + userFlavors.length + userDietary.length;
   if (total === 0) return null;
@@ -417,137 +536,15 @@ export default function HomePage() {
               </div>
             )}
             {filteredRestaurants.map((r) => (
-              <div
+              <RestaurantCard
                 key={r.id}
-                onClick={() => setSelectedRestaurantId(r.id)}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 overflow-hidden flex flex-col md:flex-row h-auto md:min-h-[19rem]"
-              >
-                <div className="md:w-1/3 min-w-0 relative min-h-[12rem] md:min-h-0">
-                  <img
-                    src={r.image || defaultRestaurantImg}
-                    alt={r.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }}
-                  />
-                  {r.match !== null && (
-                    <div className="absolute top-4 left-4 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                      {r.match}% 매칭
-                    </div>
-                  )}
-                </div>
-                <div className="p-6 md:w-2/3 flex flex-col justify-between">
-                  <div>
-                    <div className="flex justify-between items-start mb-1">
-                      <h3 className="font-[Epilogue] text-xl font-semibold">
-                        {r.name}
-                      </h3>
-                      <div className="flex items-center text-tertiary">
-                        <span
-                          className="material-symbols-outlined text-sm"
-                          style={{ fontVariationSettings: "'FILL' 1" }}
-                        >
-                          star
-                        </span>
-                        <span className="font-semibold text-sm ml-1">
-                          {r.rating}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-orange-500 text-white shadow-sm uppercase">
-                        <span
-                          className="material-symbols-outlined text-[14px]"
-                          style={{ fontVariationSettings: "'FILL' 1" }}
-                        >
-                          military_tech
-                        </span>
-                        {r.badge}
-                      </span>
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-600 border border-red-100 uppercase">
-                        <span className="material-symbols-outlined text-[12px]">
-                          priority_high
-                        </span>
-                        {r.event}
-                      </span>
-                    </div>
-                    <p className="text-slate-500 text-xs mb-3">{cuisineMap[r.cuisine] || r.cuisine}</p>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {r.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="bg-secondary-container/20 text-on-secondary-container px-3 py-1 rounded-full text-xs flex items-center gap-1"
-                        >
-                          <span className="material-symbols-outlined text-xs">
-                            auto_awesome
-                          </span>
-                          {tag}
-                        </span>
-                      ))}
-                      <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs">
-                        {r.note}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {r.vibes.map((v) => (
-                        <span
-                          key={v}
-                          className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
-                            selectedVibes.includes(v)
-                              ? "bg-indigo-500 text-white border-indigo-500"
-                              : "bg-indigo-50 text-indigo-500 border-indigo-100"
-                          }`}
-                        >
-                          <span className="material-symbols-outlined text-[12px]">
-                            mood
-                          </span>
-                          {filterLabelMap[v] || v}
-                        </span>
-                      ))}
-                      {r.flavors.map((f) => (
-                        <span
-                          key={f}
-                          className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
-                            selectedFlavors.includes(f)
-                              ? "bg-amber-500 text-white border-amber-500"
-                              : "bg-amber-50 text-amber-500 border-amber-100"
-                          }`}
-                        >
-                          <span className="material-symbols-outlined text-[12px]">
-                            restaurant_menu
-                          </span>
-                          {filterLabelMap[f] || f}
-                        </span>
-                      ))}
-                      {r.dietary.map((d) => (
-                        <span
-                          key={d}
-                          className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
-                            selectedDietary.includes(d)
-                              ? "bg-green-500 text-white border-green-500"
-                              : "bg-green-50 text-green-600 border-green-100"
-                          }`}
-                        >
-                          <span className="material-symbols-outlined text-[12px]">
-                            eco
-                          </span>
-                          {filterLabelMap[d] || d}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center pt-3 border-t border-slate-50">
-                    <span className="text-slate-600 text-sm italic truncate max-w-[60%]">
-                      {r.quote}
-                    </span>
-                    <button
-                      onClick={() => handleGoToRestaurantDetail(r.id)}
-                      className="bg-primary text-white text-sm font-semibold px-5 py-2 rounded-lg hover:brightness-110 active:scale-95 transition-all ml-3 flex-shrink-0"
-                    >
-                      상세보기
-                    </button>
-                  </div>
-                </div>
-              </div>
+                r={r}
+                selectedVibes={selectedVibes}
+                selectedFlavors={selectedFlavors}
+                selectedDietary={selectedDietary}
+                onSelect={() => setSelectedRestaurantId(r.id)}
+                onDetail={() => handleGoToRestaurantDetail(r.id)}
+              />
             ))}
           </div>
         </div>

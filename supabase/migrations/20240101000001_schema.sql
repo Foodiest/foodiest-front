@@ -42,6 +42,7 @@ create table if not exists public.restaurants (
   note        text,
   quote       text,
   image       text,
+  sub_images  text[] default '{}',
   vibes       text[] default '{}',
   flavors     text[] default '{}',
   dietary     text[] default '{}',
