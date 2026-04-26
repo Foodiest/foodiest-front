@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "../components/Layout";
-import { create, update, getByRestaurant } from "../services/reviewService";
+import { create, update, remove, getByRestaurant } from "../services/reviewService";
 import { uploadReviewImage } from "../services/storageService";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -39,7 +39,7 @@ const keywordGroups = [
 
 export default function WriteReviewPage() {
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { session, profile } = useAuth();
 
   const [searchParams] = useSearchParams();
 
@@ -63,6 +63,8 @@ export default function WriteReviewPage() {
   });
 
   const [images, setImages] = useState([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Load review data if in edit mode
   useEffect(() => {
@@ -118,6 +120,16 @@ export default function WriteReviewPage() {
     setImages((prev) => prev.filter((image) => image.id !== id));
   };
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await remove(reviewId);
+      navigate(profile?.user_id ? `/mypage/${profile.user_id}` : "/mypage");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!session) {
       navigate('/login');
@@ -145,7 +157,7 @@ export default function WriteReviewPage() {
       await create({ restaurantId, ...payload });
     }
 
-    navigate("/mypage");
+    navigate(profile?.user_id ? `/mypage/${profile.user_id}` : "/mypage");
   };
 
   return (
@@ -378,6 +390,44 @@ export default function WriteReviewPage() {
                   <br />
                   컨시어지 추천 엔진에 반영됩니다.
                 </p>
+
+                {isEditMode && (
+                  <div className="mt-4 pt-4 border-t border-surface-container">
+                    {showDeleteConfirm ? (
+                      <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                        <p className="text-sm font-semibold text-red-600 mb-3 text-center">
+                          정말 삭제하시겠어요?
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowDeleteConfirm(false)}
+                            className="flex-1 py-2 rounded-lg border border-slate-200 text-sm font-semibold text-slate-500 hover:bg-slate-50 transition-colors"
+                          >
+                            취소
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleDelete}
+                            disabled={deleting}
+                            className="flex-1 py-2 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors disabled:opacity-60"
+                          >
+                            {deleting ? "삭제 중..." : "삭제"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="w-full py-2.5 rounded-xl border border-red-200 text-red-400 text-sm font-semibold hover:bg-red-50 hover:text-red-500 transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <span className="material-symbols-outlined text-sm">delete</span>
+                        리뷰 삭제
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
