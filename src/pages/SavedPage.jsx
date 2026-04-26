@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getSavedIds, toggleSaved } from '../services/savedService';
 import { getAll } from '../services/restaurantService';
 import defaultRestaurantImg from '../assets/default-restaurant.svg';
+import { cuisineMap } from '../data/mockFilters';
 
 export default function SavedPage() {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ export default function SavedPage() {
     <Layout>
       <div className="max-w-7xl mx-auto w-full px-6 py-10">
         <div className="mb-8">
-          <h1 className="font-[Epilogue] text-4xl font-bold text-on-surface mb-1">Saved</h1>
+          <h1 className="font-[Epilogue] text-4xl font-bold text-on-surface mb-1">저장한 식당</h1>
           <p className="text-on-surface-variant text-sm">{savedRestaurants.length}개의 저장된 식당</p>
         </div>
 
@@ -41,7 +42,7 @@ export default function SavedPage() {
           <div className="flex flex-col items-center justify-center py-32 gap-4 text-on-surface-variant">
             <span className="material-symbols-outlined text-6xl text-gray-300">bookmark</span>
             <p className="text-lg font-medium">저장된 식당이 없습니다</p>
-            <p className="text-sm">식당 상세 페이지에서 Save 버튼을 눌러 저장해보세요.</p>
+            <p className="text-sm">식당 상세 페이지에서 저장 버튼을 눌러 저장해보세요.</p>
             <button
               onClick={() => navigate('/')}
               className="mt-2 bg-primary text-white px-6 py-2.5 rounded-lg font-semibold text-sm hover:opacity-90 transition-all"
@@ -96,7 +97,7 @@ export default function SavedPage() {
                       {restaurant.rating}
                     </span>
                     <span>•</span>
-                    <span>{restaurant.cuisine}</span>
+                    <span>{cuisineMap[restaurant.cuisine] || restaurant.cuisine}</span>
                     <span>•</span>
                     <span>{restaurant.price}</span>
                   </div>

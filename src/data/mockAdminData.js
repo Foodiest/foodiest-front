@@ -1,7 +1,7 @@
 export const kpiCards = [
   {
     icon: "person_add",
-    title: "Total Users",
+    title: "전체 유저",
     value: "42,892",
     badge: "+12.5%",
     color: "bg-orange-50 text-primary",
@@ -9,7 +9,7 @@ export const kpiCards = [
   },
   {
     icon: "reviews",
-    title: "Total Reviews",
+    title: "전체 리뷰",
     value: "128,450",
     badge: "+8.2%",
     color: "bg-blue-50 text-secondary",
@@ -17,17 +17,17 @@ export const kpiCards = [
   },
   {
     icon: "storefront",
-    title: "Active Restaurants",
+    title: "활성 식당",
     value: "1,245",
-    badge: "Stable",
+    badge: "안정",
     color: "bg-purple-50 text-purple-600",
     badgeColor: "text-slate-400 bg-slate-50",
   },
   {
     icon: "report",
-    title: "Flagged Reviews",
+    title: "신고된 리뷰",
     value: "24",
-    badge: "Urgent",
+    badge: "긴급",
     color: "bg-error-container text-error",
     badgeColor: "text-error bg-error-container",
     urgent: true,
@@ -38,49 +38,49 @@ export const flaggedReviews = [
   {
     user: "Alex Rivera",
     restaurant: "Le Petit Bistro",
-    reason: "Inappropriate",
-    date: "Oct 24, 2023",
+    reason: "부적절",
+    date: "2023.10.24",
     status: "pending",
   },
   {
     user: "Sarah Chen",
     restaurant: "Oshima Sushi",
-    reason: "Spam Content",
-    date: "Oct 23, 2023",
+    reason: "스팸",
+    date: "2023.10.23",
     status: "pending",
   },
   {
     user: "Marc Dupond",
     restaurant: "The Grill House",
-    reason: "Off-topic",
-    date: "Oct 22, 2023",
+    reason: "주제 외",
+    date: "2023.10.22",
     status: "resolved",
   },
 ];
 
 export const trendingKeywords = [
-  "Quiet",
-  "Handmade Pasta",
-  "Noisy",
-  "Al Fresco",
-  "Authentic",
-  "Wait Times",
-  "Craft Cocktails",
+  "조용한",
+  "수제 파스타",
+  "시끄러운",
+  "야외 식사",
+  "정통",
+  "대기 시간",
+  "크래프트 칵테일",
 ];
 
 export const userGrowth = [
-  { month: "September", value: 1402, pct: 85, color: "bg-primary" },
-  { month: "August", value: 1210, pct: 72, color: "bg-secondary" },
-  { month: "July", value: 980, pct: 60, color: "bg-slate-300" },
+  { month: "9월", value: 1402, pct: 85, color: "bg-primary" },
+  { month: "8월", value: 1210, pct: 72, color: "bg-secondary" },
+  { month: "7월", value: 980, pct: 60, color: "bg-slate-300" },
 ];
 
 export const navItems = [
-  { icon: "dashboard", label: "Dashboard", to: "/admin", active: true },
-  { icon: "analytics", label: "Analytics", to: "/admin" },
-  { icon: "group", label: "Users", to: "/admin" },
-  { icon: "restaurant", label: "Restaurants", to: "/admin" },
-  { icon: "rate_review", label: "Reviews", to: "/admin" },
-  { icon: "settings", label: "Settings", to: "/admin" },
+  { icon: "dashboard", label: "대시보드", to: "/admin", active: true },
+  { icon: "analytics", label: "분석", to: "/admin" },
+  { icon: "group", label: "유저", to: "/admin" },
+  { icon: "restaurant", label: "식당", to: "/admin" },
+  { icon: "rate_review", label: "리뷰", to: "/admin" },
+  { icon: "settings", label: "설정", to: "/admin" },
 ];
 
 export const LOGO_URL =

@@ -5,6 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { updateProfile } from "../services/authService";
 import { uploadProfileImage, uploadCoverImage } from "../services/storageService";
 import { search as searchRestaurants, getById } from "../services/restaurantService";
+import { cuisineMap } from "../data/mockFilters";
 
 function RestaurantSearchModal({ onSelect, onClose }) {
   const [query, setQuery] = useState("");
@@ -84,7 +85,7 @@ function RestaurantSearchModal({ onSelect, onClose }) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm text-on-surface truncate">{r.name}</p>
-                <p className="text-xs text-slate-400 truncate">{r.cuisine} {r.price && `• ${r.price}`}</p>
+                <p className="text-xs text-slate-400 truncate">{cuisineMap[r.cuisine] || r.cuisine} {r.price && `• ${r.price}`}</p>
               </div>
               <div className="flex items-center gap-0.5 text-primary flex-shrink-0">
                 <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
@@ -191,14 +192,14 @@ export default function MyPageSettings() {
           >
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
-          <h2 className="text-3xl font-bold font-[Epilogue]">Edit My Page</h2>
+          <h2 className="text-3xl font-bold font-[Epilogue]">마이페이지 수정</h2>
         </div>
 
         <div className="space-y-12">
           {/* 1. 커버 및 프로필 이미지 수정 */}
           <section>
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined">image</span> Visuals
+              <span className="material-symbols-outlined">image</span> 이미지
             </h3>
 
             {/* 커버 이미지 */}
@@ -272,7 +273,7 @@ export default function MyPageSettings() {
           {/* 3. 베스트 레스토랑 */}
           <section>
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined">restaurant</span> Best Restaurants
+              <span className="material-symbols-outlined">restaurant</span> 베스트 식당
             </h3>
             <div className="space-y-3">
               {bestRestaurants.map((restaurant, idx) => (
@@ -320,14 +321,14 @@ export default function MyPageSettings() {
               onClick={() => navigate(-1)}
               className="flex-1 py-4 rounded-2xl border border-slate-200 font-semibold text-slate-500 hover:bg-slate-50"
             >
-              Cancel
+              취소
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
               className="flex-[2] py-4 rounded-2xl bg-primary text-white font-bold shadow-lg shadow-orange-200 hover:brightness-110 transition-all disabled:opacity-60"
             >
-              {saving ? "저장 중..." : "Save Changes"}
+              {saving ? "저장 중..." : "변경사항 저장"}
             </button>
           </div>
         </div>

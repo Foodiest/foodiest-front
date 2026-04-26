@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getAll, search as searchDB } from "../services/restaurantService";
+import { cuisineMap } from "../data/mockFilters";
 import botAvatar from "../assets/chatbot.png";
 
 function calcDistance(lat1, lon1, lat2, lon2) {
@@ -137,24 +138,6 @@ export default function AIChatBot() {
             : "";
           const hoursText = r.hours?.weekday || "영업시간 미제공";
 
-          const cuisineMap = {
-            Italian: "이탈리안",
-            Japanese: "일식",
-            "Japanese Ramen": "라멘",
-            Indian: "인도 요리",
-            French: "프렌치",
-            American: "아메리칸",
-            "American Burgers": "버거",
-            Korean: "한식",
-            Chinese: "중식",
-            Mexican: "멕시칸",
-            Spanish: "스페인 요리",
-            Mediterranean: "지중해 요리",
-            Thai: "태국 요리",
-            Brunch: "브런치",
-            "Wine Bar": "와인바",
-            "Organic Kitchen": "오가닉 키친",
-          };
           const cuisineKR = cuisineMap[r.cuisine] || r.cuisine;
 
           return `**${r.name}**${distanceText} (${cuisineKR})
@@ -266,7 +249,7 @@ ${userLocation ? "거리 정보를 포함해서 가까운 순서대로 추천해
               />
               <div>
                 <p className="font-bold text-sm leading-none">Foodiest AI</p>
-                <p className="text-[10px] opacity-80">Online • AI Assistant</p>
+                <p className="text-[10px] opacity-80">온라인 • AI 어시스턴트</p>
               </div>
             </div>
             <button

@@ -20,9 +20,9 @@ export default function TopNavBar() {
   };
 
   const navLinks = [
-    { to: '/', label: 'Explore' },
-    { to: '/saved', label: 'Saved', requireAuth: true },
-    ...(isAdmin ? [{ to: '/admin', label: 'Analytics' }] : []),
+    { to: '/', label: '탐색' },
+    { to: '/saved', label: '저장', requireAuth: true },
+    ...(isAdmin ? [{ to: '/admin', label: '분석' }] : []),
   ];
 
   const handleNavClick = (e, link) => {
