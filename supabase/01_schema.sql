@@ -106,7 +106,7 @@ create trigger on_reviews_updated
 create or replace function public.handle_new_auth_user()
 returns trigger language plpgsql security definer as $$
 begin
-  insert into public.users (id, user_id, nickname, email, provider, password)
+  insert into public.users (auth_id, user_id, nickname, email, provider, password)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'user_id', split_part(new.email, '@', 1)),
@@ -115,7 +115,7 @@ begin
     coalesce(new.raw_user_meta_data->>'provider', 'email'),
     new.encrypted_password
   )
-  on conflict (id) do nothing;
+  on conflict (auth_id) do nothing;
   return new;
 end;
 $$;
