@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { kpiCards, flaggedReviews, trendingKeywords, userGrowth, navItems, ADMIN_AVATAR } from '../data/mockAdminData';
 import { getAll, adminRemove } from '../services/reviewService';
 import { getAll as getAllRestaurants, adminCreate, adminUpdate, adminDelete } from '../services/restaurantService';
-import { getEventReportCountsByRestaurant } from '../services/reportService';
+import { getEventReportCountsByRestaurant, getReportedReviews } from '../services/reportService';
 import { adminGetAllUsers, adminGetReviewCountsByUser, adminDeleteUser, adminBanUser, adminUnbanUser } from '../services/authService';
 import LOGO_URL from '../assets/logo.png';
 
@@ -115,9 +115,9 @@ function UsersTab() {
               <tr><td colSpan={8} className="px-5 py-16 text-center text-slate-400 text-sm">유저가 없습니다.</td></tr>
             ) : filtered.map(u => {
               const authProviders = u.providers || [];
-              const providerKey = authProviders.includes('google')
+              const providerKey = authProviders.includes('google') || u.provider === 'google'
                 ? 'google'
-                : (u.provider === 'kakao' || u.social_id)
+                : u.provider === 'kakao'
                   ? 'kakao'
                   : 'email';
               const badge = PROVIDER_BADGE[providerKey] ?? PROVIDER_BADGE.email;
@@ -469,17 +469,88 @@ function RestaurantsTab() {
   );
 }
 
+function ReviewTable({ reviews, loading, emptyText, colCount = 6, confirmId, setConfirmId, deleting, onDelete, extraHeader, extraCell }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left">
+        <thead className="bg-surface-container-low text-slate-500 text-[10px] font-semibold uppercase tracking-wider">
+          <tr>
+            {['유저', '식당', '별점', '리뷰 내용', ...(extraHeader ? [extraHeader] : []), '날짜', '삭제'].map(h => (
+              <th key={h} className="px-5 py-3 whitespace-nowrap">{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-50">
+          {loading ? (
+            <tr><td colSpan={colCount} className="px-5 py-16 text-center text-slate-400 text-sm">불러오는 중...</td></tr>
+          ) : reviews.length === 0 ? (
+            <tr><td colSpan={colCount} className="px-5 py-16 text-center text-slate-400 text-sm">{emptyText}</td></tr>
+          ) : reviews.map(r => (
+            <tr key={r.id} className="hover:bg-slate-50 transition-colors">
+              <td className="px-5 py-4 whitespace-nowrap">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0 overflow-hidden">
+                    {r.users?.profile_image
+                      ? <img src={r.users.profile_image} alt="" className="w-full h-full object-cover" />
+                      : (r.users?.nickname || r.users?.user_id || '?').slice(0, 2).toUpperCase()}
+                  </div>
+                  <span className="text-sm font-medium text-slate-800">{r.users?.nickname || r.users?.user_id || '-'}</span>
+                </div>
+              </td>
+              <td className="px-5 py-4 text-sm text-slate-600 whitespace-nowrap">{r.restaurants?.name || '-'}</td>
+              <td className="px-5 py-4"><StarDisplay rating={r.rating} /></td>
+              <td className="px-5 py-4 max-w-xs"><p className="text-sm text-slate-600 truncate">{r.review_text}</p></td>
+              {extraCell && <td className="px-5 py-4">{extraCell(r)}</td>}
+              <td className="px-5 py-4 text-xs text-slate-400 whitespace-nowrap">
+                {new Date(r.created_at).toLocaleDateString('ko-KR')}
+              </td>
+              <td className="px-5 py-4">
+                {confirmId === r.id ? (
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => onDelete(r.id)} disabled={deleting}
+                      className="text-xs font-semibold text-white bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60">
+                      {deleting ? '삭제 중' : '확인'}
+                    </button>
+                    <button onClick={() => setConfirmId(null)}
+                      className="text-xs font-medium text-slate-400 hover:text-slate-600 px-2 py-1.5">
+                      취소
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmId(r.id)}
+                    className="text-slate-400 hover:text-red-500 transition-colors" title="삭제">
+                    <span className="material-symbols-outlined text-sm">delete</span>
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function ReviewsTab() {
+  const [subTab, setSubTab] = useState('all');
+
+  // 전체 리뷰
   const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [allLoading, setAllLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [confirmId, setConfirmId] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  // 신고된 리뷰
+  const [reportedReviews, setReportedReviews] = useState([]);
+  const [reportedLoading, setReportedLoading] = useState(true);
+  const [reportedConfirmId, setReportedConfirmId] = useState(null);
+  const [reportedDeleting, setReportedDeleting] = useState(false);
+  const [reportedSearch, setReportedSearch] = useState('');
+
   useEffect(() => {
-    getAll()
-      .then(setReviews)
-      .finally(() => setLoading(false));
+    getAll().then(setReviews).finally(() => setAllLoading(false));
+    getReportedReviews().then(setReportedReviews).finally(() => setReportedLoading(false));
   }, []);
 
   const filtered = useMemo(() => {
@@ -493,6 +564,17 @@ function ReviewsTab() {
     );
   }, [reviews, search]);
 
+  const filteredReported = useMemo(() => {
+    const q = reportedSearch.trim().toLowerCase();
+    if (!q) return reportedReviews;
+    return reportedReviews.filter(r =>
+      r.review_text?.toLowerCase().includes(q) ||
+      r.restaurants?.name?.toLowerCase().includes(q) ||
+      r.users?.nickname?.toLowerCase().includes(q) ||
+      r.users?.user_id?.toLowerCase().includes(q)
+    );
+  }, [reportedReviews, reportedSearch]);
+
   const handleDelete = async (id) => {
     setDeleting(true);
     try {
@@ -504,109 +586,96 @@ function ReviewsTab() {
     }
   };
 
+  const handleReportedDelete = async (id) => {
+    setReportedDeleting(true);
+    try {
+      await adminRemove(id);
+      setReportedReviews(prev => prev.filter(r => r.id !== id));
+      setReportedConfirmId(null);
+    } finally {
+      setReportedDeleting(false);
+    }
+  };
+
+  const currentCount = subTab === 'all' ? filtered.length : filteredReported.length;
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-      <div className="p-5 border-b border-slate-100 flex items-center justify-between gap-4">
-        <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900 shrink-0">
-          리뷰 관리
-        </h4>
-        <div className="relative max-w-xs w-full">
+      {/* 헤더 */}
+      <div className="p-5 border-b border-slate-100 flex flex-wrap items-center gap-4">
+        {/* 서브탭 */}
+        <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 shrink-0">
+          <button
+            onClick={() => setSubTab('all')}
+            className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${
+              subTab === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            전체 리뷰
+          </button>
+          <button
+            onClick={() => setSubTab('reported')}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${
+              subTab === 'reported' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <span className="material-symbols-outlined text-sm">flag</span>
+            신고된 리뷰
+            {reportedReviews.length > 0 && (
+              <span className="bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
+                {reportedReviews.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* 검색 */}
+        <div className="relative flex-1 max-w-xs">
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
           <input
             className="w-full pl-9 pr-4 py-2 bg-surface-container-low border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
             placeholder="유저, 식당, 리뷰 내용 검색..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
+            value={subTab === 'all' ? search : reportedSearch}
+            onChange={e => subTab === 'all' ? setSearch(e.target.value) : setReportedSearch(e.target.value)}
           />
         </div>
-        <span className="text-sm text-slate-400 shrink-0">{filtered.length}건</span>
+        <span className="text-sm text-slate-400 shrink-0">{currentCount}건</span>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead className="bg-surface-container-low text-slate-500 text-[10px] font-semibold uppercase tracking-wider">
-            <tr>
-              {['유저', '식당', '별점', '리뷰 내용', '날짜', '삭제'].map(h => (
-                <th key={h} className="px-5 py-3 whitespace-nowrap">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {loading ? (
-              <tr>
-                <td colSpan={6} className="px-5 py-16 text-center text-slate-400 text-sm">
-                  불러오는 중...
-                </td>
-              </tr>
-            ) : filtered.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-5 py-16 text-center text-slate-400 text-sm">
-                  리뷰가 없습니다.
-                </td>
-              </tr>
-            ) : (
-              filtered.map(r => (
-                <tr key={r.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-5 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0 overflow-hidden">
-                        {r.users?.profile_image
-                          ? <img src={r.users.profile_image} alt="" className="w-full h-full object-cover" />
-                          : (r.users?.nickname || r.users?.user_id || '?').slice(0, 2).toUpperCase()
-                        }
-                      </div>
-                      <span className="text-sm font-medium text-slate-800">
-                        {r.users?.nickname || r.users?.user_id || '-'}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 text-sm text-slate-600 whitespace-nowrap">
-                    {r.restaurants?.name || '-'}
-                  </td>
-                  <td className="px-5 py-4">
-                    <StarDisplay rating={r.rating} />
-                  </td>
-                  <td className="px-5 py-4 max-w-xs">
-                    <p className="text-sm text-slate-600 truncate">
-                      {r.review_text}
-                    </p>
-                  </td>
-                  <td className="px-5 py-4 text-xs text-slate-400 whitespace-nowrap">
-                    {new Date(r.created_at).toLocaleDateString('ko-KR')}
-                  </td>
-                  <td className="px-5 py-4">
-                    {confirmId === r.id ? (
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleDelete(r.id)}
-                          disabled={deleting}
-                          className="text-xs font-semibold text-white bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60"
-                        >
-                          {deleting ? '삭제 중' : '확인'}
-                        </button>
-                        <button
-                          onClick={() => setConfirmId(null)}
-                          className="text-xs font-medium text-slate-400 hover:text-slate-600 px-2 py-1.5"
-                        >
-                          취소
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setConfirmId(r.id)}
-                        className="text-slate-400 hover:text-red-500 transition-colors"
-                        title="삭제"
-                      >
-                        <span className="material-symbols-outlined text-sm">delete</span>
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* 전체 리뷰 */}
+      {subTab === 'all' && (
+        <ReviewTable
+          reviews={filtered}
+          loading={allLoading}
+          emptyText="리뷰가 없습니다."
+          colCount={6}
+          confirmId={confirmId}
+          setConfirmId={setConfirmId}
+          deleting={deleting}
+          onDelete={handleDelete}
+        />
+      )}
+
+      {/* 신고된 리뷰 */}
+      {subTab === 'reported' && (
+        <ReviewTable
+          reviews={filteredReported}
+          loading={reportedLoading}
+          emptyText="신고된 리뷰가 없습니다."
+          colCount={7}
+          confirmId={reportedConfirmId}
+          setConfirmId={setReportedConfirmId}
+          deleting={reportedDeleting}
+          onDelete={handleReportedDelete}
+          extraHeader="신고수"
+          extraCell={(r) => (
+            <span className="flex items-center gap-1 text-xs font-bold text-red-500">
+              <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>flag</span>
+              {r.reportCount}건
+            </span>
+          )}
+        />
+      )}
     </div>
   );
 }

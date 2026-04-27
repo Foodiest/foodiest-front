@@ -8,6 +8,7 @@ import { getByUser } from "../services/reviewService";
 import { getById as getRestaurantById } from "../services/restaurantService";
 import { follow, unfollow, checkIsFollowing, getFollowing, getFollowersCount } from "../services/followService";
 import { supabase } from "../lib/supabase";
+import ReviewReportButton from "../components/ReviewReportButton";
 
 const kwLabelMap = {
   Quiet: "조용한", Sophisticated: "세련된", Vibrant: "활기찬", Minimalist: "미니멀", Romantic: "로맨틱", Cozy: "아늑한",
@@ -17,6 +18,12 @@ const kwLabelMap = {
   Friendly: "친절한", Fast: "빠른", Attentive: "세심한", "Valet Park": "발렛파킹",
   Slow: "느린", Rude: "불친절한", "Long Wait": "대기 긺",
 };
+
+const presetNegativeSet = new Set([
+  "Noisy", "Crowded", "Dark",
+  "Bland", "Oily", "Overpriced",
+  "Slow", "Rude", "Long Wait",
+]);
 
 function ReviewCard({ review, navigate, isOwn }) {
   const {
@@ -31,7 +38,10 @@ function ReviewCard({ review, navigate, isOwn }) {
     keywords = {},
   } = review;
 
-  const negativeSet = new Set(keywords._negative || []);
+  const negativeSet = new Set([
+    ...(keywords._negative || []),
+    ...[...(keywords.Vibe || []), ...(keywords.Taste || []), ...(keywords.Service || [])].filter(kw => presetNegativeSet.has(kw)),
+  ]);
   const allKws = [
     ...(keywords.Vibe || []),
     ...(keywords.Taste || []),
@@ -94,6 +104,13 @@ function ReviewCard({ review, navigate, isOwn }) {
               ))}
             </div>
           </>
+        )}
+        {!isOwn && (
+          <div className="absolute top-3 right-3 z-10">
+            <div className="bg-white/90 backdrop-blur-md rounded-full px-2 py-1.5 shadow-sm">
+              <ReviewReportButton reviewId={id} />
+            </div>
+          </div>
         )}
         {isOwn && (
           <div className="absolute top-3 right-3">
@@ -255,8 +272,14 @@ export default function MyPage() {
       setBestRestaurants([]);
       return;
     }
+    const comments = viewedProfile?.best_restaurant_comments ?? [];
     Promise.all(ids.map((id) => getRestaurantById(id).catch(() => null))).then(
-      (results) => setBestRestaurants(results.filter(Boolean))
+      (results) =>
+        setBestRestaurants(
+          results
+            .map((r, i) => (r ? { ...r, comment: comments[i] ?? "" } : null))
+            .filter(Boolean)
+        )
     );
   }, [viewedProfile]);
 
@@ -464,8 +487,12 @@ export default function MyPage() {
                   className="relative group rounded-3xl overflow-hidden shadow-sm border border-slate-100 bg-white cursor-pointer"
                   onClick={() => navigate(`/restaurant/${r.id}`)}
                 >
-                  <div className="h-48 overflow-hidden bg-slate-100 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-slate-300 text-5xl">restaurant</span>
+                  <div className="h-48 overflow-hidden bg-slate-100">
+                    <img
+                      src={r.image || defaultRestaurantImg}
+                      alt={r.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                   </div>
                   <div className="absolute top-4 left-4 bg-primary-container text-on-primary px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-md">
                     #{idx + 1} 픽
@@ -477,6 +504,11 @@ export default function MyPage() {
                     <p className="text-slate-500 text-xs mt-1">
                       {cuisineMap[r.cuisine] || r.cuisine}{r.price ? ` • ${r.price}` : ""}
                     </p>
+                    {r.comment && (
+                      <p className="text-slate-400 text-xs mt-2 italic line-clamp-2">
+                        "{r.comment}"
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}

@@ -133,14 +133,17 @@ export default function WriteReviewPage() {
     })();
   }, [isEditMode, reviewId, restaurantId]);
 
-  const toggleKw = (category, item) => {
+  const toggleKw = (category, item, isNegative = false) => {
     setSelectedKeywords((prev) => {
       const list = prev[category] ?? [];
+      const negList = prev._negative ?? [];
+      const isSelected = list.includes(item);
       return {
         ...prev,
-        [category]: list.includes(item)
-          ? list.filter((i) => i !== item)
-          : [...list, item],
+        [category]: isSelected ? list.filter((i) => i !== item) : [...list, item],
+        _negative: isNegative
+          ? isSelected ? negList.filter((i) => i !== item) : [...negList, item]
+          : negList,
       };
     });
   };
@@ -258,44 +261,32 @@ export default function WriteReviewPage() {
           </p>
         </div>
 
-        {/* Restaurant Context - Only show in create mode or adjust */}
-
-        {!isEditMode && (
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            {/* Left */}
-
-            <div className="md:col-span-8 space-y-5">
-              <div className="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant flex items-center gap-5">
-                <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container">
-                  {restaurant?.image && (
-                    <img
-                      src={restaurant.image}
-                      alt={restaurant.name}
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                </div>
-
-                <div>
-                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">
-                    현재 리뷰 작성 중
-                  </span>
-
-                  <h2 className="font-[Epilogue] text-xl font-semibold text-on-surface">
-                    {restaurant?.name ?? '...'}
-                  </h2>
-
-                  <p className="text-sm text-on-surface-variant flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">
-                      location_on
-                    </span>{" "}
-                    {restaurant?.address ?? ''}
-                  </p>
-                </div>
+        {/* Restaurant Context */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-2">
+          <div className="md:col-span-8">
+            <div className="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant flex items-center gap-5">
+              <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container">
+                <img
+                  src={restaurant?.image || defaultRestaurantImg}
+                  alt={restaurant?.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                  {isEditMode ? "리뷰 수정 중" : "현재 리뷰 작성 중"}
+                </span>
+                <h2 className="font-[Epilogue] text-xl font-semibold text-on-surface">
+                  {restaurant?.name ?? '...'}
+                </h2>
+                <p className="text-sm text-on-surface-variant flex items-center gap-1">
+                  <span className="material-symbols-outlined text-sm">location_on</span>
+                  {restaurant?.address ?? ''}
+                </p>
               </div>
             </div>
           </div>
-        )}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           {/* Left */}
@@ -501,7 +492,7 @@ export default function WriteReviewPage() {
                           <button
                             key={value}
                             type="button"
-                            onClick={() => toggleKw(category, value)}
+                            onClick={() => toggleKw(category, value, true)}
                             className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-all ${
                               active
                                 ? "bg-red-400 text-white"

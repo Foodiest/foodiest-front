@@ -104,6 +104,7 @@ export default function MyPageSettings() {
   const { profile, refreshProfile } = useAuth();
   const [bio, setBio] = useState("");
   const [bestRestaurants, setBestRestaurants] = useState([null, null, null]);
+  const [bestComments, setBestComments] = useState(["", "", ""]);
   const [modalSlot, setModalSlot] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -121,6 +122,12 @@ export default function MyPageSettings() {
     setCoverImagePreview(profile.cover_image ?? null);
     const ids = profile.best_restaurants ?? [];
     if (ids.length === 0) return;
+    const comments = profile.best_restaurant_comments ?? [];
+    setBestComments([
+      comments[0] ?? "",
+      comments[1] ?? "",
+      comments[2] ?? "",
+    ]);
     Promise.all(ids.slice(0, 3).map((id) => getById(id).catch(() => null))).then(
       (restaurants) => {
         setBestRestaurants([
@@ -168,9 +175,11 @@ export default function MyPageSettings() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const filled = bestRestaurants.map((r, i) => (r ? { id: r.id, comment: bestComments[i].trim() } : null)).filter(Boolean);
       const updates = {
         bio: bio.trim(),
-        best_restaurants: bestRestaurants.filter(Boolean).map((r) => r.id),
+        best_restaurants: filled.map((item) => item.id),
+        best_restaurant_comments: filled.map((item) => item.comment),
       };
       if (profileImageFile) updates.profile_image = await uploadProfileImage(profileImageFile);
       if (coverImageFile) updates.cover_image = await uploadCoverImage(coverImageFile);
@@ -279,37 +288,55 @@ export default function MyPageSettings() {
               {bestRestaurants.map((restaurant, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-2xl shadow-sm"
+                  className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm space-y-3"
                 >
-                  <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 font-bold flex-shrink-0">
-                    {idx + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    {restaurant ? (
-                      <>
-                        <p className="text-sm font-semibold text-on-surface truncate">{restaurant.name}</p>
-                        <p className="text-xs text-slate-400 truncate">{restaurant.cuisine} {restaurant.price && `• ${restaurant.price}`}</p>
-                      </>
-                    ) : (
-                      <p className="text-sm text-slate-300">선택된 식당이 없습니다</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    {restaurant && (
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 font-bold flex-shrink-0">
+                      {idx + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {restaurant ? (
+                        <>
+                          <p className="text-sm font-semibold text-on-surface truncate">{restaurant.name}</p>
+                          <p className="text-xs text-slate-400 truncate">{restaurant.cuisine} {restaurant.price && `• ${restaurant.price}`}</p>
+                        </>
+                      ) : (
+                        <p className="text-sm text-slate-300">선택된 식당이 없습니다</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {restaurant && (
+                        <button
+                          onClick={() => handleRemove(idx)}
+                          className="w-8 h-8 flex items-center justify-center rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-sm">close</span>
+                        </button>
+                      )}
                       <button
-                        onClick={() => handleRemove(idx)}
-                        className="w-8 h-8 flex items-center justify-center rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors"
+                        onClick={() => setModalSlot(idx)}
+                        className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-primary hover:bg-orange-50 transition-colors"
                       >
-                        <span className="material-symbols-outlined text-sm">close</span>
+                        <span className="material-symbols-outlined text-sm">search</span>
                       </button>
-                    )}
-                    <button
-                      onClick={() => setModalSlot(idx)}
-                      className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-primary hover:bg-orange-50 transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-sm">search</span>
-                    </button>
+                    </div>
                   </div>
+                  {restaurant && (
+                    <input
+                      type="text"
+                      value={bestComments[idx]}
+                      onChange={(e) =>
+                        setBestComments((prev) => {
+                          const next = [...prev];
+                          next[idx] = e.target.value;
+                          return next;
+                        })
+                      }
+                      maxLength={50}
+                      placeholder="한 줄 코멘트를 남겨보세요 (선택)"
+                      className="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition-colors placeholder:text-slate-300"
+                    />
+                  )}
                 </div>
               ))}
             </div>

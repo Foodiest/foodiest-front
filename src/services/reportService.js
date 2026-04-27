@@ -1,7 +1,9 @@
 import { supabase } from '../lib/supabase';
+import { supabaseAdmin } from '../lib/supabaseAdmin';
 
 export const REPORT_TYPE = {
   REVIEW_EVENT: 'review_event',
+  REVIEW: 'review',
 };
 
 export async function submitReport({ reportType, reviewId, restaurantId, reportedUserId }) {
@@ -71,6 +73,33 @@ export async function getEventReportCountsByRestaurant() {
     counts[restaurant_id] = (counts[restaurant_id] || 0) + 1;
   });
   return counts;
+}
+
+export async function getReportedReviews() {
+  const { data: reportRows, error: reportError } = await supabaseAdmin
+    .from('reports')
+    .select('review_id')
+    .eq('report_type', REPORT_TYPE.REVIEW)
+    .not('review_id', 'is', null);
+  if (reportError) throw reportError;
+
+  const countMap = {};
+  (reportRows || []).forEach(({ review_id }) => {
+    countMap[review_id] = (countMap[review_id] || 0) + 1;
+  });
+
+  const reviewIds = Object.keys(countMap);
+  if (reviewIds.length === 0) return [];
+
+  const { data: reviews, error: reviewError } = await supabaseAdmin
+    .from('reviews')
+    .select('*, users(user_id, nickname, profile_image), restaurants(id, name)')
+    .in('id', reviewIds);
+  if (reviewError) throw reviewError;
+
+  return (reviews || [])
+    .map(r => ({ ...r, reportCount: countMap[r.id] || 0 }))
+    .sort((a, b) => b.reportCount - a.reportCount);
 }
 
 export async function getReportCount({ reportType, reviewId, restaurantId, reportedUserId }) {
