@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useState, useMemo, useEffect } from "react";
 import Layout from "../components/Layout";
+import defaultRestaurantImg from "../assets/default-restaurant.svg";
 import { useAuth } from "../contexts/AuthContext";
 import { filterLabelMap, cuisineMap } from "../data/mockFilters";
 import { getByUser } from "../services/reviewService";
@@ -239,8 +240,8 @@ export default function MyPage() {
             .toUpperCase(),
           stars: r.rating,
           desc: r.review_text,
-          images: r.images?.length ? r.images : ["https://via.placeholder.com/400"],
           keywords: r.keywords ?? {},
+          images: r.images?.length ? r.images : [defaultRestaurantImg],
           createdAt: r.created_at,
         }))
       );

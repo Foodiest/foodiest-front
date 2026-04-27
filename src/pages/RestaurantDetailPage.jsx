@@ -25,7 +25,7 @@ const loadKakaoMapSdk = () => {
     return Promise.resolve(window.kakao);
   }
 
-  if (kakaoScriptPromise) {
+  if (akaoScriptPromise) {
     return kakaoScriptPromise;
   }
 
@@ -276,15 +276,15 @@ export default function RestaurantDetailPage() {
   // AI 분석 결과 또는 폴백 데이터
   const scores = aiAnalysis
     ? [
-        { label: '맛', value: aiAnalysis.scores.taste },
-        { label: '서비스', value: aiAnalysis.scores.service },
-        { label: '분위기', value: aiAnalysis.scores.atmosphere },
-      ]
+      { label: '맛', value: aiAnalysis.scores.taste },
+      { label: '서비스', value: aiAnalysis.scores.service },
+      { label: '분위기', value: aiAnalysis.scores.atmosphere },
+    ]
     : [
-        { label: '맛', value: reviews.length ? Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 20) : 0 },
-        { label: '서비스', value: reviews.length ? Math.min(100, Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 18) + 5) : 0 },
-        { label: '분위기', value: reviews.length ? Math.min(100, Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 17) + 8) : 0 },
-      ];
+      { label: '맛', value: reviews.length ? Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 20) : 0 },
+      { label: '서비스', value: reviews.length ? Math.min(100, Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 18) + 5) : 0 },
+      { label: '분위기', value: reviews.length ? Math.min(100, Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 17) + 8) : 0 },
+    ];
 
   const allKwFlat = reviews.flatMap(r =>
     Object.entries(r.keywords || {})
@@ -292,8 +292,12 @@ export default function RestaurantDetailPage() {
       .flatMap(([, v]) => v)
   );
   const customNegativeAll = new Set(reviews.flatMap(r => r.keywords?._negative || []));
-  const positiveKwList = [...new Set(allKwFlat.filter(kw => !negativeKwSet.has(kw) && !customNegativeAll.has(kw)))];
-  const negativeKwList = [...new Set(allKwFlat.filter(kw => negativeKwSet.has(kw) || customNegativeAll.has(kw)))];
+  const positiveKwList = aiAnalysis?.keywords?.positive?.length
+    ? aiAnalysis.keywords.positive
+    : [...new Set(allKwFlat.filter(kw => !negativeKwSet.has(kw) && !customNegativeAll.has(kw)))];
+  const negativeKwList = aiAnalysis?.keywords?.negative?.length
+    ? aiAnalysis.keywords.negative
+    : [...new Set(allKwFlat.filter(kw => negativeKwSet.has(kw) || customNegativeAll.has(kw)))];
   const aiSummary = aiAnalysis?.summary || null;
 
   return (
@@ -327,8 +331,8 @@ export default function RestaurantDetailPage() {
             <h1 className="font-[Epilogue] text-4xl md:text-5xl font-bold text-on-surface mb-2">{restaurant.name}</h1>
             <div className="flex items-center gap-3 text-sm font-medium">
               <span className="flex items-center text-primary">
-                <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                {restaurant.rating} ({reviewCount}개 리뷰)
+                <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: restaurant.rating ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+                {restaurant.rating || '0.0'} ({reviewCount}개 리뷰)
               </span>
               <span className="text-on-surface-variant">•</span>
               <span className="text-on-surface-variant">{cuisineMap[restaurant.cuisine] || restaurant.cuisine}</span>
@@ -367,11 +371,10 @@ export default function RestaurantDetailPage() {
             </button>
             <button
               onClick={handleSaveToggle}
-              className={`px-5 py-3 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1 ${
-                saved
+              className={`px-5 py-3 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1 ${saved
                   ? 'bg-primary text-white hover:opacity-90'
                   : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-variant'
-              }`}
+                }`}
             >
               <span
                 className="material-symbols-outlined text-sm"
@@ -431,9 +434,7 @@ export default function RestaurantDetailPage() {
               <h2 className="font-[Epilogue] text-2xl font-semibold flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'wght' 700" }}>psychology</span>
                 AI 리뷰 분석
-                {aiAnalysis && (
-                  <span className="text-[10px] font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Gemini AI</span>
-                )}
+                {/* AI 엔진 배지 삭제됨 */}
               </h2>
               <span className="text-xs text-on-surface-variant">{reviewCount}개의 리뷰 기반</span>
             </div>
@@ -473,7 +474,7 @@ export default function RestaurantDetailPage() {
                   {/* 키워드 */}
                   <div className="bg-surface-container-lowest p-4 rounded-lg border border-surface-variant space-y-4">
                     <h4 className="font-semibold text-sm text-secondary">
-                      {aiAnalysis ? 'AI 키워드 분석' : 'NLP 키워드 추출'}
+                      AI 키워드 분석
                     </h4>
 
                     {positiveKwList.length > 0 && (
@@ -573,11 +574,10 @@ export default function RestaurantDetailPage() {
                     <button
                       key={value}
                       onClick={() => setSortOrder(value)}
-                      className={`px-3 py-1.5 transition-colors ${
-                        sortOrder === value
+                      className={`px-3 py-1.5 transition-colors ${sortOrder === value
                           ? 'bg-secondary text-white'
                           : 'bg-white text-on-surface-variant hover:bg-surface-container'
-                      }`}
+                        }`}
                     >
                       {label}
                     </button>

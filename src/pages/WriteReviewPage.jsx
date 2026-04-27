@@ -3,8 +3,10 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "../components/Layout";
 import { create, update, remove, getByRestaurant } from "../services/reviewService";
 import { uploadReviewImage } from "../services/storageService";
+import { getById as getRestaurantById } from "../services/restaurantService";
 import { useAuth } from "../contexts/AuthContext";
 import { submitReport, hasReported, REPORT_TYPE } from "../services/reportService";
+import defaultRestaurantImg from "../assets/default-restaurant.svg";
 
 const keywordGroups = [
   {
@@ -69,6 +71,8 @@ export default function WriteReviewPage() {
   const navigate = useNavigate();
   const { session, profile } = useAuth();
 
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   const [searchParams] = useSearchParams();
 
   const reviewId = searchParams.get("reviewId");
@@ -89,13 +93,17 @@ export default function WriteReviewPage() {
     _negative: [],
   });
 
+  const [restaurant, setRestaurant] = useState(null);
   const [images, setImages] = useState([]);
   const [isEvent, setIsEvent] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [customKeywords, setCustomKeywords] = useState({ Vibe: [], Taste: [], Service: [] });
   const [customInputs, setCustomInputs] = useState({ Vibe: '', Taste: '', Service: '' });
-  const [customInputModes, setCustomInputModes] = useState({ Vibe: 'positive', Taste: 'positive', Service: 'positive' });
+
+  useEffect(() => {
+    getRestaurantById(restaurantId).then(setRestaurant).catch(() => {});
+  }, [restaurantId]);
 
   // Load review data if in edit mode
   useEffect(() => {
@@ -141,12 +149,11 @@ export default function WriteReviewPage() {
     const val = customInputs[category].trim();
     if (!val) return;
     if (selectedKeywords[category]?.includes(val)) return;
-    const isNeg = customInputModes[category] === 'negative';
     setCustomKeywords(prev => ({ ...prev, [category]: [...prev[category], val] }));
     setSelectedKeywords(prev => ({
       ...prev,
       [category]: [...(prev[category] || []), val],
-      _negative: isNeg ? [...(prev._negative || []), val] : (prev._negative || []),
+      _negative: [...(prev._negative || []), val],
     }));
     setCustomInputs(prev => ({ ...prev, [category]: '' }));
   };
@@ -212,7 +219,7 @@ export default function WriteReviewPage() {
     const payload = {
       reviewText,
       rating,
-      images: uploadedImages,
+      images: uploadedImages.length > 0 ? uploadedImages : [defaultRestaurantImg],
       keywords: selectedKeywords,
     };
 
@@ -259,12 +266,14 @@ export default function WriteReviewPage() {
 
             <div className="md:col-span-8 space-y-5">
               <div className="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant flex items-center gap-5">
-                <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
-                  <img
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkmlXH30uvSRzLTC12UKIlCtQ0qOFCAgZK-LEp2CLLsoyn96hP-XrpX9hxNe1QlcQZTfkzJb7jWvd87UUWPmJPUS-LHz1XEq3qfigbFmwJbOEkO0PVfS5BZvvj3UKOr06RXRQfJrmRvh_99ySQhJ5dCu4o7cIHL0-chfvUE-56dJ_Hp4YsJn4gq8q2RZAhqjPV9oAPt-LSKcrqNd-11Kj0GaCzXJhPQgWIw-aqLvFMPd67tLVq8EQ1FFuFXRZb4GD3Xfq1rGcIlH7V"
-                    alt="restaurant"
-                    className="w-full h-full object-cover"
-                  />
+                <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container">
+                  {restaurant?.image && (
+                    <img
+                      src={restaurant.image}
+                      alt={restaurant.name}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
                 </div>
 
                 <div>
@@ -273,14 +282,14 @@ export default function WriteReviewPage() {
                   </span>
 
                   <h2 className="font-[Epilogue] text-xl font-semibold text-on-surface">
-                    L'Anima Trattoria
+                    {restaurant?.name ?? '...'}
                   </h2>
 
                   <p className="text-sm text-on-surface-variant flex items-center gap-1">
                     <span className="material-symbols-outlined text-sm">
                       location_on
                     </span>{" "}
-                    Gangnam, Seoul
+                    {restaurant?.address ?? ''}
                   </p>
                 </div>
               </div>
@@ -533,34 +542,23 @@ export default function WriteReviewPage() {
                       </div>
                     )}
 
-                    {/* 직접 입력 */}
+                    {/* 직접 입력 (부정 키워드만) */}
                     <div className="flex gap-1 pt-0.5">
-                      <button
-                        type="button"
-                        onClick={() => setCustomInputModes(prev => ({
-                          ...prev,
-                          [category]: prev[category] === 'positive' ? 'negative' : 'positive',
-                        }))}
-                        className={`shrink-0 px-2 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
-                          customInputModes[category] === 'negative'
-                            ? 'bg-red-50 text-red-500 border-red-200'
-                            : 'bg-secondary/10 text-secondary border-secondary/20'
-                        }`}
-                      >
-                        {customInputModes[category] === 'negative' ? '부정' : '긍정'}
-                      </button>
+                      <span className="shrink-0 px-2 py-1.5 rounded-lg text-xs font-semibold border bg-red-50 text-red-500 border-red-200 flex items-center">
+                        부정
+                      </span>
                       <input
                         type="text"
                         value={customInputs[category]}
                         onChange={e => setCustomInputs(prev => ({ ...prev, [category]: e.target.value }))}
                         onKeyDown={e => e.key === 'Enter' && addCustomKeyword(category)}
                         placeholder="직접 입력 후 Enter"
-                        className="flex-1 text-xs px-2.5 py-1.5 border border-outline-variant rounded-lg bg-surface focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none"
+                        className="flex-1 text-xs px-2.5 py-1.5 border border-outline-variant rounded-lg bg-surface focus:border-red-300 focus:ring-1 focus:ring-red-300 outline-none"
                       />
                       <button
                         type="button"
                         onClick={() => addCustomKeyword(category)}
-                        className="px-2.5 py-1.5 bg-surface-container rounded-lg text-on-surface-variant hover:bg-primary-container hover:text-white transition-colors"
+                        className="px-2.5 py-1.5 bg-surface-container rounded-lg text-on-surface-variant hover:bg-red-400 hover:text-white transition-colors"
                       >
                         <span className="material-symbols-outlined text-sm">add</span>
                       </button>

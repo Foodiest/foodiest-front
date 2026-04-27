@@ -1,13 +1,35 @@
 import { supabase } from '../lib/supabase';
 import { supabaseAdmin } from '../lib/supabaseAdmin';
 
+async function fetchAvgRatings(restaurantIds) {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('restaurant_id, rating')
+    .in('restaurant_id', restaurantIds);
+  if (error) throw error;
+
+  return data.reduce((acc, { restaurant_id, rating }) => {
+    if (!acc[restaurant_id]) acc[restaurant_id] = { sum: 0, count: 0 };
+    acc[restaurant_id].sum += rating;
+    acc[restaurant_id].count += 1;
+    return acc;
+  }, {});
+}
+
+function mergeRating(restaurant, avgMap) {
+  const entry = avgMap[restaurant.id];
+  const rating = entry ? Math.round((entry.sum / entry.count) * 10) / 10 : 0;
+  return { ...restaurant, rating };
+}
+
 export async function getAll() {
   const { data, error } = await supabase
     .from('restaurants')
     .select('*')
     .order('id');
   if (error) throw error;
-  return data;
+  const avgMap = await fetchAvgRatings(data.map(r => r.id));
+  return data.map(r => mergeRating(r, avgMap));
 }
 
 export async function getById(id) {
@@ -17,7 +39,8 @@ export async function getById(id) {
     .eq('id', id)
     .single();
   if (error) throw error;
-  return data;
+  const avgMap = await fetchAvgRatings([id]);
+  return mergeRating(data, avgMap);
 }
 
 export async function search(query) {
@@ -26,7 +49,8 @@ export async function search(query) {
     .select('*')
     .or(`name.ilike.%${query}%,cuisine.ilike.%${query}%`);
   if (error) throw error;
-  return data;
+  const avgMap = await fetchAvgRatings(data.map(r => r.id));
+  return data.map(r => mergeRating(r, avgMap));
 }
 
 export async function adminCreate(data) {
@@ -61,17 +85,12 @@ export async function adminDelete(id) {
 export async function filterByPreferences({ vibes = [], flavors = [], dietary = [] }) {
   let query = supabase.from('restaurants').select('*');
 
-  if (vibes.length > 0) {
-    query = query.overlaps('vibes', vibes);
-  }
-  if (flavors.length > 0) {
-    query = query.overlaps('flavors', flavors);
-  }
-  if (dietary.length > 0) {
-    query = query.overlaps('dietary', dietary);
-  }
+  if (vibes.length > 0) query = query.overlaps('vibes', vibes);
+  if (flavors.length > 0) query = query.overlaps('flavors', flavors);
+  if (dietary.length > 0) query = query.overlaps('dietary', dietary);
 
   const { data, error } = await query.order('id');
   if (error) throw error;
-  return data;
+  const avgMap = await fetchAvgRatings(data.map(r => r.id));
+  return data.map(r => mergeRating(r, avgMap));
 }
