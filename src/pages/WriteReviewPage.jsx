@@ -93,7 +93,6 @@ export default function WriteReviewPage() {
   const [deleting, setDeleting] = useState(false);
   const [customKeywords, setCustomKeywords] = useState({ Vibe: [], Taste: [], Service: [] });
   const [customInputs, setCustomInputs] = useState({ Vibe: '', Taste: '', Service: '' });
-  const [customInputModes, setCustomInputModes] = useState({ Vibe: 'positive', Taste: 'positive', Service: 'positive' });
 
   // Load review data if in edit mode
   useEffect(() => {
@@ -134,12 +133,11 @@ export default function WriteReviewPage() {
     const val = customInputs[category].trim();
     if (!val) return;
     if (selectedKeywords[category]?.includes(val)) return;
-    const isNeg = customInputModes[category] === 'negative';
     setCustomKeywords(prev => ({ ...prev, [category]: [...prev[category], val] }));
     setSelectedKeywords(prev => ({
       ...prev,
       [category]: [...(prev[category] || []), val],
-      _negative: isNeg ? [...(prev._negative || []), val] : (prev._negative || []),
+      _negative: [...(prev._negative || []), val],
     }));
     setCustomInputs(prev => ({ ...prev, [category]: '' }));
   };
@@ -477,34 +475,23 @@ export default function WriteReviewPage() {
                       </div>
                     )}
 
-                    {/* 직접 입력 */}
+                    {/* 직접 입력 (부정 키워드만) */}
                     <div className="flex gap-1 pt-0.5">
-                      <button
-                        type="button"
-                        onClick={() => setCustomInputModes(prev => ({
-                          ...prev,
-                          [category]: prev[category] === 'positive' ? 'negative' : 'positive',
-                        }))}
-                        className={`shrink-0 px-2 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
-                          customInputModes[category] === 'negative'
-                            ? 'bg-red-50 text-red-500 border-red-200'
-                            : 'bg-secondary/10 text-secondary border-secondary/20'
-                        }`}
-                      >
-                        {customInputModes[category] === 'negative' ? '부정' : '긍정'}
-                      </button>
+                      <span className="shrink-0 px-2 py-1.5 rounded-lg text-xs font-semibold border bg-red-50 text-red-500 border-red-200 flex items-center">
+                        부정
+                      </span>
                       <input
                         type="text"
                         value={customInputs[category]}
                         onChange={e => setCustomInputs(prev => ({ ...prev, [category]: e.target.value }))}
                         onKeyDown={e => e.key === 'Enter' && addCustomKeyword(category)}
                         placeholder="직접 입력 후 Enter"
-                        className="flex-1 text-xs px-2.5 py-1.5 border border-outline-variant rounded-lg bg-surface focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none"
+                        className="flex-1 text-xs px-2.5 py-1.5 border border-outline-variant rounded-lg bg-surface focus:border-red-300 focus:ring-1 focus:ring-red-300 outline-none"
                       />
                       <button
                         type="button"
                         onClick={() => addCustomKeyword(category)}
-                        className="px-2.5 py-1.5 bg-surface-container rounded-lg text-on-surface-variant hover:bg-primary-container hover:text-white transition-colors"
+                        className="px-2.5 py-1.5 bg-surface-container rounded-lg text-on-surface-variant hover:bg-red-400 hover:text-white transition-colors"
                       >
                         <span className="material-symbols-outlined text-sm">add</span>
                       </button>
