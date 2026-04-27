@@ -1,12 +1,22 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useState, useMemo, useEffect } from "react";
 import Layout from "../components/Layout";
+import defaultRestaurantImg from "../assets/default-restaurant.svg";
 import { useAuth } from "../contexts/AuthContext";
 import { filterLabelMap, cuisineMap } from "../data/mockFilters";
 import { getByUser } from "../services/reviewService";
 import { getById as getRestaurantById } from "../services/restaurantService";
 import { follow, unfollow, checkIsFollowing, getFollowing, getFollowersCount } from "../services/followService";
 import { supabase } from "../lib/supabase";
+
+const kwLabelMap = {
+  Quiet: "조용한", Sophisticated: "세련된", Vibrant: "활기찬", Minimalist: "미니멀", Romantic: "로맨틱", Cozy: "아늑한",
+  Noisy: "시끄러운", Crowded: "복잡한", Dark: "어두운",
+  Spicy: "매콤한", Savory: "고소한", "Umami-rich": "감칠맛", Authentic: "정통", Sweet: "달콤한", Fresh: "신선한",
+  Bland: "싱거운", Oily: "기름진", Overpriced: "가성비 낮음",
+  Friendly: "친절한", Fast: "빠른", Attentive: "세심한", "Valet Park": "발렛파킹",
+  Slow: "느린", Rude: "불친절한", "Long Wait": "대기 긺",
+};
 
 function ReviewCard({ review, navigate, isOwn }) {
   const {
@@ -18,7 +28,15 @@ function ReviewCard({ review, navigate, isOwn }) {
     stars,
     desc,
     images,
+    keywords = {},
   } = review;
+
+  const negativeSet = new Set(keywords._negative || []);
+  const allKws = [
+    ...(keywords.Vibe || []),
+    ...(keywords.Taste || []),
+    ...(keywords.Service || []),
+  ].sort((a, b) => (negativeSet.has(b) ? 1 : 0) - (negativeSet.has(a) ? 1 : 0));
 
   const [imgIndex, setImgIndex] = useState(0);
 
@@ -107,7 +125,24 @@ function ReviewCard({ review, navigate, isOwn }) {
         <h4 className="font-[Epilogue] text-lg font-semibold text-on-surface mb-2 line-clamp-1">
           {title}
         </h4>
-        <p className="text-slate-500 text-sm line-clamp-2 mb-4">{desc}</p>
+        <p className="text-slate-500 text-sm line-clamp-2 mb-3">{desc}</p>
+
+        {allKws.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-4">
+            {allKws.map((kw) => (
+              <span
+                key={kw}
+                className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${
+                  negativeSet.has(kw)
+                    ? "bg-red-50 text-red-500 border-red-200"
+                    : "bg-secondary/10 text-secondary border-secondary/20"
+                }`}
+              >
+                {kwLabelMap[kw] || kw}
+              </span>
+            ))}
+          </div>
+        )}
 
         <div className="mt-auto pt-4 border-t border-slate-50 flex items-center gap-3">
           <span
@@ -205,7 +240,8 @@ export default function MyPage() {
             .toUpperCase(),
           stars: r.rating,
           desc: r.review_text,
-          images: r.images?.length ? r.images : ["https://via.placeholder.com/400"],
+          keywords: r.keywords ?? {},
+          images: r.images?.length ? r.images : [defaultRestaurantImg],
           createdAt: r.created_at,
         }))
       );

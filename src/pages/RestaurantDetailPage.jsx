@@ -8,6 +8,7 @@ import { getByRestaurant } from '../services/reviewService';
 import { useAuth } from '../contexts/AuthContext';
 import { isSaved as isSavedService, toggleSaved as toggleSavedService } from '../services/savedService';
 import { analyzeReviews } from '../services/aiAnalysisService';
+import { submitReport, cancelReport, hasReported, getReportCount, REPORT_TYPE } from '../services/reportService';
 import defaultRestaurantImg from '../assets/default-restaurant.svg';
 
 
@@ -146,10 +147,36 @@ export default function RestaurantDetailPage() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
 
+  // 리뷰이벤트 신고 상태
+  const [eventReported, setEventReported] = useState(false);
+  const [eventReportCount, setEventReportCount] = useState(0);
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+
   const openLightbox = (images, index) => setLightbox({ open: true, images, index });
   const closeLightbox = () => setLightbox(prev => ({ ...prev, open: false }));
   const prevImage = () => setLightbox(prev => ({ ...prev, index: (prev.index - 1 + prev.images.length) % prev.images.length }));
   const nextImage = () => setLightbox(prev => ({ ...prev, index: (prev.index + 1) % prev.images.length }));
+
+  const handleEventReport = async () => {
+    if (!isLoggedIn) { navigate('/login'); return; }
+    if (reportSubmitting) return;
+    setReportSubmitting(true);
+    try {
+      if (eventReported) {
+        await cancelReport({ reportType: REPORT_TYPE.REVIEW_EVENT, restaurantId: restaurant.id });
+        setEventReported(false);
+        setEventReportCount(c => Math.max(0, c - 1));
+      } else {
+        await submitReport({ reportType: REPORT_TYPE.REVIEW_EVENT, restaurantId: restaurant.id });
+        setEventReported(true);
+        setEventReportCount(c => c + 1);
+      }
+    } catch (e) {
+      if (e.message === 'ALREADY_REPORTED') setEventReported(true);
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     if (!lightbox.open) return;
@@ -181,6 +208,17 @@ export default function RestaurantDetailPage() {
     if (!isLoggedIn || !restaurant) return;
     isSavedService(restaurant.id).then(setSaved);
   }, [isLoggedIn, restaurant]);
+
+  useEffect(() => {
+    if (!restaurant) return;
+    const rid = restaurant.id;
+    getReportCount({ reportType: REPORT_TYPE.REVIEW_EVENT, restaurantId: rid })
+      .then(setEventReportCount);
+    if (isLoggedIn) {
+      hasReported({ reportType: REPORT_TYPE.REVIEW_EVENT, restaurantId: rid })
+        .then(setEventReported);
+    }
+  }, [restaurant, isLoggedIn]);
 
   // AI 리뷰 분석 호출
   useEffect(() => {
@@ -254,8 +292,12 @@ export default function RestaurantDetailPage() {
       .flatMap(([, v]) => v)
   );
   const customNegativeAll = new Set(reviews.flatMap(r => r.keywords?._negative || []));
-  const positiveKwList = [...new Set(allKwFlat.filter(kw => !negativeKwSet.has(kw) && !customNegativeAll.has(kw)))];
-  const negativeKwList = [...new Set(allKwFlat.filter(kw => negativeKwSet.has(kw) || customNegativeAll.has(kw)))];
+  const positiveKwList = aiAnalysis?.keywords?.positive?.length
+    ? aiAnalysis.keywords.positive
+    : [...new Set(allKwFlat.filter(kw => !negativeKwSet.has(kw) && !customNegativeAll.has(kw)))];
+  const negativeKwList = aiAnalysis?.keywords?.negative?.length
+    ? aiAnalysis.keywords.negative
+    : [...new Set(allKwFlat.filter(kw => negativeKwSet.has(kw) || customNegativeAll.has(kw)))];
   const aiSummary = aiAnalysis?.summary || null;
 
   return (
@@ -298,7 +340,26 @@ export default function RestaurantDetailPage() {
               <span className="text-on-surface-variant">{restaurant.price}</span>
             </div>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
+            <button
+              onClick={handleEventReport}
+              disabled={reportSubmitting}
+              className={`px-5 py-3 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 ${
+                eventReported
+                  ? 'bg-red-100 text-red-500 border border-red-300 hover:bg-red-200'
+                  : 'bg-red-50 text-red-500 border border-red-200 hover:bg-red-100'
+              }`}
+            >
+              <span className="material-symbols-outlined text-sm">
+                {eventReported ? 'cancel' : 'warning'}
+              </span>
+              {eventReported ? '신고 취소' : '리뷰이벤트 신고하기'}
+              {eventReportCount > 0 && (
+                <span className="bg-red-200 text-red-600 rounded-full px-1.5 py-0.5 text-[10px]">
+                  {eventReportCount}
+                </span>
+              )}
+            </button>
             <button
               onClick={handleShare}
               className="bg-surface-container-high text-on-surface-variant px-5 py-3 rounded-lg text-sm font-semibold hover:bg-surface-variant transition-colors flex items-center gap-1"
@@ -373,9 +434,7 @@ export default function RestaurantDetailPage() {
               <h2 className="font-[Epilogue] text-2xl font-semibold flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'wght' 700" }}>psychology</span>
                 AI 리뷰 분석
-                {aiAnalysis && (
-                  <span className="text-[10px] font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Gemini AI</span>
-                )}
+                {/* AI 엔진 배지 삭제됨 */}
               </h2>
               <span className="text-xs text-on-surface-variant">{reviewCount}개의 리뷰 기반</span>
             </div>
@@ -415,7 +474,7 @@ export default function RestaurantDetailPage() {
                   {/* 키워드 */}
                   <div className="bg-surface-container-lowest p-4 rounded-lg border border-surface-variant space-y-4">
                     <h4 className="font-semibold text-sm text-secondary">
-                      {aiAnalysis ? 'AI 키워드 분석' : 'NLP 키워드 추출'}
+                      AI 키워드 분석
                     </h4>
 
                     {positiveKwList.length > 0 && (
