@@ -1,4 +1,4 @@
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY?.trim().replace(/[^\x20-\x7E]/g, '');
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 const cache = new Map();
