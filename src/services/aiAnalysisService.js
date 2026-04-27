@@ -1,106 +1,67 @@
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${GEMINI_API_KEY}`;
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-const memCache = new Map();
-const inFlight = new Map();
-
-const STORAGE_PREFIX = 'gemini_analysis_';
-
-function loadFromStorage(key) {
-  try {
-    const raw = localStorage.getItem(STORAGE_PREFIX + key);
-    if (!raw) return null;
-    const { result, expiry } = JSON.parse(raw);
-    if (Date.now() > expiry) { localStorage.removeItem(STORAGE_PREFIX + key); return null; }
-    return result;
-  } catch { return null; }
-}
-
-function saveToStorage(key, result) {
-  try {
-    localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify({
-      result,
-      expiry: Date.now() + 1000 * 60 * 60 * 24, // 24시간
-    }));
-  } catch {}
-}
+const cache = new Map();
 
 export async function analyzeReviews(restaurantName, reviews) {
-  if (!GEMINI_API_KEY) throw new Error('VITE_GEMINI_API_KEY가 설정되지 않았습니다.');
+  if (!GROQ_API_KEY || GROQ_API_KEY === 'YOUR_GROQ_API_KEY_HERE') {
+    throw new Error('VITE_GROQ_API_KEY가 설정되지 않았습니다. .env 파일을 확인해 주세요.');
+  }
   if (!reviews?.length) return null;
 
   const cacheKey = `${restaurantName}_${reviews.length}`;
-  if (memCache.has(cacheKey)) return memCache.get(cacheKey);
-  const stored = loadFromStorage(cacheKey);
-  if (stored) { memCache.set(cacheKey, stored); return stored; }
-  if (inFlight.has(cacheKey)) return inFlight.get(cacheKey);
+  if (cache.has(cacheKey)) return cache.get(cacheKey);
 
   const reviewTexts = reviews.slice(0, 20).map((r, i) =>
     `리뷰 ${i + 1} (별점: ${r.rating}/5): ${r.review_text}`
   ).join('\n');
 
-  const prompt = `아래는 "${restaurantName}" 식당의 리뷰입니다.
+  const systemPrompt = `당신은 식당 리뷰 분석 전문가입니다. 
+제공된 리뷰들을 기반으로 식당의 특징을 요약하고, 맛, 서비스, 분위기 점수를 0-100 사이로 산출하세요.
+반드시 JSON 형식만 반환해야 하며, 다른 설명은 포함하지 마세요.`;
 
+  const userPrompt = `아래는 "${restaurantName}" 식당의 리뷰입니다. 분석 결과를 JSON으로 반환하세요.
+  
+리뷰 데이터:
 ${reviewTexts}
 
-이 리뷰들을 분석해서 아래 JSON만 반환하세요. 마크다운 없이 순수 JSON만 출력하세요:
-{"summary":"한 문장 한국어 요약 (50자 이내)","scores":{"taste":맛점수0-100,"service":서비스점수0-100,"atmosphere":분위기점수0-100}}`;
+응답 형식:
+{"summary":"2문장 한국어 요약","scores":{"taste":점수,"service":점수,"atmosphere":점수}}`;
 
-  const fetchOnce = async () => {
-    const response = await fetch(GEMINI_URL, {
+  try {
+    const response = await fetch(GROQ_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_API_KEY}`
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.2,
+        max_tokens: 512,
+        response_format: { type: "json_object" }
       }),
     });
 
-    if (response.status === 429) {
+    if (!response.ok) {
       const err = await response.json().catch(() => null);
-      const msg = err?.error?.message ?? '';
-      const seconds = parseFloat(msg.match(/retry in ([\d.]+)s/i)?.[1] ?? '20');
-      await new Promise(r => setTimeout(r, seconds * 1000));
-      return fetch(GEMINI_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
-        }),
-      });
+      throw new Error(err?.error?.message || `Groq API 오류: ${response.status}`);
     }
 
-    return response;
-  };
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+    
+    if (!content) throw new Error('Groq API 응답이 비어있습니다.');
 
-  const promise = (async () => {
-    try {
-      const response = await fetchOnce();
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => null);
-        throw new Error(err?.error?.message || `Gemini API 오류: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      const parts = data?.candidates?.[0]?.content?.parts ?? [];
-      const text = parts.filter(p => !p.thought).map(p => p.text ?? '').join('');
-      if (!text) throw new Error('Gemini API 응답이 비어있습니다.');
-
-      const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) ?? text.match(/(\{[\s\S]*\})/);
-      if (!jsonMatch) throw new Error('응답에서 JSON을 찾을 수 없습니다.');
-      const result = JSON.parse(jsonMatch[1] ?? jsonMatch[0]);
-
-      memCache.set(cacheKey, result);
-      saveToStorage(cacheKey, result);
-      return result;
-    } finally {
-      inFlight.delete(cacheKey);
-    }
-  })();
-
-  inFlight.set(cacheKey, promise);
-  return promise;
+    const result = JSON.parse(content);
+    cache.set(cacheKey, result);
+    return result;
+  } catch (error) {
+    console.error('[Groq 분석 오류]', error);
+    throw error;
+  }
 }
