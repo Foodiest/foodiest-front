@@ -3,18 +3,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { filterLabelMap, cuisineMap } from '../data/mockFilters';
 import { getById } from '../services/restaurantService';
+import { getByRestaurant as getMenusByRestaurant } from '../services/menuService';
 import { getByRestaurant } from '../services/reviewService';
 import { useAuth } from '../contexts/AuthContext';
 import { isSaved as isSavedService, toggleSaved as toggleSavedService } from '../services/savedService';
 import { analyzeReviews } from '../services/aiAnalysisService';
 import defaultRestaurantImg from '../assets/default-restaurant.svg';
 
-const popularDishes = [
-  { name: '시그니처 메뉴', price: '₩28,000', desc: '가장 신선한 제철 재료를 활용한 셰프의 매일 선택 메뉴입니다.', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBtLh1NYpD8QI9ZAlSIh6ro1uhnW8KKtq244wpGDLTECRQmqHpdjbmfiMtCHH_CnowDIL1pAuzMqmqFvkmK_9_7hxqDrzNXlAM80ROwjcpzhyGKn4dvOTCOEtbiSuBPVEu_2p843aJViWGH9qh0xC5hUmbrg8zkxwVwdsqb3OPCHcXqup0e-YmylykNTg4iYBTOdGshaS1DQcD2Rm1uNTWiYAsx73taEt3-t5mEfa9v3G6tl34I_4YuieUfyVlCnyJg2OwftROktxg_' },
-  { name: '셰프 스페셜', price: '₩32,000', desc: '셰프가 매주 영감을 받아 선보이는 순환 메뉴입니다.', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDWfiTamkqsO7J-p2pjn_rBQZjm25m7UARi9O5Mu4sSC0hY00aWr7dIaThsPOoq41-okk6iybbx9CTPhjUlmq43YK8WdswzT4lLAZaFc23J2-qBd9_pHKXXnkpBI7ZHR4ms_-HgpY9hC78UeOvkChUJFz6zAjsLUY5cbyPl8ZVRPxGiVItrs5nP2zy-22TKLoUQjHAqZVae_JDS9LxP0lHqRtF93eAEppC2a1wqVXjwK91sM6-3-vC4b9GeSB573R4KK5m1qEJdAOei' },
-  { name: '하우스 페이버릿', price: '₩24,000', desc: '수년간 완성된, 단골들이 계속 찾아오는 인기 클래식 메뉴입니다.', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDvzp1mVk2qPX231Hyp9yTkS5ysLEaXNZlES_hj7DmJQ66i1SDKM_Xwayg374qG4OWy7kHf1wLpbYXjhSeWIRA1q7ZXTPVEvZ6Ln3YZRRivBY7oD4fPmkITP2Jav8doC9zVzUNdehVIMSzTBItSayO90fYD6CnuVotRvTUrQEY2FKY4H_PPqOzvlgwp_p7WPmpPOh2u0HoHhGBDMP30lEqhc-m2rNLyE7opfijNqgbIf9L5AdqITXFtuu40i_ELPnb5qGroIf2ij10P' },
-  { name: '시즌 디저트', price: '₩14,000', desc: '제철 과일과 로컬 유제품으로 만든 가볍고 상큼한 마무리 메뉴입니다.', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDCHccFkc2uCwTcGjfOMhFy-sPVDo65WJGA7hUis74RATxXWmfXzDS2Qcff7hacPldcnzIysc_KjaY2ZoNH9J4F87LsQQmPdW9jVV-5RUqEz9JxhyJxrQDJtMJIiBbdFoCVqobulcX9TFTBQSVMePEfahLfPvxm1QKTw7YifgoHHUKcGZ4N4STv4e2wH942hAL-7fIgDtNQG_JeeXovvAuAExAB8L0KYPi1yhKlz1wDOmUL6Pf3Wa1IJJ1tbuyvIgJyFl0jksI-oCCl' },
-];
 
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY;
@@ -138,6 +133,8 @@ export default function RestaurantDetailPage() {
 
   const [restaurant, setRestaurant] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [menus, setMenus] = useState([]);
+  const [menuExpanded, setMenuExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copyToast, setCopyToast] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -170,10 +167,12 @@ export default function RestaurantDetailPage() {
     Promise.all([
       getById(restaurantId),
       getByRestaurant(restaurantId),
+      getMenusByRestaurant(restaurantId),
     ])
-      .then(([r, rv]) => {
+      .then(([r, rv, mn]) => {
         setRestaurant(r);
         setReviews(rv);
+        setMenus(mn);
       })
       .finally(() => setLoading(false));
   }, [id]);
@@ -263,20 +262,26 @@ export default function RestaurantDetailPage() {
     <Layout>
       {/* Bento Gallery */}
       <section className="max-w-7xl mx-auto w-full px-6 py-4">
-        <div className="grid grid-cols-4 grid-rows-2 gap-3 mb-6" style={{ gridTemplateRows: 'repeat(2, 200px)' }}>
-          <div className="col-span-2 row-span-2 relative overflow-hidden rounded-lg">
-            <img src={bentoImages[0] || defaultRestaurantImg} alt="restaurant" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
-          </div>
-          <div className="col-span-1 row-span-1 relative overflow-hidden rounded-lg">
-            <img src={bentoImages[1] || defaultRestaurantImg} alt="dish" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
-          </div>
-          <div className="col-span-1 row-span-1 relative overflow-hidden rounded-lg">
-            <img src={bentoImages[2] || defaultRestaurantImg} alt="cocktail" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
-          </div>
-          <div className="col-span-2 row-span-1 relative overflow-hidden rounded-lg">
-            <img src={bentoImages[3] || defaultRestaurantImg} alt="chef" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
-          </div>
-        </div>
+        {(() => {
+          const allImgs = [restaurant.image, ...(restaurant.sub_images || [])].filter(Boolean);
+          const imgs = allImgs.length > 0 ? allImgs : [null, null, null, null];
+          return (
+            <div className="grid grid-cols-4 grid-rows-2 gap-3 mb-6" style={{ gridTemplateRows: 'repeat(2, 200px)' }}>
+              <div className="col-span-2 row-span-2 relative overflow-hidden rounded-lg">
+                <img src={imgs[0] || defaultRestaurantImg} alt="restaurant" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
+              </div>
+              <div className="col-span-1 row-span-1 relative overflow-hidden rounded-lg">
+                <img src={imgs[1] || defaultRestaurantImg} alt="sub 1" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
+              </div>
+              <div className="col-span-1 row-span-1 relative overflow-hidden rounded-lg">
+                <img src={imgs[2] || defaultRestaurantImg} alt="sub 2" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
+              </div>
+              <div className="col-span-2 row-span-1 relative overflow-hidden rounded-lg">
+                <img src={imgs[3] || defaultRestaurantImg} alt="sub 3" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Title Row */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-3 mb-10">
@@ -459,24 +464,41 @@ export default function RestaurantDetailPage() {
 
           {/* Menu */}
           <div>
-            <h2 className="font-[Epilogue] text-2xl font-semibold mb-5">인기 메뉴</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {popularDishes.map(d => (
-                <div key={d.name} className="flex gap-3 bg-white p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                  <img src={d.img} alt={d.name} className="w-24 h-24 object-cover rounded" />
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                      <h4 className="font-semibold text-sm">{d.name}</h4>
-                      <span className="text-primary font-bold text-sm">{d.price}</span>
+            <h2 className="font-[Epilogue] text-2xl font-semibold mb-5">메뉴</h2>
+            {menus.length === 0 ? (
+              <p className="text-sm text-on-surface-variant">등록된 메뉴가 없습니다.</p>
+            ) : (
+              <>
+                <div className="divide-y divide-slate-100 rounded-xl border border-slate-100 overflow-hidden bg-white shadow-sm">
+                  {(menuExpanded ? menus : menus.slice(0, 4)).map((m) => (
+                    <div key={m.id} className="flex justify-between items-center px-5 py-4 hover:bg-slate-50 transition-colors">
+                      <span className="text-sm font-medium text-on-surface">{m.name}</span>
+                      <span className="text-sm font-bold text-primary ml-4 flex-shrink-0">
+                        {m.price.toLocaleString()}원
+                      </span>
                     </div>
-                    <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">{d.desc}</p>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <button className="w-full mt-5 py-3 border border-secondary text-secondary rounded-lg font-semibold text-sm hover:bg-secondary/5 transition-colors">
-              전체 메뉴 보기
-            </button>
+                {menus.length > 4 && (
+                  <button
+                    onClick={() => setMenuExpanded(prev => !prev)}
+                    className="w-full mt-4 py-3 border border-secondary text-secondary rounded-lg font-semibold text-sm hover:bg-secondary/5 transition-colors flex items-center justify-center gap-1"
+                  >
+                    {menuExpanded ? (
+                      <>
+                        <span className="material-symbols-outlined text-sm">expand_less</span>
+                        접기
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-sm">expand_more</span>
+                        전체 메뉴 보기 ({menus.length}개)
+                      </>
+                    )}
+                  </button>
+                )}
+              </>
+            )}
           </div>
 
           {/* Reviews */}
