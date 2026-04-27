@@ -294,21 +294,22 @@ export default function SignUpStep2Page() {
                 const socialTemp = JSON.parse(localStorage.getItem('socialSignupTemp') || 'null');
 
                 if (socialTemp) {
-                  // 카카오 소셜 회원가입: 이메일+생성된 패스워드로 등록
+                  // 소셜 회원가입: 이메일+생성된 패스워드로 등록
                   await signUp({
                     userId: step1.userId,
                     nickname: step1.nickname,
                     email: socialTemp.email,
-                    password: `kakao_${socialTemp.socialId}`,
+                    password: `${socialTemp.provider}_${socialTemp.socialId}`,
                     phone: step1.phone,
                     vibes: selectedVibes,
                     flavors: selectedFlavors,
                     dietary: selectedDietary,
                     allergies: selectedAllergies,
+                    socialId: socialTemp.provider,
                   });
                   await supabase.auth.signInWithPassword({
                     email: socialTemp.email,
-                    password: `kakao_${socialTemp.socialId}`,
+                    password: `${socialTemp.provider}_${socialTemp.socialId}`,
                   });
                 } else {
                   await signUp({
@@ -326,6 +327,7 @@ export default function SignUpStep2Page() {
 
                 localStorage.removeItem('signupTemp');
                 localStorage.removeItem('socialSignupTemp');
+                sessionStorage.removeItem('googleSignupHandled');
                 navigate('/');
               } catch (err) {
                 setError(err.message || '회원가입에 실패했습니다.');

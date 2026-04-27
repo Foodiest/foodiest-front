@@ -5,18 +5,17 @@ import { getAll } from "../services/restaurantService";
 import { vibes, flavors, dietary, filterLabelMap, cuisineMap } from "../data/mockFilters";
 import defaultRestaurantImg from "../assets/default-restaurant.svg";
 
-const nearbyFavorites = [
-  {
-    name: "The Daily Grind",
-    sub: "0.2km • 커피",
-    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuB6KO-M3xKogRmdAQc3tuFwF0Ifa-4Nvv0FB2agawLXLE4kt5hZG_SfvdzLPpMMODoZVDnZSzHdCxZV-wCUEzqiNZ2ZCZmYRnZuViu--wwHNbgbO92n9Dwr2nJf64hl3ZsOPgI44wxFUBJkg6UrnZ7r3jU3BPR7aG-RACAXhwQNRysAfF6Oe9IeosgimB0djze3lxIN1E23RY7zR7xvNRs3y4MFCtk2CzucuOpw3Tbl0lv_YMA3hGs3iWzsjQvrz3MqasK1TnqLpRf5",
-  },
-  {
-    name: "선셋 브런치 클럽",
-    sub: "0.5km • 브런치",
-    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCHmDnYklZfS2ovFicfL3qOTQgj0DGWejlakVViEcksvnKsVjtdJ3mPWYvZV6ycd5Ggy-_QJ7Fx69dEAtecAM7bQT1FBDND4SUGMQ8GnXezodjCHiPwxYusXpPQ-3uF9C6BVglpIsSdgNd98DARCu6s1pzD2LFvmFA9XyiRLrAsGvR5dhk7-FCvFMifTQrF03fQpmbfg02bChaqCSDVaNs6WpRxt2ji4LBBhP6W4vl9Fr9gQsAjlU-Nm5XThu_e0OK9wENkvjBibqo3",
-  },
-];
+function calcDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 function RestaurantCard({ r, selectedVibes, selectedFlavors, selectedDietary, onSelect, onDetail }) {
   const allImgs = [r.image, ...(r.sub_images || [])].filter(Boolean);
@@ -200,11 +199,13 @@ function KakaoMapView({
   restaurants,
   selectedRestaurantId,
   onSelectRestaurant,
+  userLocation,
   className,
 }) {
   const mapElRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
+  const userMarkerRef = useRef(null);
   const [mapError, setMapError] = useState("");
 
   useEffect(() => {
@@ -216,16 +217,25 @@ function KakaoMapView({
           return;
         }
 
-        const firstRestaurant = restaurants[0];
-        const center = new kakao.maps.LatLng(
-          firstRestaurant.y,
-          firstRestaurant.x,
-        );
+        const initialLat = userLocation ? userLocation.lat : restaurants[0]?.y;
+        const initialLng = userLocation ? userLocation.lng : restaurants[0]?.x;
+        const center = new kakao.maps.LatLng(initialLat, initialLng);
         const map = new kakao.maps.Map(mapElRef.current, {
           center,
           level: 4,
         });
         mapRef.current = map;
+
+        if (userLocation) {
+          const userPos = new kakao.maps.LatLng(userLocation.lat, userLocation.lng);
+          const userOverlay = new kakao.maps.CustomOverlay({
+            position: userPos,
+            content: `<div style="width:16px;height:16px;border-radius:50%;background:#3b82f6;border:3px solid white;box-shadow:0 0 0 3px #3b82f6aa;"></div>`,
+            zIndex: 20,
+          });
+          userOverlay.setMap(map);
+          userMarkerRef.current = userOverlay;
+        }
 
         markersRef.current = restaurants.map((restaurant) => {
           const marker = new kakao.maps.Marker({
@@ -250,9 +260,13 @@ function KakaoMapView({
       isUnmounted = true;
       markersRef.current.forEach(({ marker }) => marker.setMap(null));
       markersRef.current = [];
+      if (userMarkerRef.current) {
+        userMarkerRef.current.setMap(null);
+        userMarkerRef.current = null;
+      }
       mapRef.current = null;
     };
-  }, [onSelectRestaurant, restaurants]);
+  }, [onSelectRestaurant, restaurants, userLocation]);
 
   useEffect(() => {
     if (!window.kakao?.maps || !mapRef.current || !selectedRestaurantId) {
@@ -305,11 +319,20 @@ export default function HomePage() {
   const [selectedVibes, setSelectedVibes] = useState([]);
   const [selectedFlavors, setSelectedFlavors] = useState([]);
   const [selectedDietary, setSelectedDietary] = useState([]);
+  const [userLocation, setUserLocation] = useState(null);
 
   useEffect(() => {
     getAll()
       .then(setRestaurants)
       .finally(() => setLoadingRestaurants(false));
+  }, []);
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {},
+    );
   }, []);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -354,6 +377,18 @@ export default function HomePage() {
         match: calcMatch(r, selectedVibes, selectedFlavors, selectedDietary),
       }));
   }, [restaurants, searchQuery, selectedVibes, selectedFlavors, selectedDietary]);
+
+  const nearbyRestaurants = useMemo(() => {
+    if (!userLocation || restaurants.length === 0) return [];
+    return [...restaurants]
+      .filter((r) => r.x && r.y)
+      .map((r) => ({
+        ...r,
+        distance: calcDistance(userLocation.lat, userLocation.lng, r.y, r.x),
+      }))
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 3);
+  }, [restaurants, userLocation]);
 
   const effectiveSelectedRestaurantId = useMemo(() => {
     if (filteredRestaurants.some((r) => r.id === selectedRestaurantId)) {
@@ -568,6 +603,7 @@ export default function HomePage() {
               restaurants={filteredRestaurants}
               selectedRestaurantId={effectiveSelectedRestaurantId}
               onSelectRestaurant={setSelectedRestaurantId}
+              userLocation={userLocation}
             />
             <div className="p-5">
               {selectedRestaurant && (
@@ -578,22 +614,37 @@ export default function HomePage() {
                   </span>
                 </p>
               )}
-              <h4 className="font-semibold text-sm mb-3">주변 인기 맛집</h4>
+              <h4 className="font-semibold text-sm mb-3">주변 음식점</h4>
               <div className="space-y-3">
-                {nearbyFavorites.map((item) => (
-                  <div key={item.name} className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-100">
+                {nearbyRestaurants.length === 0 && (
+                  <p className="text-xs text-slate-400">
+                    {userLocation ? "주변 음식점 데이터가 없습니다." : "위치 권한을 허용하면 주변 음식점을 볼 수 있습니다."}
+                  </p>
+                )}
+                {nearbyRestaurants.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 rounded-lg p-1 -mx-1 transition-colors"
+                    onClick={() => handleGoToRestaurantDetail(item.id)}
+                  >
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
                       <img
-                        src={item.img}
+                        src={item.image || defaultRestaurantImg}
                         alt={item.name}
                         className="w-full h-full object-cover"
+                        onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }}
                       />
                     </div>
                     <div>
                       <p className="font-semibold text-xs text-slate-900">
                         {item.name}
                       </p>
-                      <p className="text-xs text-slate-500">{item.sub}</p>
+                      <p className="text-xs text-slate-500">
+                        {item.distance < 1
+                          ? `${Math.round(item.distance * 1000)}m`
+                          : `${item.distance.toFixed(1)}km`}{" "}
+                        • {cuisineMap[item.cuisine] || item.cuisine}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -638,6 +689,7 @@ export default function HomePage() {
               restaurants={filteredRestaurants}
               selectedRestaurantId={effectiveSelectedRestaurantId}
               onSelectRestaurant={setSelectedRestaurantId}
+              userLocation={userLocation}
             />
           </div>
         </div>

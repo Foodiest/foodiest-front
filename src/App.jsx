@@ -48,6 +48,20 @@ function AdminGuard({ children }) {
   return children;
 }
 
+function SocialSignupGuard() {
+  const { needsSocialSignup } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (needsSocialSignup && location.pathname !== '/signup' && !location.pathname.startsWith('/signup')) {
+      navigate('/signup', { replace: true });
+    }
+  }, [needsSocialSignup, location.pathname, navigate]);
+
+  return null;
+}
+
 function App() {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 

@@ -28,14 +28,10 @@ export default function AIChatBot() {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [apiKey, setApiKey] = useState(
-    () => sessionStorage.getItem("groq_api_key") || "",
-  );
-  const [showApiKeyInput, setShowApiKeyInput] = useState(
-    () => !sessionStorage.getItem("groq_api_key"),
-  );
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY || "";
   const [userLocation, setUserLocation] = useState(null);
   const messagesContainerRef = useRef(null);
+  const chatContainerRef = useRef(null);
 
   const suggestions = [
     "조용한 카페 추천해줘",
@@ -82,22 +78,12 @@ export default function AIChatBot() {
     }
   }, []);
 
-  const saveApiKey = () => {
-    const trimmed = apiKey.trim();
-    if (!trimmed) return;
-    sessionStorage.setItem("groq_api_key", trimmed);
-    setShowApiKeyInput(false);
-  };
-
   const sendMessage = async (text) => {
     const userMsg = text || input.trim();
     if (!userMsg || isLoading) return;
 
-    const key = sessionStorage.getItem("groq_api_key") || apiKey.trim();
-    if (!key) {
-      setShowApiKeyInput(true);
-      return;
-    }
+    const key = apiKey.trim();
+    if (!key) return;
 
     const userMessage = { id: Date.now(), from: "user", text: userMsg };
     const nextMessages = [...messages, userMessage];
@@ -218,13 +204,21 @@ ${userLocation ? "거리 정보를 포함해서 가까운 순서대로 추천해
           text: `Groq 오류: ${errorMessage}`,
         },
       ]);
-      if (key !== (sessionStorage.getItem("groq_api_key") || "")) {
-        setShowApiKeyInput(true);
-      }
     } finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e) => {
+      if (chatContainerRef.current && !chatContainerRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || !messagesContainerRef.current) return;
@@ -235,18 +229,21 @@ ${userLocation ? "거리 정보를 포함해서 가까운 순서대로 추천해
   }, [messages, isLoading, isOpen]);
 
   return (
-    <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end">
+    <div ref={chatContainerRef} className="fixed bottom-6 right-6 z-[60] flex flex-col items-end">
       {/* Chat Window */}
       {isOpen && (
         <div className="mb-4 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col">
           {/* Header */}
           <div className="bg-[#FF5722] p-4 text-white flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <img
-                src={BOT_AVATAR}
-                alt="AI Avatar"
-                className="w-8 h-8 rounded-full object-cover border-2 border-white/20"
-              />
+              <div className="w-8 h-8 rounded-full bg-white border border-white/30 flex-shrink-0 overflow-hidden">
+                <img
+                  src={BOT_AVATAR}
+                  alt="AI Avatar"
+                  className="w-full h-full object-contain"
+                  style={{ transform: 'translateY(3px)' }}
+                />
+              </div>
               <div>
                 <p className="font-bold text-sm leading-none">Foodiest AI</p>
                 <p className="text-[10px] opacity-80">온라인 • AI 어시스턴트</p>
@@ -265,31 +262,6 @@ ${userLocation ? "거리 정보를 포함해서 가까운 순서대로 추천해
             ref={messagesContainerRef}
             className="h-80 overflow-y-auto p-4 bg-slate-50 space-y-3"
           >
-            {showApiKeyInput && (
-              <div className="bg-white border border-orange-200 rounded-xl p-3 shadow-sm">
-                <p className="text-xs font-semibold text-slate-700 mb-2">
-                  Groq API Key 입력
-                </p>
-                <div className="flex gap-2">
-                  <input
-                    type="password"
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="gsk_..."
-                    className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                  />
-                  <button
-                    onClick={saveApiKey}
-                    className="px-3 py-2 text-xs bg-[#FF5722] text-white rounded-lg hover:brightness-110"
-                  >
-                    저장
-                  </button>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-2">
-                  키는 브라우저 세션에만 저장됩니다. (Groq API Key)
-                </p>
-              </div>
-            )}
 
             {messages.map((msg) => (
               <div
@@ -297,11 +269,12 @@ ${userLocation ? "거리 정보를 포함해서 가까운 순서대로 추천해
                 className={`flex items-start gap-2 ${msg.from === "user" ? "flex-row-reverse" : ""}`}
               >
                 {msg.from === "bot" && (
-                  <div className="w-8 h-8 rounded-full bg-[#FF5722] flex-shrink-0 overflow-hidden">
+                  <div className="w-8 h-8 rounded-full bg-white border border-orange-200 flex-shrink-0 overflow-hidden">
                     <img
                       src={BOT_AVATAR}
                       alt="bot"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
+                      style={{ transform: 'translateY(3px)' }}
                     />
                   </div>
                 )}
@@ -380,20 +353,20 @@ ${userLocation ? "거리 정보를 포함해서 가까운 순서대로 추천해
       )}
 
       {/* Toggle Button */}
-      <button
+      {!isOpen && <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative w-16 h-16 bg-[#FF5722] rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 overflow-hidden group"
+        className="relative w-16 h-16 bg-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 overflow-hidden group border border-[#FF5722]"
       >
         <img
           src={BOT_AVATAR}
           alt="Chat"
-          className="w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-contain"
+          style={{ transform: 'translateY(8px)' }}
         />
-        <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 border-2 border-white rounded-full"></span>
         <span className="absolute right-full mr-4 bg-slate-800 text-white text-xs py-1 px-3 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
           AI 컨시어지에게 물어보세요
         </span>
-      </button>
+      </button>}
     </div>
   );
 }

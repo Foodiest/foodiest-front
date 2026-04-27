@@ -80,8 +80,8 @@ export const restaurants = [
     vibes: ["Quiet", "Romantic"],
     flavors: ["Savory Classics", "Umami & Rich"],
     dietary: ["Gluten-free", "Nut-free"],
-    x: 126.9784,
-    y: 37.5665,
+    x: 127.1040,
+    y: 37.3620,
     description:
       "A hidden gem in the heart of the city, L'Anima Trattoria brings the soul of Rome to your table. Specializing in handmade pasta and seasonal ingredients, we provide an intimate atmosphere perfect for meaningful conversations and culinary discovery.",
     hours: {
@@ -109,8 +109,8 @@ export const restaurants = [
     vibes: ["Quiet", "Professional"],
     flavors: ["Umami & Rich", "Savory Classics"],
     dietary: ["Gluten-free", "Dairy-free"],
-    x: 127.0495,
-    y: 37.5172,
+    x: 127.1085,
+    y: 37.3668,
   },
   {
     id: 3,
@@ -131,8 +131,8 @@ export const restaurants = [
     vibes: ["Lively", "Social"],
     flavors: ["Spicy & Bold", "Savory Classics"],
     dietary: ["Vegan", "Vegetarian"],
-    x: 126.9219,
-    y: 37.5563,
+    x: 127.1010,
+    y: 37.3650,
   },
   {
     id: 4,
@@ -152,8 +152,8 @@ export const restaurants = [
     vibes: ["Romantic", "Family Friendly"],
     flavors: ["Sweet Treats"],
     dietary: ["Nut-free", "Vegan"],
-    x: 126.9887,
-    y: 37.572,
+    x: 127.1095,
+    y: 37.3625,
   },
   {
     id: 5,
@@ -173,8 +173,8 @@ export const restaurants = [
     vibes: ["Professional", "Quiet"],
     flavors: ["Savory Classics", "Umami & Rich"],
     dietary: ["Keto", "Gluten-free"],
-    x: 127.0276,
-    y: 37.4979,
+    x: 127.1060,
+    y: 37.3670,
   },
 ];
 

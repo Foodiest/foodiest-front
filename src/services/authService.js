@@ -1,21 +1,24 @@
 import { supabase } from '../lib/supabase';
 import { supabaseAdmin } from '../lib/supabaseAdmin';
 
-export async function signUp({ userId, nickname, email, password, phone, vibes, flavors, dietary, allergies }) {
-  const { data, error } = await supabaseAdmin.auth.admin.createUser({
+export async function signUp({ userId, nickname, email, password, phone, vibes, flavors, dietary, allergies, socialId }) {
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    email_confirm: true,
-    user_metadata: { user_id: userId, nickname, provider: 'email' },
+    options: {
+      data: { user_id: userId, nickname, provider: socialId || 'email' },
+    },
   });
   if (error) throw error;
 
-  const { data: loginData } = await supabase.auth.signInWithPassword({ email, password });
-
-  if (loginData?.session) {
+  // auto_confirm_email 트리거로 인해 세션이 즉시 생성됨
+  // 세션이 있을 때만 profile update 실행 (없으면 이메일 인증 대기 상태)
+  if (data.session) {
+    const updatePayload = { phone, vibes, flavors, dietary, allergies };
+    if (socialId) updatePayload.social_id = socialId;
     const { error: profileError } = await supabase
       .from('users')
-      .update({ phone, vibes, flavors, dietary, allergies })
+      .update(updatePayload)
       .eq('auth_id', data.user.id);
     if (profileError) console.warn('Profile update failed:', profileError.message);
   }
