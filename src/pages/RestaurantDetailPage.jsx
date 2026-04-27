@@ -24,7 +24,7 @@ const loadKakaoMapSdk = () => {
     return Promise.resolve(window.kakao);
   }
 
-  if (kakaoScriptPromise) {
+  if (akaoScriptPromise) {
     return kakaoScriptPromise;
   }
 
@@ -238,15 +238,15 @@ export default function RestaurantDetailPage() {
   // AI 분석 결과 또는 폴백 데이터
   const scores = aiAnalysis
     ? [
-        { label: '맛', value: aiAnalysis.scores.taste },
-        { label: '서비스', value: aiAnalysis.scores.service },
-        { label: '분위기', value: aiAnalysis.scores.atmosphere },
-      ]
+      { label: '맛', value: aiAnalysis.scores.taste },
+      { label: '서비스', value: aiAnalysis.scores.service },
+      { label: '분위기', value: aiAnalysis.scores.atmosphere },
+    ]
     : [
-        { label: '맛', value: reviews.length ? Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 20) : 0 },
-        { label: '서비스', value: reviews.length ? Math.min(100, Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 18) + 5) : 0 },
-        { label: '분위기', value: reviews.length ? Math.min(100, Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 17) + 8) : 0 },
-      ];
+      { label: '맛', value: reviews.length ? Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 20) : 0 },
+      { label: '서비스', value: reviews.length ? Math.min(100, Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 18) + 5) : 0 },
+      { label: '분위기', value: reviews.length ? Math.min(100, Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 17) + 8) : 0 },
+    ];
 
   const allKwFlat = reviews.flatMap(r =>
     Object.entries(r.keywords || {})
@@ -310,11 +310,10 @@ export default function RestaurantDetailPage() {
             </button>
             <button
               onClick={handleSaveToggle}
-              className={`px-5 py-3 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1 ${
-                saved
+              className={`px-5 py-3 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1 ${saved
                   ? 'bg-primary text-white hover:opacity-90'
                   : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-variant'
-              }`}
+                }`}
             >
               <span
                 className="material-symbols-outlined text-sm"
@@ -516,11 +515,10 @@ export default function RestaurantDetailPage() {
                     <button
                       key={value}
                       onClick={() => setSortOrder(value)}
-                      className={`px-3 py-1.5 transition-colors ${
-                        sortOrder === value
+                      className={`px-3 py-1.5 transition-colors ${sortOrder === value
                           ? 'bg-secondary text-white'
                           : 'bg-white text-on-surface-variant hover:bg-surface-container'
-                      }`}
+                        }`}
                     >
                       {label}
                     </button>
