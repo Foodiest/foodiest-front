@@ -5,6 +5,7 @@ import { create, update, remove, getByRestaurant } from "../services/reviewServi
 import { uploadReviewImage } from "../services/storageService";
 import { getById as getRestaurantById } from "../services/restaurantService";
 import { useAuth } from "../contexts/AuthContext";
+import defaultRestaurantImg from "../assets/default-restaurant.svg";
 
 const keywordGroups = [
   {
@@ -225,7 +226,7 @@ export default function WriteReviewPage() {
     const payload = {
       reviewText,
       rating,
-      images: uploadedImages,
+      images: uploadedImages.length > 0 ? uploadedImages : [defaultRestaurantImg],
       keywords: selectedKeywords,
       negative_reviews: negativeReviews,
     };
