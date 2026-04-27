@@ -5,7 +5,11 @@
       "Bash(supabase --version)",
       "WebFetch(domain:unsplash.com)",
       "WebSearch",
-      "mcp__supabase__execute_sql"
+      "mcp__supabase__execute_sql",
+      "Bash(npx supabase *)",
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_06323615936bb44a22cfb9aca0eccf66ced73941 npx supabase db push --linked)",
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_06323615936bb44a22cfb9aca0eccf66ced73941 npx supabase migration repair --status reverted 20260424160406 20260424160728 20260424161029 20260426022140 20260426085140 20260426092610)",
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_06323615936bb44a22cfb9aca0eccf66ced73941 npx supabase migration repair --status applied 20240101000001 20240101000002 20240101000003 20240101000004 20240101000005)"
     ]
   }
 }

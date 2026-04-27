@@ -5,6 +5,7 @@ import { create, update, remove, getByRestaurant } from "../services/reviewServi
 import { uploadReviewImage } from "../services/storageService";
 import { getById as getRestaurantById } from "../services/restaurantService";
 import { useAuth } from "../contexts/AuthContext";
+import { submitReport, hasReported, REPORT_TYPE } from "../services/reportService";
 import defaultRestaurantImg from "../assets/default-restaurant.svg";
 
 const keywordGroups = [
@@ -94,8 +95,7 @@ export default function WriteReviewPage() {
 
   const [restaurant, setRestaurant] = useState(null);
   const [images, setImages] = useState([]);
-  const [negativeReviews, setNegativeReviews] = useState([]);
-  const [negativeInput, setNegativeInput] = useState("");
+  const [isEvent, setIsEvent] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [customKeywords, setCustomKeywords] = useState({ Vibe: [], Taste: [], Service: [] });
@@ -124,25 +124,18 @@ export default function WriteReviewPage() {
         });
         setCustomKeywords(detected);
         setImages(review.images.map((src, idx) => ({ id: `edit-${idx}`, src })));
-        setNegativeReviews(review.negative_keywords ?? []);
+        const alreadyReported = await hasReported({
+          reportType: REPORT_TYPE.REVIEW_EVENT,
+          restaurantId,
+        });
+        setIsEvent(alreadyReported);
       }
     })();
   }, [isEditMode, reviewId, restaurantId]);
 
-  const addNegativeReview = () => {
-    const trimmed = negativeInput.trim();
-    if (!trimmed) return;
-    setNegativeReviews((prev) => [...prev, trimmed]);
-    setNegativeInput("");
-  };
-
-  const removeNegativeReview = (idx) => {
-    setNegativeReviews((prev) => prev.filter((_, i) => i !== idx));
-  };
-
   const toggleKw = (category, item) => {
     setSelectedKeywords((prev) => {
-      const list = prev[category];
+      const list = prev[category] ?? [];
       return {
         ...prev,
         [category]: list.includes(item)
@@ -228,13 +221,23 @@ export default function WriteReviewPage() {
       rating,
       images: uploadedImages.length > 0 ? uploadedImages : [defaultRestaurantImg],
       keywords: selectedKeywords,
-      negative_reviews: negativeReviews,
     };
 
     if (isEditMode) {
       await update(reviewId, payload);
     } else {
       await create({ restaurantId, ...payload });
+    }
+
+    if (isEvent) {
+      try {
+        await submitReport({
+          reportType: REPORT_TYPE.REVIEW_EVENT,
+          restaurantId,
+        });
+      } catch (e) {
+        // 이미 신고한 경우 무시
+      }
     }
 
     navigate(profile?.user_id ? `/mypage/${profile.user_id}` : "/mypage");
@@ -427,61 +430,13 @@ export default function WriteReviewPage() {
               </p>
             </div>
 
-            {/* Negative Review */}
-            <div className="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-red-100">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="material-symbols-outlined text-red-400 text-base">thumb_down</span>
-                <h3 className="font-semibold text-sm text-on-surface">부정적인 키워드</h3>
-                <span className="ml-auto text-xs text-slate-400">{negativeReviews.length}개</span>
-              </div>
-
-              {negativeReviews.length > 0 && (
-                <div className="space-y-2 mb-3">
-                  {negativeReviews.map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-lg px-3 py-2.5">
-                      <span className="text-red-400 mt-0.5 flex-shrink-0">
-                        <span className="material-symbols-outlined text-sm">remove_circle</span>
-                      </span>
-                      <span className="text-sm text-red-800 flex-1 leading-relaxed">{item}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeNegativeReview(idx)}
-                        className="text-red-300 hover:text-red-500 transition-colors flex-shrink-0 mt-0.5"
-                      >
-                        <span className="material-symbols-outlined text-sm">close</span>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={negativeInput}
-                  onChange={(e) => setNegativeInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNegativeReview(); } }}
-                  placeholder="불편했던 점을 한 단어로 표현해주세요"
-                  className="flex-1 bg-surface px-3 py-2.5 rounded-lg border border-outline-variant focus:border-red-300 focus:ring-1 focus:ring-red-200 outline-none text-sm placeholder:text-outline"
-                />
-                <button
-                  type="button"
-                  onClick={addNegativeReview}
-                  disabled={!negativeInput.trim()}
-                  className="w-10 h-10 rounded-lg bg-red-100 text-red-500 hover:bg-red-200 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors flex-shrink-0"
-                >
-                  <span className="material-symbols-outlined text-sm">add</span>
-                </button>
-              </div>
-              <p className="text-[11px] text-outline mt-2">Enter 키 또는 + 버튼으로 추가할 수 있습니다.</p>
-            </div>
           </div>
 
           {/* Right */}
 
           <div className="md:col-span-4 space-y-4">
             <div className="bg-white p-5 rounded-xl shadow-lg border border-primary-container/20 sticky top-24">
-              <div className="flex items-center gap-2 mb-5">
+              <div className="flex items-center gap-2 mb-4">
                 <span className="material-symbols-outlined text-primary-container">
                   smart_toy
                 </span>
@@ -490,6 +445,22 @@ export default function WriteReviewPage() {
                   AI 키워드
                 </h3>
               </div>
+
+              <label className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-xl cursor-pointer mb-5 hover:bg-red-100/60 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={isEvent}
+                  onChange={(e) => setIsEvent(e.target.checked)}
+                  className="w-4 h-4 accent-red-500 shrink-0"
+                />
+                <div>
+                  <p className="text-sm font-semibold text-red-700 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-sm text-red-500">warning</span>
+                    리뷰 이벤트 시행 중
+                  </p>
+                  <p className="text-[11px] text-red-400 mt-0.5">이벤트 참여 리뷰는 신뢰도에 영향을 줄 수 있습니다.</p>
+                </div>
+              </label>
 
               <div className="space-y-5">
                 {keywordGroups.map(({ category, displayCategory, icon, positive, negative }) => (

@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { supabaseAdmin } from '../lib/supabaseAdmin';
 import { getMyUserId } from '../lib/getMyUserId';
 
 export async function getByRestaurant(restaurantId) {
@@ -51,13 +52,36 @@ export async function update(reviewId, { reviewText, rating, images, keywords, n
 
   const { data, error } = await supabase
     .from('reviews')
-    .update({ review_text: reviewText, rating, images, keywords, negative_keywords: negative_reviews ?? [] })
+    .update({
+      review_text: reviewText,
+      rating,
+      images,
+      keywords,
+      negative_keywords: negative_reviews ?? [],
+    })
     .eq('id', reviewId)
     .eq('user_id', userId)
     .select()
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function getAll() {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('*, users(user_id, nickname, profile_image), restaurants(id, name)')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function adminRemove(reviewId) {
+  const { error } = await supabaseAdmin
+    .from('reviews')
+    .delete()
+    .eq('id', reviewId);
+  if (error) throw error;
 }
 
 export async function remove(reviewId) {
