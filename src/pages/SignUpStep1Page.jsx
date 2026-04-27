@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 export default function SignUpStep1Page() {
   const navigate = useNavigate();
   const socialTemp = JSON.parse(localStorage.getItem('socialSignupTemp') || 'null');
   const isSocial = !!socialTemp;
-  const isKakao = socialTemp?.provider === 'kakao';
-  const kakaoUserId = isKakao && socialTemp?.email ? socialTemp.email.split('@')[0] : '';
+  const defaultUserId = socialTemp?.email ? socialTemp.email.split('@')[0] : '';
 
   const [form, setForm] = useState({
-    userId: kakaoUserId,
+    userId: defaultUserId,
     nickname: socialTemp?.nickname || '',
     email: socialTemp?.email || '',
     password: '',
@@ -18,8 +18,25 @@ export default function SignUpStep1Page() {
   });
 
   const [showPw, setShowPw] = useState(false);
+  const [idStatus, setIdStatus] = useState('idle'); // 'idle' | 'checking' | 'ok' | 'taken'
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
+
+  // 아이디 중복 검사 (debounce)
+  useEffect(() => {
+    const uid = form.userId.trim();
+    if (uid.length < 2) { setIdStatus('idle'); return; }
+    setIdStatus('checking');
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from('users')
+        .select('user_id')
+        .eq('user_id', uid)
+        .maybeSingle();
+      setIdStatus(data ? 'taken' : 'ok');
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [form.userId]);
 
   const pwStrength = form.password.length === 0 ? 0 : form.password.length < 6 ? 1 : form.password.length < 10 ? 2 : 4;
   const pwMatch = form.confirmPassword && form.password !== form.confirmPassword;
@@ -70,21 +87,34 @@ export default function SignUpStep1Page() {
                       name="userId"
                       value={form.userId}
                       onChange={handleChange}
-                      disabled={isKakao}
-                      className="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg px-4 py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                      className={`w-full bg-surface-container-low border focus:ring-2 focus:ring-primary rounded-lg px-4 py-3 text-base ${
+                        idStatus === 'taken' ? 'border-red-400 focus:ring-red-300' : 'border-transparent'
+                      }`}
                       placeholder="고유한 아이디를 입력하세요"
                       type="text"
                     />
-                    {form.userId.length > 3 && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-primary">
-                        <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                      </div>
-                    )}
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {idStatus === 'checking' && (
+                        <span className="material-symbols-outlined text-sm text-slate-400 animate-spin">refresh</span>
+                      )}
+                      {idStatus === 'ok' && (
+                        <span className="material-symbols-outlined text-sm text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                      )}
+                      {idStatus === 'taken' && (
+                        <span className="material-symbols-outlined text-sm text-red-500" style={{ fontVariationSettings: "'FILL' 1" }}>cancel</span>
+                      )}
+                    </div>
                   </div>
-                  {isKakao
-                    ? <p className="text-xs text-on-surface-variant">카카오 계정 이메일 기반으로 자동 설정되며 변경할 수 없습니다.</p>
-                    : <p className="text-xs text-on-surface-variant">플랫폼에서 사용할 고유 식별자입니다.</p>
-                  }
+                  {idStatus === 'taken' ? (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-xs">error</span>
+                      이미 사용 중인 아이디입니다. 다른 아이디를 입력해주세요.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-on-surface-variant">
+                      {isSocial ? '소셜 계정 이메일 기반으로 자동 설정됩니다. 직접 변경할 수 있습니다.' : '플랫폼에서 사용할 고유 식별자입니다.'}
+                    </p>
+                  )}
                 </div>
 
                 {/* Nickname */}
@@ -198,7 +228,8 @@ export default function SignUpStep1Page() {
                 </p>
                 <button
                   type="submit"
-                  className="w-full md:w-auto bg-primary text-on-primary font-[Epilogue] font-semibold px-10 py-4 rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 group"
+                  disabled={idStatus === 'taken' || idStatus === 'checking'}
+                  className="w-full md:w-auto bg-primary text-on-primary font-[Epilogue] font-semibold px-10 py-4 rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   다음: 취향 설정
                   <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
