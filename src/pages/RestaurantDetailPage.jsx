@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { isSaved as isSavedService, toggleSaved as toggleSavedService } from '../services/savedService';
 import { analyzeReviews } from '../services/aiAnalysisService';
 import { submitReport, cancelReport, hasReported, getReportCount, REPORT_TYPE } from '../services/reportService';
+import ReviewReportButton from '../components/ReviewReportButton';
 import defaultRestaurantImg from '../assets/default-restaurant.svg';
 
 
@@ -130,7 +131,7 @@ const bentoImages = [
 export default function RestaurantDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, profile } = useAuth();
 
   const [restaurant, setRestaurant] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -631,10 +632,15 @@ export default function RestaurantDetailPage() {
                             <p className="text-xs text-on-surface-variant">{dateStr}</p>
                           </div>
                         </div>
-                        <div className="flex text-primary">
-                          {[...Array(review.rating)].map((_, i) => (
-                            <span key={i} className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                          ))}
+                        <div className="flex items-center gap-3">
+                          <div className="flex text-primary">
+                            {[...Array(review.rating)].map((_, i) => (
+                              <span key={i} className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                            ))}
+                          </div>
+                          {review.user_id !== profile?.id && (
+                            <ReviewReportButton reviewId={review.id} />
+                          )}
                         </div>
                       </div>
                       {(() => {
