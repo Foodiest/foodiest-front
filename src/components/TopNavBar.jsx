@@ -49,11 +49,8 @@ export default function TopNavBar() {
           <img
             src={LOGO_URL}
             alt="Foodiest Logo"
-            className="h-10 w-10 object-contain"
+            className="h-16 w-auto object-contain"
           />
-          <span className="text-2xl font-black tracking-tight text-orange-600">
-            Foodiest
-          </span>
         </Link>
 
         <div className="hidden md:flex items-center space-x-8">

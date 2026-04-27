@@ -5,9 +5,11 @@ export default function SignUpStep1Page() {
   const navigate = useNavigate();
   const socialTemp = JSON.parse(localStorage.getItem('socialSignupTemp') || 'null');
   const isSocial = !!socialTemp;
+  const isKakao = socialTemp?.provider === 'kakao';
+  const kakaoUserId = isKakao && socialTemp?.email ? socialTemp.email.split('@')[0] : '';
 
   const [form, setForm] = useState({
-    userId: '',
+    userId: kakaoUserId,
     nickname: socialTemp?.nickname || '',
     email: socialTemp?.email || '',
     password: '',
@@ -68,7 +70,8 @@ export default function SignUpStep1Page() {
                       name="userId"
                       value={form.userId}
                       onChange={handleChange}
-                      className="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg px-4 py-3 text-base"
+                      disabled={isKakao}
+                      className="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg px-4 py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed"
                       placeholder="고유한 아이디를 입력하세요"
                       type="text"
                     />
@@ -78,7 +81,10 @@ export default function SignUpStep1Page() {
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-on-surface-variant">플랫폼에서 사용할 고유 식별자입니다.</p>
+                  {isKakao
+                    ? <p className="text-xs text-on-surface-variant">카카오 계정 이메일 기반으로 자동 설정되며 변경할 수 없습니다.</p>
+                    : <p className="text-xs text-on-surface-variant">플랫폼에서 사용할 고유 식별자입니다.</p>
+                  }
                 </div>
 
                 {/* Nickname */}

@@ -1,6 +1,7 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import HomePage from './pages/HomePage';
 import RestaurantDetailPage from './pages/RestaurantDetailPage';
 import WriteReviewPage from './pages/WriteReviewPage';
@@ -14,6 +15,20 @@ import MyPageSettingsPage from './pages/MyPageSettingsPage';
 import SavedPage from './pages/SavedPage';
 import EditProfilePage from './pages/EditProfilePage';
 
+function SocialSignupGuard() {
+  const { needsSocialSignup } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (needsSocialSignup && location.pathname !== '/signup' && !location.pathname.startsWith('/signup')) {
+      navigate('/signup', { replace: true });
+    }
+  }, [needsSocialSignup, location.pathname, navigate]);
+
+  return null;
+}
+
 function App() {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -21,6 +36,7 @@ function App() {
     <GoogleOAuthProvider clientId={clientId}>
       <AuthProvider>
       <BrowserRouter>
+        <SocialSignupGuard />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/restaurant/:id" element={<RestaurantDetailPage />} />
