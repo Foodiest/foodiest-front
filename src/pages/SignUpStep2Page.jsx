@@ -294,22 +294,37 @@ export default function SignUpStep2Page() {
                 const socialTemp = JSON.parse(localStorage.getItem('socialSignupTemp') || 'null');
 
                 if (socialTemp) {
-                  // 소셜 회원가입: 이메일+생성된 패스워드로 등록
-                  await signUp({
-                    userId: step1.userId,
-                    nickname: step1.nickname,
-                    email: socialTemp.email,
-                    password: `${socialTemp.provider}_${socialTemp.socialId}`,
-                    phone: step1.phone,
-                    vibes: selectedVibes,
-                    flavors: selectedFlavors,
-                    dietary: selectedDietary,
-                    allergies: selectedAllergies,
-                    socialId: socialTemp.provider,
-                  });
+                  // 구글: 충돌 방지를 위해 항상 합성 이메일
+                  // 카카오: 실제 이메일 우선, 없으면 합성 이메일 (기존 계정 호환)
+                  const authEmail = socialTemp.provider === 'google'
+                    ? `google_${socialTemp.socialId}@google.local`
+                    : (socialTemp.email || `kakao_${socialTemp.socialId}@kakao.local`);
+                  const socialPassword = `${socialTemp.provider}_${socialTemp.socialId}`;
+                  try {
+                    await signUp({
+                      userId: step1.userId,
+                      nickname: step1.nickname,
+                      email: authEmail,
+                      password: socialPassword,
+                      phone: step1.phone,
+                      vibes: selectedVibes,
+                      flavors: selectedFlavors,
+                      dietary: selectedDietary,
+                      allergies: selectedAllergies,
+                      socialId: socialTemp.socialId,
+                      provider: socialTemp.provider || 'email',
+                      displayEmail: socialTemp.email || undefined,
+                    });
+                  } catch (signUpErr) {
+                    // 이미 가입된 경우(400) 로그인으로 진행
+                    const msg = signUpErr.message || '';
+                    if (!msg.includes('already') && !msg.includes('registered') && !msg.includes('taken')) {
+                      throw signUpErr;
+                    }
+                  }
                   await supabase.auth.signInWithPassword({
-                    email: socialTemp.email,
-                    password: `${socialTemp.provider}_${socialTemp.socialId}`,
+                    email: authEmail,
+                    password: socialPassword,
                   });
                 } else {
                   await signUp({
@@ -327,7 +342,6 @@ export default function SignUpStep2Page() {
 
                 localStorage.removeItem('signupTemp');
                 localStorage.removeItem('socialSignupTemp');
-                sessionStorage.removeItem('googleSignupHandled');
                 navigate('/');
               } catch (err) {
                 setError(err.message || '회원가입에 실패했습니다.');

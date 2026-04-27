@@ -27,29 +27,6 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function fetchProfile(session) {
-    const provider = session.user.app_metadata?.provider;
-
-    if (provider === 'google' && !sessionStorage.getItem('googleSignupHandled')) {
-      const createdAt = new Date(session.user.created_at).getTime();
-      const lastSignIn = new Date(session.user.last_sign_in_at).getTime();
-      const isFirstLogin = Math.abs(lastSignIn - createdAt) < 10000;
-
-      if (isFirstLogin) {
-        sessionStorage.setItem('googleSignupHandled', 'true');
-        const u = session.user;
-        localStorage.setItem('socialSignupTemp', JSON.stringify({
-          provider: 'google',
-          socialId: u.id,
-          email: u.email ?? '',
-          nickname: u.user_metadata?.full_name ?? u.user_metadata?.name ?? '',
-          profileImage: u.user_metadata?.avatar_url ?? '',
-        }));
-        setNeedsSocialSignup(true);
-        setProfile(null);
-        return;
-      }
-    }
-
     const { data } = await supabase
       .from('users')
       .select('*')

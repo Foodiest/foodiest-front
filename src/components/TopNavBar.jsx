@@ -117,8 +117,13 @@ export default function TopNavBar() {
   return (
     <nav className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
       <div className="flex justify-between items-center h-16 px-6 max-w-7xl mx-auto font-[Epilogue] antialiased">
-        <Link to="/" className="flex items-center gap-2">
-          <img src={LOGO_URL} alt="Foodiest Logo" className="h-16 w-auto object-contain" />
+
+        <Link to="/" onClick={() => { window.location.href = '/'; }} className="flex items-center gap-2">
+          <img
+            src={LOGO_URL}
+            alt="Foodiest Logo"
+            className="h-16 w-auto object-contain"
+          />
         </Link>
 
         <div className="hidden md:flex items-center space-x-8">

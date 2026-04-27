@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signIn, signInWithGoogle } from '../services/authService';
-import { loginWithKakao } from '../utils/socialAuth';
+import { useGoogleLogin } from '@react-oauth/google';
+import { signIn } from '../services/authService';
+import { loginWithKakao, loginWithGoogle } from '../utils/socialAuth';
 import { supabase } from '../lib/supabase';
 
 const BG_IMG =
@@ -39,7 +40,17 @@ export default function LoginPage() {
     } catch (err) {
       const msg = err.message || '';
       if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
-        setError('아이디/이메일 또는 비밀번호가 올바르지 않습니다.');
+        // 이메일은 맞지만 비밀번호가 틀린 경우 — 소셜 가입 계정인지 확인
+        const resolvedEmail = identifier.includes('@') ? identifier : null;
+        const { data: userRow } = resolvedEmail
+          ? await supabase.from('users').select('provider').eq('email', resolvedEmail).maybeSingle()
+          : { data: null };
+        if (userRow?.provider && userRow.provider !== 'email') {
+          const label = { kakao: '카카오', google: '구글' }[userRow.provider] || userRow.provider;
+          setError(`이 이메일은 ${label}로 가입된 계정입니다. ${label}로 로그인해주세요.`);
+        } else {
+          setError('아이디/이메일 또는 비밀번호가 올바르지 않습니다.');
+        }
       } else if (msg.includes('Email not confirmed')) {
         setError('이메일 인증이 필요합니다. 가입 시 받은 이메일을 확인해주세요.');
       } else {
@@ -50,33 +61,67 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setError('');
-    try {
-      await signInWithGoogle();
-      // OAuth redirect — 이후 AuthContext가 세션을 감지
-    } catch (err) {
-      setError(err.message || '구글 로그인에 실패했습니다.');
+  const PROVIDER_LABEL = { email: '이메일', kakao: '카카오', google: '구글' };
+
+  const checkEmailConflict = async (email, currentSocialId) => {
+    if (!email) return null;
+    const { data } = await supabase
+      .from('users')
+      .select('provider, social_id')
+      .eq('email', email)
+      .maybeSingle();
+    if (!data) return null;
+    if (data.social_id === currentSocialId) return null; // 본인 계정
+    return data.provider || 'email';
+  };
+
+  const handleSocialLoginResult = async (signInData, signInErr, socialUser, providerName) => {
+    if (!signInErr && signInData?.session) {
+      navigate('/');
+      return;
+    }
+    const conflictProvider = await checkEmailConflict(socialUser.email, socialUser.socialId);
+    if (conflictProvider) {
+      const label = PROVIDER_LABEL[conflictProvider] || conflictProvider;
+      setError(`이미 ${label}로 가입된 이메일입니다. ${label}로 로그인해주세요.`);
+    } else {
+      localStorage.setItem('socialSignupTemp', JSON.stringify(socialUser));
+      navigate('/signup');
     }
   };
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setError('');
+      setLoading(true);
+      try {
+        const socialUser = await loginWithGoogle(tokenResponse.access_token);
+        const authEmail = `google_${socialUser.socialId}@google.local`;
+        const { data, error: signInErr } = await supabase.auth.signInWithPassword({
+          email: authEmail,
+          password: `google_${socialUser.socialId}`,
+        });
+        await handleSocialLoginResult(data, signInErr, socialUser, 'google');
+      } catch (err) {
+        setError(err.message || '구글 로그인에 실패했습니다.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: () => setError('구글 로그인에 실패했습니다.'),
+  });
 
   const handleKakaoLogin = async () => {
     setError('');
     setLoading(true);
     try {
       const socialUser = await loginWithKakao();
-      // Kakao 유저 정보로 Supabase 이메일 로그인 시도, 없으면 회원가입 유도
+      const authEmail = socialUser.email || `kakao_${socialUser.socialId}@kakao.local`;
       const { data, error: signInErr } = await supabase.auth.signInWithPassword({
-        email: socialUser.email,
+        email: authEmail,
         password: `kakao_${socialUser.socialId}`,
       });
-      if (signInErr) {
-        // 미가입 유저 — 소셜 정보를 임시 저장 후 회원가입 플로우로
-        localStorage.setItem('socialSignupTemp', JSON.stringify(socialUser));
-        navigate('/signup');
-      } else if (data.session) {
-        navigate('/');
-      }
+      await handleSocialLoginResult(data, signInErr, socialUser, 'kakao');
     } catch (err) {
       setError(err.message || '카카오 로그인에 실패했습니다.');
     } finally {
@@ -169,8 +214,9 @@ export default function LoginPage() {
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
-                onClick={handleGoogleLogin}
-                className="flex items-center justify-center gap-2 py-3 border border-outline-variant rounded-lg font-semibold text-sm hover:bg-surface-container-high transition-colors active:scale-95"
+                onClick={() => googleLogin()}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 py-3 border border-outline-variant rounded-lg font-semibold text-sm hover:bg-surface-container-high transition-colors active:scale-95 disabled:opacity-60"
               >
                 <img src={GOOGLE_LOGO} alt="Google" className="w-5 h-5" />
                 Google
