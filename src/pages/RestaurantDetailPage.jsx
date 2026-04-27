@@ -7,6 +7,7 @@ import { getByRestaurant as getMenusByRestaurant } from '../services/menuService
 import { getByRestaurant } from '../services/reviewService';
 import { useAuth } from '../contexts/AuthContext';
 import { isSaved as isSavedService, toggleSaved as toggleSavedService } from '../services/savedService';
+import { analyzeReviews } from '../services/aiAnalysisService';
 import defaultRestaurantImg from '../assets/default-restaurant.svg';
 
 
@@ -104,6 +105,26 @@ function KakaoLocationMiniMap({ x, y }) {
   return <div ref={mapElementRef} className="w-full h-full" />;
 }
 
+const kwLabelMap = {
+  Quiet: "조용한", Sophisticated: "세련된", Vibrant: "활기찬", Minimalist: "미니멀",
+  Romantic: "로맨틱", Cozy: "아늑한", Noisy: "시끄러운", Crowded: "복잡한", Dark: "어두운",
+  Spicy: "매콤한", Savory: "고소한", "Umami-rich": "감칠맛", Authentic: "정통",
+  Sweet: "달콤한", Fresh: "신선한", Bland: "싱거운", Oily: "기름진", Overpriced: "가성비 낮음",
+  Friendly: "친절한", Fast: "빠른", Attentive: "세심한", "Valet Park": "발렛파킹",
+  Slow: "느린", Rude: "불친절한", "Long Wait": "대기 긺",
+  Lively: "활기찬",
+};
+
+const negativeKwSet = new Set([
+  "Noisy", "Crowded", "Dark", "Bland", "Oily", "Overpriced", "Slow", "Rude", "Long Wait"
+]);
+
+const bentoImages = [
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuBtLh1NYpD8QI9ZAlSIh6ro1uhnW8KKtq244wpGDLTECRQmqHpdjbmfiMtCHH_CnowDIL1pAuzMqmqFvkmK_9_7hxqDrzNXlAM80ROwjcpzhyGKn4dvOTCOEtbiSuBPVEu_2p843aJViWGH9qh0xC5hUmbrg8zkxwVwdsqb3OPCHcXqup0e-YmylykNTg4iYBTOdGshaS1DQcD2Rm1uNTWiYAsx73taEt3-t5mEfa9v3G6tl34I_4YuieUfyVlCnyJg2OwftROktxg_',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDWfiTamkqsO7J-p2pjn_rBQZjm25m7UARi9O5Mu4sSC0hY00aWr7dIaThsPOoq41-okk6iybbx9CTPhjUlmq43YK8WdswzT4lLAZaFc23J2-qBd9_pHKXXnkpBI7ZHR4ms_-HgpY9hC78UeOvkChUJFz6zAjsLUY5cbyPl8ZVRPxGiVItrs5nP2zy-22TKLoUQjHAqZVae_JDS9LxP0lHqRtF93eAEppC2a1wqVXjwK91sM6-3-vC4b9GeSB573R4KK5m1qEJdAOei',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDvzp1mVk2qPX231Hyp9yTkS5ysLEaXNZlES_hj7DmJQ66i1SDKM_Xwayg374qG4OWy7kHf1wLpbYXjhSeWIRA1q7ZXTPVEvZ6Ln3YZRRivBY7oD4fPmkITP2Jav8doC9zVzUNdehVIMSzTBItSayO90fYD6CnuVotRvTUrQEY2FKY4H_PPqOzvlgwp_p7WPmpPOh2u0HoHhGBDMP30lEqhc-m2rNLyE7opfijNqgbIf9L5AdqITXFtuu40i_ELPnb5qGroIf2ij10P',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDCHccFkc2uCwTcGjfOMhFy-sPVDo65WJGA7hUis74RATxXWmfXzDS2Qcff7hacPldcnzIysc_KjaY2ZoNH9J4F87LsQQmPdW9jVV-5RUqEz9JxhyJxrQDJtMJIiBbdFoCVqobulcX9TFTBQSVMePEfahLfPvxm1QKTw7YifgoHHUKcGZ4N4STv4e2wH942hAL-7fIgDtNQG_JeeXovvAuAExAB8L0KYPi1yhKlz1wDOmUL6Pf3Wa1IJJ1tbuyvIgJyFl0jksI-oCCl',
+];
 
 export default function RestaurantDetailPage() {
   const { id } = useParams();
@@ -117,6 +138,29 @@ export default function RestaurantDetailPage() {
   const [loading, setLoading] = useState(true);
   const [copyToast, setCopyToast] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [sortOrder, setSortOrder] = useState('latest');
+  const [lightbox, setLightbox] = useState({ open: false, images: [], index: 0 });
+
+  // AI 분석 상태
+  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
+
+  const openLightbox = (images, index) => setLightbox({ open: true, images, index });
+  const closeLightbox = () => setLightbox(prev => ({ ...prev, open: false }));
+  const prevImage = () => setLightbox(prev => ({ ...prev, index: (prev.index - 1 + prev.images.length) % prev.images.length }));
+  const nextImage = () => setLightbox(prev => ({ ...prev, index: (prev.index + 1) % prev.images.length }));
+
+  useEffect(() => {
+    if (!lightbox.open) return;
+    const handler = (e) => {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') prevImage();
+      if (e.key === 'ArrowRight') nextImage();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [lightbox.open]);
 
   useEffect(() => {
     const restaurantId = parseInt(id);
@@ -137,6 +181,17 @@ export default function RestaurantDetailPage() {
     if (!isLoggedIn || !restaurant) return;
     isSavedService(restaurant.id).then(setSaved);
   }, [isLoggedIn, restaurant]);
+
+  // AI 리뷰 분석 호출
+  useEffect(() => {
+    if (!restaurant || reviews.length === 0) return;
+    setAiLoading(true);
+    setAiError('');
+    analyzeReviews(restaurant.name, reviews)
+      .then((result) => setAiAnalysis(result))
+      .catch((err) => setAiError(err.message))
+      .finally(() => setAiLoading(false));
+  }, [restaurant, reviews]);
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href).then(() => {
@@ -180,15 +235,28 @@ export default function RestaurantDetailPage() {
   const restaurantLocation = { x: restaurant.x, y: restaurant.y };
   const reviewCount = reviews.length;
 
-  const scores = [
-    { label: '맛', value: reviews.length ? Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 20) : 0 },
-    { label: '서비스', value: reviews.length ? Math.min(100, Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 18) + 5) : 0 },
-    { label: '분위기', value: reviews.length ? Math.min(100, Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 17) + 8) : 0 },
-  ];
+  // AI 분석 결과 또는 폴백 데이터
+  const scores = aiAnalysis
+    ? [
+        { label: '맛', value: aiAnalysis.scores.taste },
+        { label: '서비스', value: aiAnalysis.scores.service },
+        { label: '분위기', value: aiAnalysis.scores.atmosphere },
+      ]
+    : [
+        { label: '맛', value: reviews.length ? Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 20) : 0 },
+        { label: '서비스', value: reviews.length ? Math.min(100, Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 18) + 5) : 0 },
+        { label: '분위기', value: reviews.length ? Math.min(100, Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 17) + 8) : 0 },
+      ];
 
-  const nlpKeywords = reviews.length
-    ? [...new Set(reviews.flatMap((r) => Object.values(r.keywords || {}).flat()))].slice(0, 8)
-    : ['정통 맛', '훌륭한 분위기', '친절한 서비스'];
+  const allKwFlat = reviews.flatMap(r =>
+    Object.entries(r.keywords || {})
+      .filter(([k]) => k !== '_negative')
+      .flatMap(([, v]) => v)
+  );
+  const customNegativeAll = new Set(reviews.flatMap(r => r.keywords?._negative || []));
+  const positiveKwList = [...new Set(allKwFlat.filter(kw => !negativeKwSet.has(kw) && !customNegativeAll.has(kw)))];
+  const negativeKwList = [...new Set(allKwFlat.filter(kw => negativeKwSet.has(kw) || customNegativeAll.has(kw)))];
+  const aiSummary = aiAnalysis?.summary || null;
 
   return (
     <Layout>
@@ -306,35 +374,93 @@ export default function RestaurantDetailPage() {
               <h2 className="font-[Epilogue] text-2xl font-semibold flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'wght' 700" }}>psychology</span>
                 AI 리뷰 분석
+                {aiAnalysis && (
+                  <span className="text-[10px] font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Gemini AI</span>
+                )}
               </h2>
               <span className="text-xs text-on-surface-variant">{reviewCount}개의 리뷰 기반</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
-              <div className="space-y-4">
-                {scores.map(({ label, value }) => (
-                  <div key={label}>
-                    <div className="flex justify-between mb-1">
-                      <span className="font-semibold text-sm">{label}</span>
-                      <span className="font-semibold text-sm text-primary">{value}%</span>
-                    </div>
-                    <div className="w-full bg-surface-container rounded-full h-2">
-                      <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${value}%` }} />
-                    </div>
+
+            {aiLoading && (
+              <div className="flex items-center justify-center py-8 text-slate-400">
+                <span className="material-symbols-outlined text-2xl animate-spin mr-3">refresh</span>
+                <span className="text-sm font-medium">AI가 리뷰를 분석하고 있습니다...</span>
+              </div>
+            )}
+
+            {aiError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm text-red-600">
+                <span className="material-symbols-outlined text-sm align-middle mr-1">error</span>
+                AI 분석 오류: {aiError}
+              </div>
+            )}
+
+            {!aiLoading && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                  {/* 통계 바 */}
+                  <div className="space-y-5">
+                    {scores.map(({ label, value }) => (
+                      <div key={label}>
+                        <div className="flex justify-between mb-1.5">
+                          <span className="font-semibold text-sm">{label}</span>
+                          <span className="font-semibold text-sm text-primary">{value}%</span>
+                        </div>
+                        <div className="w-full bg-surface-container rounded-full h-2.5">
+                          <div className="bg-primary h-2.5 rounded-full transition-all" style={{ width: `${value}%` }} />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <div className="bg-surface-container-lowest p-4 rounded-lg border border-surface-variant">
-                <h4 className="font-semibold text-sm mb-3 text-secondary">NLP 키워드 추출</h4>
-                <div className="flex flex-wrap gap-2">
-                  {nlpKeywords.map(kw => (
-                    <span key={kw} className="bg-secondary/5 text-secondary border border-secondary/20 px-3 py-1 rounded-full text-xs">{kw}</span>
-                  ))}
+
+                  {/* 키워드 */}
+                  <div className="bg-surface-container-lowest p-4 rounded-lg border border-surface-variant space-y-4">
+                    <h4 className="font-semibold text-sm text-secondary">
+                      {aiAnalysis ? 'AI 키워드 분석' : 'NLP 키워드 추출'}
+                    </h4>
+
+                    {positiveKwList.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-semibold text-secondary uppercase tracking-wide mb-1.5">긍정적</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {positiveKwList.map(kw => (
+                            <span key={kw} className="bg-secondary/10 text-secondary border border-secondary/20 px-2.5 py-1 rounded-full text-xs font-medium">
+                              {kwLabelMap[kw] ?? kw}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {negativeKwList.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-semibold text-red-400 uppercase tracking-wide mb-1.5">부정적</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {negativeKwList.map(kw => (
+                            <span key={kw} className="bg-red-50 text-red-500 border border-red-200 px-2.5 py-1 rounded-full text-xs font-medium">
+                              {kwLabelMap[kw] ?? kw}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {!positiveKwList.length && !negativeKwList.length && (
+                      <p className="text-xs text-on-surface-variant">리뷰 키워드가 없습니다.</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </div>
-            <p className="text-base text-on-surface-variant italic">
-              "전반적으로 탁월한 미식 경험을 제공하며 조용한 분위기로 비즈니스 미팅이나 로맨틱한 저녁 식사에 이상적입니다."
-            </p>
+
+                {/* AI 요약 */}
+                {aiSummary && (
+                  <div className="border-t border-surface-container pt-4">
+                    <p className="text-sm text-on-surface-variant italic leading-relaxed">
+                      "{aiSummary}"
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Menu */}
@@ -378,7 +504,40 @@ export default function RestaurantDetailPage() {
 
           {/* Reviews */}
           <div>
-            <h2 className="font-[Epilogue] text-2xl font-semibold mb-5">손님들의 이야기</h2>
+            <div className="flex flex-wrap justify-between items-center gap-3 mb-5">
+              <h2 className="font-[Epilogue] text-2xl font-semibold">손님들의 이야기</h2>
+              <div className="flex items-center gap-2">
+                <div className="flex rounded-lg border border-outline-variant overflow-hidden text-xs font-semibold">
+                  {[
+                    { value: 'latest', label: '최신순' },
+                    { value: 'high', label: '별점 높은순' },
+                    { value: 'low', label: '별점 낮은순' },
+                  ].map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => setSortOrder(value)}
+                      className={`px-3 py-1.5 transition-colors ${
+                        sortOrder === value
+                          ? 'bg-secondary text-white'
+                          : 'bg-white text-on-surface-variant hover:bg-surface-container'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => {
+                    if (!isLoggedIn) { navigate('/login'); return; }
+                    navigate(`/write-review?restaurantId=${id}`);
+                  }}
+                  className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-all flex items-center gap-1.5 active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-sm">rate_review</span>
+                  리뷰 쓰기
+                </button>
+              </div>
+            </div>
             {reviews.length === 0 ? (
               <div className="bg-white p-8 rounded-lg shadow-sm text-center text-slate-400">
                 <span className="material-symbols-outlined text-3xl mb-2 block">rate_review</span>
@@ -386,7 +545,11 @@ export default function RestaurantDetailPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {reviews.map((review) => {
+                {[...reviews].sort((a, b) => {
+                  if (sortOrder === 'high') return b.rating - a.rating;
+                  if (sortOrder === 'low') return a.rating - b.rating;
+                  return new Date(b.created_at) - new Date(a.created_at);
+                }).map((review) => {
                   const nickname = review.users?.nickname ?? '익명';
                   const reviewerUserId = review.users?.user_id;
                   const profileImage = review.users?.profile_image;
@@ -417,11 +580,46 @@ export default function RestaurantDetailPage() {
                           ))}
                         </div>
                       </div>
-                      <p className="text-base mb-4">{review.review_text}</p>
+                      {(() => {
+                        const allKws = Object.entries(review.keywords || {}).filter(([k]) => k !== '_negative').flatMap(([, v]) => v);
+                        if (!allKws.length) return null;
+                        const customNegatives = new Set(review.keywords._negative || []);
+                        const positiveKws = allKws.filter(kw => !negativeKwSet.has(kw) && !customNegatives.has(kw));
+                        const negativeKws = allKws.filter(kw => negativeKwSet.has(kw) || customNegatives.has(kw));
+                        return (
+                          <div className="flex flex-col gap-1.5 mb-4">
+                            {positiveKws.length > 0 && (
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {positiveKws.map((kw, i) => (
+                                  <span key={i} className="px-2.5 py-1 rounded-full text-xs font-medium bg-secondary/10 text-secondary border border-secondary/20">
+                                    {kwLabelMap[kw] ?? kw}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {negativeKws.length > 0 && (
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {negativeKws.map((kw, i) => (
+                                  <span key={i} className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-500 border border-red-200">
+                                    {kwLabelMap[kw] ?? kw}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                      <p className="text-base mb-3">{review.review_text}</p>
                       {review.images?.length > 0 && (
                         <div className="flex gap-3 overflow-x-auto pb-1">
                           {review.images.map((img, i) => (
-                            <img key={i} src={img} alt="review" className="w-20 h-20 object-cover rounded-lg flex-shrink-0" />
+                            <img
+                              key={i}
+                              src={img}
+                              alt="review"
+                              className="w-20 h-20 object-cover rounded-lg flex-shrink-0 cursor-pointer hover:opacity-90 hover:scale-105 transition-all"
+                              onClick={() => openLightbox(review.images, i)}
+                            />
                           ))}
                         </div>
                       )}
@@ -492,6 +690,62 @@ export default function RestaurantDetailPage() {
           </div>
         </aside>
       </main>
+      {/* Lightbox */}
+      {lightbox.open && (
+        <div
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
+          onClick={closeLightbox}
+        >
+          {/* 닫기 */}
+          <button
+            onClick={closeLightbox}
+            className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
+          >
+            <span className="material-symbols-outlined text-4xl">close</span>
+          </button>
+
+          {/* 이전 */}
+          {lightbox.images.length > 1 && (
+            <button
+              onClick={e => { e.stopPropagation(); prevImage(); }}
+              className="absolute left-4 text-white/80 hover:text-white transition-colors bg-black/30 rounded-full p-1"
+            >
+              <span className="material-symbols-outlined text-4xl">chevron_left</span>
+            </button>
+          )}
+
+          {/* 이미지 */}
+          <img
+            src={lightbox.images[lightbox.index]}
+            alt="확대 이미지"
+            className="max-w-[90vw] max-h-[85vh] object-contain rounded-xl shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          />
+
+          {/* 다음 */}
+          {lightbox.images.length > 1 && (
+            <button
+              onClick={e => { e.stopPropagation(); nextImage(); }}
+              className="absolute right-4 text-white/80 hover:text-white transition-colors bg-black/30 rounded-full p-1"
+            >
+              <span className="material-symbols-outlined text-4xl">chevron_right</span>
+            </button>
+          )}
+
+          {/* 페이지 인디케이터 */}
+          {lightbox.images.length > 1 && (
+            <div className="absolute bottom-5 flex gap-2">
+              {lightbox.images.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={e => { e.stopPropagation(); setLightbox(prev => ({ ...prev, index: i })); }}
+                  className={`w-2 h-2 rounded-full transition-all ${i === lightbox.index ? 'bg-white scale-125' : 'bg-white/40'}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </Layout>
   );
 }
