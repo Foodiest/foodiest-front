@@ -1,18 +1,18 @@
 import { supabase } from '../lib/supabase';
+import { supabaseAdmin } from '../lib/supabaseAdmin';
 
 export async function signUp({ userId, nickname, email, password, phone, vibes, flavors, dietary, allergies }) {
-  const { data, error } = await supabase.auth.signUp({
+  const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email,
     password,
-    options: {
-      data: { user_id: userId, nickname, provider: 'email' },
-    },
+    email_confirm: true,
+    user_metadata: { user_id: userId, nickname, provider: 'email' },
   });
   if (error) throw error;
 
-  // auto_confirm_email 트리거로 인해 세션이 즉시 생성됨
-  // 세션이 있을 때만 profile update 실행 (없으면 이메일 인증 대기 상태)
-  if (data.session) {
+  const { data: loginData } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (loginData?.session) {
     const { error: profileError } = await supabase
       .from('users')
       .update({ phone, vibes, flavors, dietary, allergies })
@@ -20,7 +20,7 @@ export async function signUp({ userId, nickname, email, password, phone, vibes, 
     if (profileError) console.warn('Profile update failed:', profileError.message);
   }
 
-  return data;
+  return loginData;
 }
 
 export async function signIn({ email, password }) {
@@ -73,6 +73,57 @@ export async function updateProfile(updates) {
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function adminGetAllUsers() {
+  const [{ data: publicUsers, error }, { data: authProviders }] = await Promise.all([
+    supabaseAdmin.from('users').select('*').order('created_at', { ascending: false }),
+    supabaseAdmin.rpc('admin_get_auth_providers'),
+  ]);
+  if (error) throw error;
+
+  const authMap = {};
+  (authProviders || []).forEach(({ auth_id, providers }) => {
+    authMap[auth_id] = providers;
+  });
+
+  return (publicUsers || []).map(u => ({
+    ...u,
+    providers: authMap[u.auth_id] || [u.provider || 'email'],
+  }));
+}
+
+export async function adminGetReviewCountsByUser() {
+  const { data, error } = await supabaseAdmin
+    .from('reviews')
+    .select('user_id');
+  if (error) throw error;
+  const counts = {};
+  (data || []).forEach(({ user_id }) => {
+    counts[user_id] = (counts[user_id] || 0) + 1;
+  });
+  return counts;
+}
+
+export async function adminDeleteUser(authUserId) {
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(authUserId);
+  if (error) throw error;
+}
+
+export async function adminBanUser(authUserId) {
+  const { error } = await supabaseAdmin
+    .from('users')
+    .update({ role: 'banned' })
+    .eq('auth_id', authUserId);
+  if (error) throw error;
+}
+
+export async function adminUnbanUser(authUserId) {
+  const { error } = await supabaseAdmin
+    .from('users')
+    .update({ role: 'user' })
+    .eq('auth_id', authUserId);
+  if (error) throw error;
 }
 
 export function onAuthStateChange(callback) {

@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { supabaseAdmin } from '../lib/supabaseAdmin';
 
 export async function getAll() {
   const { data, error } = await supabase
@@ -26,6 +27,35 @@ export async function search(query) {
     .or(`name.ilike.%${query}%,cuisine.ilike.%${query}%`);
   if (error) throw error;
   return data;
+}
+
+export async function adminCreate(data) {
+  const { data: result, error } = await supabaseAdmin
+    .from('restaurants')
+    .insert(data)
+    .select()
+    .single();
+  if (error) throw error;
+  return result;
+}
+
+export async function adminUpdate(id, data) {
+  const { data: result, error } = await supabaseAdmin
+    .from('restaurants')
+    .update(data)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return result;
+}
+
+export async function adminDelete(id) {
+  const { error } = await supabaseAdmin
+    .from('restaurants')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
 }
 
 export async function filterByPreferences({ vibes = [], flavors = [], dietary = [] }) {
