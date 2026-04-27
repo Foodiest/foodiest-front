@@ -43,6 +43,7 @@ create table if not exists public.restaurants (
   note        text,
   quote       text,
   image       text,
+  sub_images  text[] default '{}',
   vibes       text[] default '{}',
   flavors     text[] default '{}',
   dietary     text[] default '{}',
@@ -64,9 +65,10 @@ create table if not exists public.reviews (
   restaurant_id int  not null references public.restaurants(id) on delete cascade,
   review_text   text not null,
   rating        smallint not null check (rating between 1 and 5),
-  images        text[] default '{}',
-  keywords      jsonb default '{}', -- { Vibe: [], Taste: [], Service: [] }
-  created_at    timestamptz default now(),
+  images             text[] default '{}',
+  keywords           jsonb default '{}', -- { Vibe: [], Taste: [], Service: [] }
+  negative_keywords  text[] default '{}',
+  created_at         timestamptz default now(),
   updated_at    timestamptz default now()
 );
 

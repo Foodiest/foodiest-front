@@ -17,8 +17,10 @@ function ReviewCard({ review, navigate, isOwn }) {
     date,
     stars,
     desc,
-    img,
+    images,
   } = review;
+
+  const [imgIndex, setImgIndex] = useState(0);
 
   const handleRestaurantClick = (e) => {
     e.stopPropagation();
@@ -33,14 +35,48 @@ function ReviewCard({ review, navigate, isOwn }) {
     navigate(`/write-review?reviewId=${id}&restaurantId=${restaurantId}`);
   };
 
+  const handlePrev = (e) => {
+    e.stopPropagation();
+    setImgIndex((i) => (i - 1 + images.length) % images.length);
+  };
+
+  const handleNext = (e) => {
+    e.stopPropagation();
+    setImgIndex((i) => (i + 1) % images.length);
+  };
+
   return (
     <article className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-slate-50 group flex flex-col h-full cursor-default">
       <div className="h-48 relative overflow-hidden">
         <img
-          src={img}
+          src={images[imgIndex]}
           alt={title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={handlePrev}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-all z-10"
+            >
+              <span className="material-symbols-outlined text-sm">chevron_left</span>
+            </button>
+            <button
+              onClick={handleNext}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-all z-10"
+            >
+              <span className="material-symbols-outlined text-sm">chevron_right</span>
+            </button>
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+              {images.map((_, i) => (
+                <span
+                  key={i}
+                  className={`block w-1.5 h-1.5 rounded-full transition-all ${i === imgIndex ? "bg-white" : "bg-white/40"}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
         {isOwn && (
           <div className="absolute top-3 right-3">
             <button
@@ -106,6 +142,15 @@ export default function MyPage() {
   const [showFollowingModal, setShowFollowingModal] = useState(false);
   const [followingList, setFollowingList] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [sortOrder, setSortOrder] = useState("latest");
+  const [showSortMenu, setShowSortMenu] = useState(false);
+
+  useEffect(() => {
+    if (!showSortMenu) return;
+    const close = () => setShowSortMenu(false);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [showSortMenu]);
   const [viewedProfile, setViewedProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [bestRestaurants, setBestRestaurants] = useState([]);
@@ -160,7 +205,8 @@ export default function MyPage() {
             .toUpperCase(),
           stars: r.rating,
           desc: r.review_text,
-          img: r.images?.[0] || "https://via.placeholder.com/400",
+          images: r.images?.length ? r.images : ["https://via.placeholder.com/400"],
+          createdAt: r.created_at,
         }))
       );
     });
@@ -211,6 +257,14 @@ export default function MyPage() {
     const list = await getFollowing(profile.auth_id);
     setFollowingList(list);
   };
+
+  const sortedReviews = useMemo(() => {
+    const copy = [...reviews];
+    if (sortOrder === "latest") return copy.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    if (sortOrder === "rating_high") return copy.sort((a, b) => b.stars - a.stars || new Date(b.createdAt) - new Date(a.createdAt));
+    if (sortOrder === "rating_low") return copy.sort((a, b) => a.stars - b.stars || new Date(b.createdAt) - new Date(a.createdAt));
+    return copy;
+  }, [reviews, sortOrder]);
 
   const tasteIdentityTags = useMemo(() => {
     if (!viewedProfile) return [];
@@ -402,16 +456,38 @@ export default function MyPage() {
                 ? "나의 리뷰 일지"
                 : `${viewedProfile.nickname || viewedProfile.user_id}의 리뷰`}
             </h3>
-            <button className="flex items-center gap-2 text-sm font-medium text-slate-500 border border-slate-200 px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors">
-              최신순
-              <span className="material-symbols-outlined text-sm">
-                expand_more
-              </span>
-            </button>
+            <div className="relative">
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowSortMenu((v) => !v); }}
+                className="flex items-center gap-2 text-sm font-medium text-slate-500 border border-slate-200 px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors"
+              >
+                {sortOrder === "latest" && "최신순"}
+                {sortOrder === "rating_high" && "별점 높은순"}
+                {sortOrder === "rating_low" && "별점 낮은순"}
+                <span className="material-symbols-outlined text-sm">expand_more</span>
+              </button>
+              {showSortMenu && (
+                <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 overflow-hidden min-w-[140px]">
+                  {[
+                    { key: "latest", label: "최신순" },
+                    { key: "rating_high", label: "별점 높은순" },
+                    { key: "rating_low", label: "별점 낮은순" },
+                  ].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={(e) => { e.stopPropagation(); setSortOrder(key); setShowSortMenu(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-orange-50 transition-colors ${sortOrder === key ? "text-primary font-semibold" : "text-slate-600"}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-          {reviews.length > 0 ? (
+          {sortedReviews.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {reviews.map((review) => (
+              {sortedReviews.map((review) => (
                 <ReviewCard
                   key={review.id}
                   review={review}
