@@ -28,8 +28,8 @@ export async function getAll() {
     .select('*')
     .order('id');
   if (error) throw error;
-  const avgMap = await fetchAvgRatings(data.map(r => r.id));
-  return data.map(r => mergeRating(r, avgMap));
+  const avgMap = await fetchAvgRatings(data.map((r) => r.id));
+  return data.map((r) => mergeRating(r, avgMap));
 }
 
 export async function getById(id) {
@@ -49,16 +49,30 @@ export async function search(query) {
     .select('*')
     .or(`name.ilike.%${query}%,cuisine.ilike.%${query}%`);
   if (error) throw error;
-  const avgMap = await fetchAvgRatings(data.map(r => r.id));
-  return data.map(r => mergeRating(r, avgMap));
+  const avgMap = await fetchAvgRatings(data.map((r) => r.id));
+  return data.map((r) => mergeRating(r, avgMap));
 }
 
 const LOCATION_COLS = ['address', 'x', 'y'];
 
 function stripMissingCols(data, error) {
-  if (error?.code === 'PGRST204') {
-    const col = error.message.match(/'(\w+)' column/)?.[1];
-    if (col) { const d = { ...data }; delete d[col]; return d; }
+  // PostgREST error code for column not found is often 42703 (PostgreSQL) or PGRST204 (PostgREST)
+  // But if the server handles it differently, let's also check the message.
+  if (
+    error?.code === 'PGRST204' ||
+    (error?.message &&
+      error.message.includes('column') &&
+      error.message.includes('not found'))
+  ) {
+    const col =
+      error.message.match(/'(\w+)' column/)?.[1] ||
+      error.message.match(/column "(\w+)"/)?.[1];
+    if (col) {
+      const d = { ...data };
+      delete d[col];
+      console.warn(`Column "${col}" not found in DB, stripping from payload.`);
+      return d;
+    }
   }
   return null;
 }
@@ -67,10 +81,17 @@ export async function adminCreate(data) {
   const client = supabaseAdmin ?? supabase;
   let payload = { ...data };
   for (let attempt = 0; attempt < 2; attempt++) {
-    const { data: result, error } = await client.from('restaurants').insert(payload).select().single();
+    const { data: result, error } = await client
+      .from('restaurants')
+      .insert(payload)
+      .select()
+      .single();
     if (!error) return result;
     const retryPayload = stripMissingCols(payload, error);
-    if (retryPayload) { payload = retryPayload; continue; }
+    if (retryPayload) {
+      payload = retryPayload;
+      continue;
+    }
     throw error;
   }
 }
@@ -79,24 +100,33 @@ export async function adminUpdate(id, data) {
   const client = supabaseAdmin ?? supabase;
   let payload = { ...data };
   for (let attempt = 0; attempt < 2; attempt++) {
-    const { data: result, error } = await client.from('restaurants').update(payload).eq('id', id).select().single();
+    const { data: result, error } = await client
+      .from('restaurants')
+      .update(payload)
+      .eq('id', id)
+      .select()
+      .single();
     if (!error) return result;
     const retryPayload = stripMissingCols(payload, error);
-    if (retryPayload) { payload = retryPayload; continue; }
+    if (retryPayload) {
+      payload = retryPayload;
+      continue;
+    }
     throw error;
   }
 }
 
 export async function adminDelete(id) {
   const client = supabaseAdmin ?? supabase;
-  const { error } = await client
-    .from('restaurants')
-    .delete()
-    .eq('id', id);
+  const { error } = await client.from('restaurants').delete().eq('id', id);
   if (error) throw error;
 }
 
-export async function filterByPreferences({ vibes = [], flavors = [], dietary = [] }) {
+export async function filterByPreferences({
+  vibes = [],
+  flavors = [],
+  dietary = [],
+}) {
   let query = supabase.from('restaurants').select('*');
 
   if (vibes.length > 0) query = query.overlaps('vibes', vibes);
@@ -105,6 +135,6 @@ export async function filterByPreferences({ vibes = [], flavors = [], dietary = 
 
   const { data, error } = await query.order('id');
   if (error) throw error;
-  const avgMap = await fetchAvgRatings(data.map(r => r.id));
-  return data.map(r => mergeRating(r, avgMap));
+  const avgMap = await fetchAvgRatings(data.map((r) => r.id));
+  return data.map((r) => mergeRating(r, avgMap));
 }
