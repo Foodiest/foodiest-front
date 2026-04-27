@@ -82,10 +82,12 @@ function RestaurantCard({ r, selectedVibes, selectedFlavors, selectedDietary, on
             </div>
           </div>
           <div className="flex flex-wrap gap-2 mb-2">
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-orange-500 text-white shadow-sm uppercase">
-              <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>military_tech</span>
-              {r.badge}
-            </span>
+            {r.badge?.includes('푸슐랭') && (
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-orange-500 text-white shadow-sm uppercase">
+                <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>military_tech</span>
+                {r.badge}
+              </span>
+            )}
             {r.event && (
               <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-600 border border-red-100 uppercase">
                 <span className="material-symbols-outlined text-[12px]">priority_high</span>

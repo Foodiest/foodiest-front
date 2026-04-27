@@ -11,8 +11,123 @@ import { analyzeReviews } from '../services/aiAnalysisService';
 import { submitReport, cancelReport, hasReported, getReportCount, REPORT_TYPE } from '../services/reportService';
 import ReviewReportButton from '../components/ReviewReportButton';
 import defaultRestaurantImg from '../assets/default-restaurant.svg';
+import { createReservation, getBookedSlots, getMyReservationForRestaurant } from '../services/reservationService';
 
 
+
+const TIME_SLOTS = Array.from({ length: 23 }, (_, i) => {
+  const totalMinutes = 11 * 60 + i * 30;
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+});
+
+function CalendarPicker({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [viewDate, setViewDate] = useState(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d;
+  });
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const fmt = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const todayStr = fmt(today);
+
+  const displayValue = value
+    ? new Date(value + 'T00:00:00').toLocaleDateString('ko-KR', {
+        year: 'numeric', month: 'long', day: 'numeric', weekday: 'short',
+      })
+    : '날짜 선택';
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center gap-2 px-3 py-3 border border-surface-variant rounded-lg bg-surface-bright text-sm text-left hover:border-primary/50 transition-colors"
+      >
+        <span className="material-symbols-outlined text-on-surface-variant text-sm">calendar_month</span>
+        <span className={value ? 'text-on-surface' : 'text-on-surface-variant'}>{displayValue}</span>
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-3">
+          <div className="flex items-center justify-between mb-2">
+            <button
+              type="button"
+              onClick={() => setViewDate(new Date(year, month - 1, 1))}
+              className="p-1 hover:bg-slate-100 rounded-full transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm">chevron_left</span>
+            </button>
+            <span className="font-semibold text-sm">{year}년 {month + 1}월</span>
+            <button
+              type="button"
+              onClick={() => setViewDate(new Date(year, month + 1, 1))}
+              className="p-1 hover:bg-slate-100 rounded-full transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm">chevron_right</span>
+            </button>
+          </div>
+          <div className="grid grid-cols-7 mb-1">
+            {['일', '월', '화', '수', '목', '금', '토'].map((d) => (
+              <div key={d} className="text-center text-[10px] font-semibold text-slate-400 py-1">{d}</div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-y-0.5">
+            {Array.from({ length: firstDay }, (_, i) => <div key={`e${i}`} />)}
+            {Array.from({ length: daysInMonth }, (_, i) => {
+              const day = i + 1;
+              const date = new Date(year, month, day);
+              const dateStr = fmt(date);
+              const isPast = date < today;
+              const isSelected = value === dateStr;
+              const isToday = dateStr === todayStr;
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  disabled={isPast}
+                  onClick={() => { onChange(dateStr); setOpen(false); }}
+                  className={`text-xs py-1.5 rounded-full text-center transition-colors ${
+                    isPast
+                      ? 'text-slate-300 cursor-not-allowed'
+                      : isSelected
+                      ? 'bg-primary text-white font-bold'
+                      : isToday
+                      ? 'border border-primary text-primary font-semibold hover:bg-primary/10'
+                      : 'hover:bg-orange-50 text-slate-700'
+                  }`}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY;
 let kakaoScriptPromise = null;
@@ -26,7 +141,7 @@ const loadKakaoMapSdk = () => {
     return Promise.resolve(window.kakao);
   }
 
-  if (akaoScriptPromise) {
+  if (kakaoScriptPromise) {
     return kakaoScriptPromise;
   }
 
@@ -148,6 +263,17 @@ export default function RestaurantDetailPage() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
 
+  // 예약 상태
+  const [resDate, setResDate] = useState('');
+  const [resTime, setResTime] = useState('');
+  const [resPartySize, setResPartySize] = useState(2);
+  const [resLoading, setResLoading] = useState(false);
+  const [resSuccess, setResSuccess] = useState(false);
+  const [resError, setResError] = useState('');
+  const [bookedSlots, setBookedSlots] = useState([]);
+  const [myExistingReservation, setMyExistingReservation] = useState(null);
+  const [justBooked, setJustBooked] = useState(false);
+
   // 리뷰이벤트 신고 상태
   const [eventReported, setEventReported] = useState(false);
   const [eventReportCount, setEventReportCount] = useState(0);
@@ -237,6 +363,42 @@ export default function RestaurantDetailPage() {
       setCopyToast(true);
       setTimeout(() => setCopyToast(false), 2000);
     });
+  };
+
+  useEffect(() => {
+    if (!restaurant || !isLoggedIn) return;
+    getMyReservationForRestaurant(restaurant.id)
+      .then(setMyExistingReservation)
+      .catch((e) => console.error('예약 조회 실패:', e));
+  }, [restaurant, isLoggedIn]);
+
+  useEffect(() => {
+    if (!restaurant || !resDate) { setBookedSlots([]); return; }
+    getBookedSlots(restaurant.id, resDate).then(setBookedSlots).catch(() => {});
+  }, [restaurant, resDate]);
+
+  useEffect(() => {
+    if (bookedSlots.includes(resTime)) setResTime('');
+  }, [bookedSlots]);
+
+  const handleReservation = async () => {
+    if (!isLoggedIn) { navigate('/login'); return; }
+    if (myExistingReservation || justBooked) { setResError('이미 이 식당에 예약이 있습니다.'); return; }
+    if (!resDate) { setResError('날짜를 선택해주세요.'); return; }
+    if (!resTime) { setResError('시간을 선택해주세요.'); return; }
+    if (bookedSlots.includes(resTime)) { setResError('이미 마감된 시간입니다. 다른 시간을 선택해주세요.'); return; }
+    setResLoading(true);
+    setResError('');
+    try {
+      await createReservation({ restaurantId: restaurant.id, date: resDate, time: resTime, partySize: resPartySize });
+      setJustBooked(true);
+      setResSuccess(true);
+      setTimeout(() => navigate('/reservations'), 1500);
+    } catch (e) {
+      setResError(e.message || '예약에 실패했습니다.');
+    } finally {
+      setResLoading(false);
+    }
   };
 
   const handleSaveToggle = async () => {
@@ -696,29 +858,69 @@ export default function RestaurantDetailPage() {
 
         {/* Sidebar */}
         <aside className="space-y-4">
+          <div className="sticky top-20 space-y-4">
           {/* Book */}
-          <div className="bg-white rounded-lg p-5 shadow-md border border-primary/10 sticky top-20">
+          <div className="bg-white rounded-lg p-5 shadow-md border border-primary/10">
             <h3 className="font-[Epilogue] text-xl font-semibold mb-4">테이블 예약</h3>
+
             <div className="space-y-3 mb-4">
-              {[
-                { icon: 'calendar_month', options: ['오늘 저녁', '내일', '이번 주 금요일'] },
-                { icon: 'group', options: ['2명', '3명', '4명', '5명 이상'] },
-                { icon: 'schedule', options: ['오후 7:00', '오후 7:30', '오후 8:00', '오후 8:30'] },
-              ].map(({ icon, options }) => (
-                <div key={icon} className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">{icon}</span>
-                  <select className="w-full pl-10 pr-4 py-3 border border-surface-variant rounded-lg bg-surface-bright focus:ring-primary focus:border-primary text-sm">
-                    {options.map(o => <option key={o}>{o}</option>)}
-                  </select>
-                </div>
-              ))}
+              <CalendarPicker value={resDate} onChange={setResDate} />
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm pointer-events-none">group</span>
+                <select
+                  value={resPartySize}
+                  onChange={(e) => setResPartySize(Number(e.target.value))}
+                  className="w-full pl-10 pr-4 py-3 border border-surface-variant rounded-lg bg-surface-bright focus:ring-primary focus:border-primary text-sm"
+                >
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>{n}명</option>
+                  ))}
+                </select>
+              </div>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm pointer-events-none">schedule</span>
+                <select
+                  value={resTime}
+                  onChange={(e) => setResTime(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-surface-variant rounded-lg bg-surface-bright focus:ring-primary focus:border-primary text-sm"
+                >
+                  <option value="">시간 선택</option>
+                  {TIME_SLOTS.map((t) => {
+                    const isBooked = bookedSlots.includes(t);
+                    return (
+                      <option key={t} value={t} disabled={isBooked}>
+                        {t}{isBooked ? ' (마감)' : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
             </div>
-            <button className="w-full bg-primary text-white py-4 rounded-lg font-[Epilogue] font-semibold hover:opacity-90 transition-all shadow-lg shadow-primary/20 active:scale-95 mb-2">
-              예약 확인
+            {resError && (
+              <p className="text-xs text-red-500 mb-3 flex items-center gap-1">
+                <span className="material-symbols-outlined text-sm">error</span>
+                {resError}
+              </p>
+            )}
+            {resSuccess && (
+              <p className="text-xs text-green-600 mb-3 flex items-center gap-1">
+                <span className="material-symbols-outlined text-sm">check_circle</span>
+                예약이 완료되었습니다.
+              </p>
+            )}
+            <button
+              onClick={handleReservation}
+              disabled={resLoading || !!myExistingReservation || justBooked}
+              className="w-full bg-primary text-white py-4 rounded-lg font-[Epilogue] font-semibold hover:opacity-90 transition-all shadow-lg shadow-primary/20 active:scale-95 mb-2 disabled:opacity-60"
+            >
+              {resLoading ? '예약 중...' : '예약 확인'}
             </button>
             <p className="text-center text-xs text-on-surface-variant flex items-center justify-center gap-1">
               <span className="material-symbols-outlined text-sm">bolt</span> 즉시 확인
             </p>
+            {myExistingReservation && (
+              <p className="text-center text-xs text-slate-400 mt-2">이미 예약한 적 있는 식당입니다.</p>
+            )}
           </div>
 
           {/* Info */}
@@ -750,6 +952,7 @@ export default function RestaurantDetailPage() {
             <button className="w-full py-2.5 text-secondary font-semibold text-sm flex items-center justify-center gap-1 hover:bg-secondary/5 rounded-lg transition-colors">
               <span className="material-symbols-outlined text-sm">open_in_new</span> 웹사이트 방문
             </button>
+          </div>
           </div>
         </aside>
       </main>

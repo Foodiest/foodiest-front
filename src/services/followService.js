@@ -12,6 +12,13 @@ export async function follow(followingAuthId) {
     .from('follows')
     .insert({ follower_auth_id: authId, following_auth_id: followingAuthId });
   if (error) throw error;
+
+  // 팔로우 알림 생성 (실패해도 팔로우 자체는 유지)
+  supabase.from('notifications').insert({
+    user_id: followingAuthId,
+    type: 'follow',
+    from_user_id: authId,
+  }).then();
 }
 
 export async function unfollow(followingAuthId) {
