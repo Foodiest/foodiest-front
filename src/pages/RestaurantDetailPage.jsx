@@ -254,8 +254,12 @@ export default function RestaurantDetailPage() {
       .flatMap(([, v]) => v)
   );
   const customNegativeAll = new Set(reviews.flatMap(r => r.keywords?._negative || []));
-  const positiveKwList = [...new Set(allKwFlat.filter(kw => !negativeKwSet.has(kw) && !customNegativeAll.has(kw)))];
-  const negativeKwList = [...new Set(allKwFlat.filter(kw => negativeKwSet.has(kw) || customNegativeAll.has(kw)))];
+  const positiveKwList = aiAnalysis?.keywords?.positive?.length
+    ? aiAnalysis.keywords.positive
+    : [...new Set(allKwFlat.filter(kw => !negativeKwSet.has(kw) && !customNegativeAll.has(kw)))];
+  const negativeKwList = aiAnalysis?.keywords?.negative?.length
+    ? aiAnalysis.keywords.negative
+    : [...new Set(allKwFlat.filter(kw => negativeKwSet.has(kw) || customNegativeAll.has(kw)))];
   const aiSummary = aiAnalysis?.summary || null;
 
   return (
@@ -413,7 +417,7 @@ export default function RestaurantDetailPage() {
                   {/* 키워드 */}
                   <div className="bg-surface-container-lowest p-4 rounded-lg border border-surface-variant space-y-4">
                     <h4 className="font-semibold text-sm text-secondary">
-                      {aiAnalysis ? 'AI 키워드 분석' : 'NLP 키워드 추출'}
+                      AI 키워드 분석
                     </h4>
 
                     {positiveKwList.length > 0 && (
