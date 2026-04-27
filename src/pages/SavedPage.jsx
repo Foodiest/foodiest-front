@@ -93,8 +93,8 @@ export default function SavedPage() {
 
                   <div className="flex items-center gap-2 text-sm text-on-surface-variant mb-2">
                     <span className="flex items-center gap-0.5 text-primary font-semibold">
-                      <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                      {restaurant.rating}
+                      <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: restaurant.rating ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+                      {restaurant.rating || '0.0'}
                     </span>
                     <span>•</span>
                     <span>{cuisineMap[restaurant.cuisine] || restaurant.cuisine}</span>

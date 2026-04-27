@@ -34,7 +34,7 @@ function RestaurantCard({ r, selectedVibes, selectedFlavors, selectedDietary, on
   return (
     <div
       onClick={onSelect}
-      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 overflow-hidden flex flex-col md:flex-row h-auto md:min-h-[19rem]"
+      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 overflow-hidden flex flex-col md:flex-row w-full h-[19rem]"
     >
       <div className="md:w-1/3 min-w-0 relative min-h-[12rem] md:min-h-0">
         <img
@@ -78,8 +78,8 @@ function RestaurantCard({ r, selectedVibes, selectedFlavors, selectedDietary, on
           <div className="flex justify-between items-start mb-1">
             <h3 className="font-[Epilogue] text-xl font-semibold">{r.name}</h3>
             <div className="flex items-center text-tertiary">
-              <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-              <span className="font-semibold text-sm ml-1">{r.rating}</span>
+              <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: r.rating ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+              <span className="font-semibold text-sm ml-1">{r.rating ?? '0.0'}</span>
             </div>
           </div>
           <div className="flex flex-wrap gap-2 mb-2">
@@ -87,10 +87,12 @@ function RestaurantCard({ r, selectedVibes, selectedFlavors, selectedDietary, on
               <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>military_tech</span>
               {r.badge}
             </span>
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-600 border border-red-100 uppercase">
-              <span className="material-symbols-outlined text-[12px]">priority_high</span>
-              {r.event}
-            </span>
+            {r.event && (
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-600 border border-red-100 uppercase">
+                <span className="material-symbols-outlined text-[12px]">priority_high</span>
+                {r.event}
+              </span>
+            )}
           </div>
           <p className="text-slate-500 text-xs mb-3">{cuisineMap[r.cuisine] || r.cuisine}</p>
           <div className="flex flex-wrap gap-2 mb-3">
@@ -100,7 +102,6 @@ function RestaurantCard({ r, selectedVibes, selectedFlavors, selectedDietary, on
                 {tag}
               </span>
             ))}
-            <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs flex items-center">{r.note}</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {r.vibes.map((v) => (

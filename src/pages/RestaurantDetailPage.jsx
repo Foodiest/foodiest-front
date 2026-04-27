@@ -289,8 +289,8 @@ export default function RestaurantDetailPage() {
             <h1 className="font-[Epilogue] text-4xl md:text-5xl font-bold text-on-surface mb-2">{restaurant.name}</h1>
             <div className="flex items-center gap-3 text-sm font-medium">
               <span className="flex items-center text-primary">
-                <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                {restaurant.rating} ({reviewCount}개 리뷰)
+                <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: restaurant.rating ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+                {restaurant.rating || '0.0'} ({reviewCount}개 리뷰)
               </span>
               <span className="text-on-surface-variant">•</span>
               <span className="text-on-surface-variant">{cuisineMap[restaurant.cuisine] || restaurant.cuisine}</span>
