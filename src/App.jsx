@@ -15,6 +15,7 @@ import MyPageSettingsPage from './pages/MyPageSettingsPage';
 import SavedPage from './pages/SavedPage';
 import EditProfilePage from './pages/EditProfilePage';
 import BannedPage from './pages/BannedPage';
+import ReservationsPage from './pages/ReservationsPage';
 
 function BannedGuard({ children }) {
   const { profile, isLoading } = useAuth();
@@ -84,6 +85,7 @@ function App() {
               <Route path="/mypage-settings" element={<MyPageSettingsPage />} />
               <Route path="/saved" element={<SavedPage />} />
               <Route path="/edit-profile" element={<EditProfilePage />} />
+              <Route path="/reservations" element={<ReservationsPage />} />
               <Route path="/banned" element={<BannedPage />} />
             </Routes>
           </BannedGuard>
