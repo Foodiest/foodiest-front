@@ -53,29 +53,43 @@ export async function search(query) {
   return data.map(r => mergeRating(r, avgMap));
 }
 
+const LOCATION_COLS = ['address', 'x', 'y'];
+
+function stripMissingCols(data, error) {
+  if (error?.code === 'PGRST204') {
+    const col = error.message.match(/'(\w+)' column/)?.[1];
+    if (col) { const d = { ...data }; delete d[col]; return d; }
+  }
+  return null;
+}
+
 export async function adminCreate(data) {
-  const { data: result, error } = await supabaseAdmin
-    .from('restaurants')
-    .insert(data)
-    .select()
-    .single();
-  if (error) throw error;
-  return result;
+  const client = supabaseAdmin ?? supabase;
+  let payload = { ...data };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const { data: result, error } = await client.from('restaurants').insert(payload).select().single();
+    if (!error) return result;
+    const retryPayload = stripMissingCols(payload, error);
+    if (retryPayload) { payload = retryPayload; continue; }
+    throw error;
+  }
 }
 
 export async function adminUpdate(id, data) {
-  const { data: result, error } = await supabaseAdmin
-    .from('restaurants')
-    .update(data)
-    .eq('id', id)
-    .select()
-    .single();
-  if (error) throw error;
-  return result;
+  const client = supabaseAdmin ?? supabase;
+  let payload = { ...data };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const { data: result, error } = await client.from('restaurants').update(payload).eq('id', id).select().single();
+    if (!error) return result;
+    const retryPayload = stripMissingCols(payload, error);
+    if (retryPayload) { payload = retryPayload; continue; }
+    throw error;
+  }
 }
 
 export async function adminDelete(id) {
-  const { error } = await supabaseAdmin
+  const client = supabaseAdmin ?? supabase;
+  const { error } = await client
     .from('restaurants')
     .delete()
     .eq('id', id);

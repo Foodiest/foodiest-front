@@ -1,9 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { kpiCards, flaggedReviews, trendingKeywords, userGrowth, navItems, ADMIN_AVATAR } from '../data/mockAdminData';
 import { getAll, adminRemove } from '../services/reviewService';
 import { getAll as getAllRestaurants, adminCreate, adminUpdate, adminDelete } from '../services/restaurantService';
 import { getEventReportCountsByRestaurant } from '../services/reportService';
 import { adminGetAllUsers, adminGetReviewCountsByUser, adminDeleteUser, adminBanUser, adminUnbanUser } from '../services/authService';
+import { uploadRestaurantImage } from '../services/storageService';
+import { vibes, flavors, dietary } from '../data/mockFilters';
 import LOGO_URL from '../assets/logo.png';
 
 const NAV_LABELS = navItems.map(n => n.label);
@@ -200,7 +202,95 @@ function UsersTab() {
   );
 }
 
-const EMPTY_FORM = { name: '', cuisine: '', price: '', badge: '', event: '', description: '', phone: '', website: '' };
+const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY;
+
+let kakaoWithServicesPromise = null;
+function loadKakaoWithServices() {
+  if (window.kakao?.maps?.services) return Promise.resolve(window.kakao);
+  if (kakaoWithServicesPromise) return kakaoWithServicesPromise;
+  kakaoWithServicesPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_APP_KEY}&libraries=services&autoload=false`;
+    script.async = true;
+    script.onload = () => window.kakao.maps.load(() => resolve(window.kakao));
+    script.onerror = () => { kakaoWithServicesPromise = null; reject(new Error('Kakao SDK 로드 실패')); };
+    document.head.appendChild(script);
+  });
+  return kakaoWithServicesPromise;
+}
+
+function KakaoMapPicker({ selectedAddress, selectedX, selectedY, onSelect }) {
+  const mapElementRef = useRef(null);
+  const mapRef = useRef(null);
+  const markerRef = useRef(null);
+  const [address, setAddress] = useState(selectedAddress || '');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const getInitCenter = (kakao) => new Promise(resolve => {
+      if (selectedX && selectedY) {
+        resolve(new kakao.maps.LatLng(Number(selectedY), Number(selectedX)));
+        return;
+      }
+      navigator.geolocation?.getCurrentPosition(
+        pos => resolve(new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude)),
+        () => resolve(new kakao.maps.LatLng(37.5665, 126.9780)),
+        { timeout: 5000 }
+      ) ?? resolve(new kakao.maps.LatLng(37.5665, 126.9780));
+    });
+
+    loadKakaoWithServices()
+      .then(async kakao => {
+        if (cancelled || !mapElementRef.current) return;
+        const initCenter = await getInitCenter(kakao);
+
+        const map = new kakao.maps.Map(mapElementRef.current, { center: initCenter, level: 4 });
+        mapRef.current = map;
+
+        if (selectedX && selectedY) {
+          markerRef.current = new kakao.maps.Marker({ map, position: initCenter });
+        }
+
+        kakao.maps.event.addListener(map, 'click', mouseEvent => {
+          const latlng = mouseEvent.latLng;
+          const x = String(latlng.getLng());
+          const y = String(latlng.getLat());
+
+          if (markerRef.current) markerRef.current.setPosition(latlng);
+          else markerRef.current = new kakao.maps.Marker({ map, position: latlng });
+
+          const geocoder = new kakao.maps.services.Geocoder();
+          geocoder.coord2Address(latlng.getLng(), latlng.getLat(), (result, status) => {
+            const addr = status === kakao.maps.services.Status.OK
+              ? (result[0]?.road_address?.address_name || result[0]?.address?.address_name || '')
+              : '';
+            setAddress(addr);
+            onSelect({ x, y, address: addr });
+          });
+        });
+      })
+      .catch(e => { if (!cancelled) setError(e.message); });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-xs font-semibold text-slate-500">
+        위치 선택 <span className="font-normal text-slate-400">(지도를 클릭해 위치를 지정하세요)</span>
+      </label>
+      {error
+        ? <div className="h-52 bg-slate-100 rounded-lg flex items-center justify-center text-xs text-red-500 px-4 text-center">{error}</div>
+        : <div ref={mapElementRef} className="w-full h-52 rounded-lg overflow-hidden border border-slate-200" />
+      }
+      {address && <p className="text-xs text-green-600 font-medium px-1">✓ {address}</p>}
+    </div>
+  );
+}
+
+const EMPTY_FORM = { name: '', cuisine: '', price: '', badge: '', event: '', description: '', phone: '', website: '', address: '', x: '', y: '', vibes: [], flavors: [], dietary: [], imageList: [] };
 
 function RestaurantsTab() {
   const [restaurants, setRestaurants] = useState([]);
@@ -230,10 +320,14 @@ function RestaurantsTab() {
 
   const openAdd = () => { setForm(EMPTY_FORM); setModal({ mode: 'add' }); };
   const openEdit = (r) => {
+    const existing = [r.image, ...(r.sub_images || [])].filter(Boolean).map(url => ({ url, file: null }));
     setForm({
       name: r.name || '', cuisine: r.cuisine || '', price: r.price || '',
       badge: r.badge || '', event: r.event || '', description: r.description || '',
       phone: r.phone || '', website: r.website || '',
+      address: r.address || '', x: r.x || '', y: r.y || '',
+      vibes: r.vibes || [], flavors: r.flavors || [], dietary: r.dietary || [],
+      imageList: existing,
     });
     setModal({ mode: 'edit', id: r.id });
   };
@@ -241,6 +335,11 @@ function RestaurantsTab() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const uploadedUrls = await Promise.all(
+        form.imageList.map(img => img.file ? uploadRestaurantImage(img.file) : img.url)
+      );
+      const [mainImage, ...subImages] = uploadedUrls;
+
       const payload = {
         name: form.name,
         cuisine: form.cuisine || null,
@@ -250,6 +349,14 @@ function RestaurantsTab() {
         description: form.description || null,
         phone: form.phone || null,
         website: form.website || null,
+        vibes: form.vibes.length ? form.vibes : null,
+        flavors: form.flavors.length ? form.flavors : null,
+        dietary: form.dietary.length ? form.dietary : null,
+        image: mainImage || null,
+        sub_images: subImages.length ? subImages : null,
+        address: form.address || null,
+        x: form.x || null,
+        y: form.y || null,
       };
       if (modal.mode === 'add') {
         const created = await adminCreate(payload);
@@ -416,11 +523,12 @@ function RestaurantsTab() {
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
+            <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* 기본 정보 */}
               {[
                 { key: 'name', label: '식당명 *', placeholder: '식당 이름' },
                 { key: 'cuisine', label: '카테고리', placeholder: '예: 한식, 이탈리안' },
-                { key: 'price', label: '가격대', placeholder: '예: ₩₩, ₩₩₩' },
+                { key: 'price', label: '가격대', placeholder: '예: $$, $$$' },
                 { key: 'badge', label: '뱃지', placeholder: '예: 미슐랭 1스타' },
                 { key: 'event', label: '이벤트', placeholder: '예: 리뷰이벤트' },
                 { key: 'phone', label: '전화번호', placeholder: '02-1234-5678' },
@@ -446,6 +554,89 @@ function RestaurantsTab() {
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                 />
               </div>
+
+              {/* 위치 선택 */}
+              <KakaoMapPicker
+                selectedAddress={form.address}
+                selectedX={form.x}
+                selectedY={form.y}
+                onSelect={({ address, x, y }) => setForm(prev => ({ ...prev, address, x, y }))}
+              />
+
+              {/* 이미지 (여러 장) */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-2">
+                  이미지 <span className="text-slate-400 font-normal">(첫 번째가 대표 이미지)</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {form.imageList.map((img, idx) => (
+                    <div key={idx} className="relative group w-20 h-20">
+                      <img src={img.url} alt="" className="w-full h-full object-cover rounded-lg border border-slate-200" />
+                      {idx === 0 && (
+                        <span className="absolute top-0.5 left-0.5 bg-primary text-white text-[9px] font-bold px-1 rounded">대표</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setForm(prev => ({ ...prev, imageList: prev.imageList.filter((_, i) => i !== idx) }))}
+                        className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <span className="material-symbols-outlined text-[12px]">close</span>
+                      </button>
+                    </div>
+                  ))}
+                  <label className="cursor-pointer w-20 h-20 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-lg text-slate-400 hover:border-primary hover:text-primary transition-colors">
+                    <span className="material-symbols-outlined text-xl">add_a_photo</span>
+                    <span className="text-[10px] mt-0.5">추가</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={e => {
+                        const files = Array.from(e.target.files || []);
+                        const newImgs = files.map(file => ({ file, url: URL.createObjectURL(file) }));
+                        setForm(prev => ({ ...prev, imageList: [...prev.imageList, ...newImgs] }));
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* 분위기 키워드 */}
+              {[
+                { key: 'vibes', label: '분위기', items: vibes },
+                { key: 'flavors', label: '맛 프로필', items: flavors },
+                { key: 'dietary', label: '식이 요건', items: dietary },
+              ].map(({ key, label, items }) => (
+                <div key={key}>
+                  <label className="block text-xs font-semibold text-slate-500 mb-2">{label}</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {items.map(item => {
+                      const active = form[key].includes(item.value);
+                      return (
+                        <button
+                          key={item.value}
+                          type="button"
+                          onClick={() => setForm(prev => ({
+                            ...prev,
+                            [key]: active
+                              ? prev[key].filter(v => v !== item.value)
+                              : [...prev[key], item.value],
+                          }))}
+                          className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                            active
+                              ? 'bg-primary text-white border-primary'
+                              : 'bg-white text-slate-500 border-slate-200 hover:border-primary hover:text-primary'
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
             <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
               <button
