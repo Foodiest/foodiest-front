@@ -1,204 +1,633 @@
-import { useNavigate } from 'react-router-dom';
-import Layout from '../components/Layout';
+import { useNavigate, useParams } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import Layout from "../components/Layout";
+import defaultRestaurantImg from "../assets/default-restaurant.svg";
+import { useAuth } from "../contexts/AuthContext";
+import { filterLabelMap, cuisineMap } from "../data/mockFilters";
+import { getByUser } from "../services/reviewService";
+import { getById as getRestaurantById } from "../services/restaurantService";
+import { follow, unfollow, checkIsFollowing, getFollowing, getFollowersCount } from "../services/followService";
+import { supabase } from "../lib/supabase";
+import ReviewReportButton from "../components/ReviewReportButton";
 
-const PROFILE_IMG = "https://lh3.googleusercontent.com/aida-public/AB6AXuAvqvljU0AxRy4dCUoQ55jvVcj4jFtgNwQk5ACOhF4gRO2_FdVflIt2q-9WbqjpEySqL8mpn5PzVidLNXIxHUldKQaGiiR-vKtzi6jLI8sXwBi8hWz4vHjmYtyBo98DT52C9aq2WjwniFSrUFdlLwZ-CRpe7ZTGXbJ78YSHbPgrG_XGnlLRaz93nqWRGizaWBUhs0I3oLh7rMTbTOxvgRdCPW1Xpwhh6FxYA-Scf4-zX6qysKjd3DJRC-Y8zvh2lW0W9SlSXrTNz3Qn";
-const COVER_IMG = "https://lh3.googleusercontent.com/aida-public/AB6AXuAGYZkNW-gBSnauyYuVepWJqG_pWJfN5vO-saOqzdBraFviGD2lvP_4Wflhsqp3kGKyelpET3IZD8ZtQBIBK64u5naGNZIgqCr0jWq3Z247OREPOvMgr_elxsMYGaPxdPzA0Bv4OLbwfzSrEYWJQb1a-uiqBIpsE-s8TXZeNCA2RSiR6EqqCK__8PGCyPOieAp_a4WWyfdRnyNZT-e6FNOtwLbIBXXSLZTeLjG4ohKjPvMSD3HnYDQypWgfKYNa4C4_O1NZ0UsdHihq";
+const kwLabelMap = {
+  Quiet: "조용한", Sophisticated: "세련된", Vibrant: "활기찬", Minimalist: "미니멀", Romantic: "로맨틱", Cozy: "아늑한",
+  Noisy: "시끄러운", Crowded: "복잡한", Dark: "어두운",
+  Spicy: "매콤한", Savory: "고소한", "Umami-rich": "감칠맛", Authentic: "정통", Sweet: "달콤한", Fresh: "신선한",
+  Bland: "싱거운", Oily: "기름진", Overpriced: "가성비 낮음",
+  Friendly: "친절한", Fast: "빠른", Attentive: "세심한", "Valet Park": "발렛파킹",
+  Slow: "느린", Rude: "불친절한", "Long Wait": "대기 긺",
+};
 
-const bestRestaurants = [
-  {
-    name: "L'Essence",
-    sub: 'Modern French • 3 Michelin Stars',
-    badge: 'Best of 2023',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAGrKERkAoI4x2VQxH3TC3zd4gK_6TAjyvhvkYrBW3hrZGjE5SDBNJEuSXLJB74A84iybZnN7lssT39Yn2wVTghJ52TxCrxq1_eK6NqxUTf1MfRWOfAPHXxPL-wWgJRRG1hj3SO1P_xhmDLbFWMriEFXKg7LvDcy8EwMSHlGmOFIFEM3tyB2Z0FHMeG9BJXh__3s55GIon_3HlDIYGsAfswKKLI1RE0l0i6Ch2jo_TOTW1F-5FHCs4cGHqd8Zv9XuVUO-O-7iQpyppA',
-  },
-  {
-    name: 'Wild & Raw',
-    sub: 'Organic Kitchen • Greenhouse Vibes',
-    badge: 'Local Gem',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDvdqc2VoexOAJdxt7---KdH4tn8CXYxIMdrxtjqNEW-YgwJk9IW1NVVHlT__lK4wFLJBcIC-9liRa3xwQi8vraA_7Pu6wom5dspTMvUY3wahKPbeXI6qAfn2B7XS-WPxZps6waSUqtmiWJiLksTu0JeCJE9eKa0cSFg2kFH4aXOf3gDSvlFqK-_dchpPRbPAz0mRnIpmAg-4MX445vS74uvHSsCRZhFfxrATblMGTguGHKzSWFetFgGmeb99qs_l5DO8vjBnkaJkIv',
-  },
-  {
-    name: 'Neon Sips',
-    sub: 'Mixology Lab • Sensory Experience',
-    badge: 'Best Cocktails',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD-asKVKC_AIuRh5Mv7Awg8xE8-YYJP7_b5Qkri9mLbihVlfZrUulIgjwvVqUgYw-LgJHRoxRHyZKs7PA91HtA1ayoL7Vqa4qveVAtteI_4cYgQ0G7ZLBT4mXu53R_N9nPTg-5XKZjyoUlNYCWLtMo7-K5U8vrMc5YKRdBF6QUKPnxIkh4XNL6ofasWZhrvXbELUD2PghMKuRB4mWxdGc73D_KXkJ8GlaaHjPm_52S-LlJ2nSHURAYB-noG0d8qR-pc8KJuMYzIqsij',
-  },
-];
+const presetNegativeSet = new Set([
+  "Noisy", "Crowded", "Dark",
+  "Bland", "Oily", "Overpriced",
+  "Slow", "Rude", "Long Wait",
+]);
 
-const reviews = [
-  { title: 'Truffle Alchemy', restaurant: "L'Essence", date: 'OCT 12', stars: 5, desc: 'Hand-folded silk pasta with aromatic white truffles was scientifically perfect.', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA7kGuUJdtFn38fQMnzpR-93eI4tNaKIh_9JnO-GODEADFumPdlH4FULoKh67NLLfklAf4xo0F8ablsIpoqZcVVGvAY4t3peUpZy3NdQjuMqCCRKj-raJ_mw__OUQYjpFq8P1oAogjmfKDM3VZktJ1KahM6aZaNAgjNLYAal6CFUwLOqIcet2BbOUgrbniE8kC-5y7192Gm3alqyhdZ0IpwSmfQEuSiAHru1MM7lDO32FLtWgwWlQe-r-PFw5iUNK7lJGDM9SdcP_LE' },
-  { title: 'Raw Juices', restaurant: 'Wild & Raw', date: 'SEP 28', stars: 4, desc: 'Cold-pressed extraction with no visible oxidation. Superior palette.', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDvdqc2VoexOAJdxt7---KdH4tn8CXYxIMdrxtjqNEW-YgwJk9IW1NVVHlT__lK4wFLJBcIC-9liRa3xwQi8vraA_7Pu6wom5dspTMvUY3wahKPbeXI6qAfn2B7XS-WPxZps6waSUqtmiWJiLksTu0JeCJE9eKa0cSFg2kFH4aXOf3gDSvlFqK-_dchpPRbPAz0mRnIpmAg-4MX445vS74uvHSsCRZhFfxrATblMGTguGHKzSWFetFgGmeb99qs_l5DO8vjBnkaJkIv' },
-  { title: 'Neon Mixology', restaurant: 'Neon Sips', date: 'SEP 15', stars: 5, desc: "Molecular mixology pushing boundaries with their 'Smoked Oak' Manhattan.", img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD-asKVKC_AIuRh5Mv7Awg8xE8-YYJP7_b5Qkri9mLbihVlfZrUulIgjwvVqUgYw-LgJHRoxRHyZKs7PA91HtA1ayoL7Vqa4qveVAtteI_4cYgQ0G7ZLBT4mXu53R_N9nPTg-5XKZjyoUlNYCWLtMo7-K5U8vrMc5YKRdBF6QUKPnxIkh4XNL6ofasWZhrvXbELUD2PghMKuRB4mWxdGc73D_KXkJ8GlaaHjPm_52S-LlJ2nSHURAYB-noG0d8qR-pc8KJuMYzIqsij' },
-  { title: 'Coastal Brine', restaurant: 'The Oyster Bar', date: 'AUG 22', stars: 4, desc: "The cleanest, most mineral-forward oysters I've had this season.", img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDNluibihhcdM9m7IqeWMRcMQvMhemnGEXu-tHxKYrIRzWHuqMZw3m8um8WQQUzFP_lNLgiXyVb_6bLkeEdJBhl12yoDEt6TSp159BbpeoeSgEpTz-xKV_NQqWYAfiiCtvfUA1PYMLlDGdPHnU-VDCXu3CXfXrZk9dgQQBo3Kyn0jNWuXqDK-_vaQDc2j-lahLYRhEjAufx0ie_U1YtwQAy5OT_4Sv3BD4O8xISIERmyDtSma5K07-7hewk6PbNwrkaFXeZPrzk_qMV' },
-];
+function ReviewCard({ review, navigate, isOwn }) {
+  const {
+    id,
+    title,
+    restaurant: restaurantName,
+    restaurantId,
+    date,
+    stars,
+    desc,
+    images,
+    keywords = {},
+  } = review;
 
-const tasteIdentity = [
-  { label: 'Alfresco', icon: 'wb_sunny', color: 'bg-white border-secondary-container/30 text-secondary' },
-  { label: 'Minimalist', icon: 'auto_awesome', color: 'bg-white border-secondary-container/30 text-secondary' },
-  { label: 'Umami Rich', icon: 'local_fire_department', color: 'bg-primary-fixed/50 border-primary-fixed text-on-primary-fixed-variant' },
-  { label: 'Fermented', icon: 'science', color: 'bg-primary-fixed/50 border-primary-fixed text-on-primary-fixed-variant' },
-  { label: 'Plant-Forward', icon: 'eco', color: 'bg-tertiary-fixed border-tertiary text-on-tertiary-fixed' },
-];
+  const negativeSet = new Set([
+    ...(keywords._negative || []),
+    ...[...(keywords.Vibe || []), ...(keywords.Taste || []), ...(keywords.Service || [])].filter(kw => presetNegativeSet.has(kw)),
+  ]);
+  const allKws = [
+    ...(keywords.Vibe || []),
+    ...(keywords.Taste || []),
+    ...(keywords.Service || []),
+  ].sort((a, b) => (negativeSet.has(b) ? 1 : 0) - (negativeSet.has(a) ? 1 : 0));
+
+  const [imgIndex, setImgIndex] = useState(0);
+
+  const handleRestaurantClick = (e) => {
+    e.stopPropagation();
+    if (restaurantId) {
+      navigate(`/restaurant/${restaurantId}`);
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+  };
+
+  const handleEditClick = (e) => {
+    e.stopPropagation();
+    navigate(`/write-review?reviewId=${id}&restaurantId=${restaurantId}`);
+  };
+
+  const handlePrev = (e) => {
+    e.stopPropagation();
+    setImgIndex((i) => (i - 1 + images.length) % images.length);
+  };
+
+  const handleNext = (e) => {
+    e.stopPropagation();
+    setImgIndex((i) => (i + 1) % images.length);
+  };
+
+  return (
+    <article className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-slate-50 group flex flex-col h-full cursor-default">
+      <div className="h-48 relative overflow-hidden">
+        <img
+          src={images[imgIndex]}
+          alt={title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        />
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={handlePrev}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-all z-10"
+            >
+              <span className="material-symbols-outlined text-sm">chevron_left</span>
+            </button>
+            <button
+              onClick={handleNext}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-all z-10"
+            >
+              <span className="material-symbols-outlined text-sm">chevron_right</span>
+            </button>
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+              {images.map((_, i) => (
+                <span
+                  key={i}
+                  className={`block w-1.5 h-1.5 rounded-full transition-all ${i === imgIndex ? "bg-white" : "bg-white/40"}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+        {!isOwn && (
+          <div className="absolute top-3 right-3 z-10">
+            <div className="bg-white/90 backdrop-blur-md rounded-full px-2 py-1.5 shadow-sm">
+              <ReviewReportButton reviewId={id} />
+            </div>
+          </div>
+        )}
+        {isOwn && (
+          <div className="absolute top-3 right-3">
+            <button
+              onClick={handleEditClick}
+              className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-slate-400 hover:text-orange-500 transition-all shadow-sm z-10"
+              title="리뷰 수정"
+            >
+              <span className="material-symbols-outlined text-sm">edit</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="p-5 flex flex-col flex-1 text-left">
+        <div className="flex items-center gap-0.5 text-orange-500 mb-2">
+          {[...Array(5)].map((_, i) => (
+            <span
+              key={i}
+              className="material-symbols-outlined text-sm"
+              style={{
+                fontVariationSettings: i < stars ? "'FILL' 1" : "'FILL' 0",
+              }}
+            >
+              star
+            </span>
+          ))}
+        </div>
+        <h4 className="font-[Epilogue] text-lg font-semibold text-on-surface mb-2 line-clamp-1">
+          {title}
+        </h4>
+        <p className="text-slate-500 text-sm line-clamp-2 mb-3">{desc}</p>
+
+        {allKws.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-4">
+            {allKws.map((kw) => (
+              <span
+                key={kw}
+                className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${
+                  negativeSet.has(kw)
+                    ? "bg-red-50 text-red-500 border-red-200"
+                    : "bg-secondary/10 text-secondary border-secondary/20"
+                }`}
+              >
+                {kwLabelMap[kw] || kw}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-auto pt-4 border-t border-slate-50 flex items-center gap-3">
+          <span
+            onClick={handleRestaurantClick}
+            className="text-sm font-semibold text-on-surface hover:text-primary cursor-pointer transition-colors flex items-center gap-1"
+          >
+            <span className="material-symbols-outlined text-xs">
+              restaurant
+            </span>
+            {restaurantName}
+          </span>
+          <time className="ml-auto text-xs text-slate-400">{date}</time>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+const COVER_IMG =
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuAGYZkNW-gBSnauyYuVepWJqG_pWJfN5vO-saOqzdBraFviGD2lvP_4Wflhsqp3kGKyelpET3IZD8ZtQBIBK64u5naGNZIgqCr0jWq3Z247OREPOvMgr_elxsMYGaPxdPzA0Bv4OLbwfzSrEYWJQb1a-uiqBIpsE-s8TXZeNCA2RSiR6EqqCK__8PGCyPOieAp_a4WWyfdRnyNZT-e6FNOtwLbIBXXSLZTeLjG4ohKjPvMSD3HnYDQypWgfKYNa4C4_O1NZ0UsdHihq";
+const PROFILE_IMG =
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuAvqvljU0AxRy4dCUoQ55jvVcj4jFtgNwQk5ACOhF4gRO2_FdVflIt2q-9WbqjpEySqL8mpn5PzVidLNXIxHUldKQaGiiR-vKtzi6jLI8sXwBi8hWz4vHjmYtyBo98DT52C9aq2WjwniFSrUFdlLwZ-CRpe7ZTGXbJ78YSHbPgrG_XGnlLRaz93nqWRGizaWBUhs0I3oLh7rMTbTOxvgRdCPW1Xpwhh6FxYA-Scf4-zX6qysKjd3DJRC-Y8zvh2lW0W9SlSXrTNz3Qn";
+
 
 export default function MyPage() {
   const navigate = useNavigate();
+  const { userId } = useParams();
+  const { session, profile, isLoading } = useAuth();
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
+  const [followingList, setFollowingList] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [sortOrder, setSortOrder] = useState("latest");
+  const [showSortMenu, setShowSortMenu] = useState(false);
+
+  useEffect(() => {
+    if (!showSortMenu) return;
+    const close = () => setShowSortMenu(false);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [showSortMenu]);
+  const [viewedProfile, setViewedProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [bestRestaurants, setBestRestaurants] = useState([]);
+
+  const isOwnProfile = !userId || userId === profile?.user_id;
+
+  useEffect(() => {
+    if (!isLoading && !session) navigate("/login");
+  }, [isLoading, session, navigate]);
+
+  // 본인 프로필 페이지에 접근 시 URL에 user_id 포함하도록 리다이렉트
+  useEffect(() => {
+    if (!isLoading && session && profile && !userId) {
+      navigate(`/mypage/${profile.user_id}`, { replace: true });
+    }
+  }, [isLoading, session, profile, userId, navigate]);
+
+  // 표시할 프로필 결정
+  useEffect(() => {
+    if (!profile) return;
+    if (isOwnProfile) {
+      setViewedProfile(profile);
+    } else {
+      setProfileLoading(true);
+      supabase
+        .from("users")
+        .select("*")
+        .eq("user_id", userId)
+        .single()
+        .then(({ data }) => {
+          setViewedProfile(data ?? null);
+          setProfileLoading(false);
+        });
+    }
+  }, [profile, userId, isOwnProfile]);
+
+  // 표시할 프로필의 리뷰 불러오기
+  useEffect(() => {
+    if (!viewedProfile) return;
+    getByUser(viewedProfile.id).then((data) => {
+      setReviews(
+        data.map((r) => ({
+          id: r.id,
+          title:
+            r.review_text.length > 20
+              ? r.review_text.slice(0, 20) + "..."
+              : r.review_text,
+          restaurant: r.restaurants?.name ?? "",
+          restaurantId: r.restaurant_id,
+          date: new Date(r.created_at)
+            .toLocaleDateString("en-US", { month: "short", day: "numeric" })
+            .toUpperCase(),
+          stars: r.rating,
+          desc: r.review_text,
+          keywords: r.keywords ?? {},
+          images: r.images?.length ? r.images : [defaultRestaurantImg],
+          createdAt: r.created_at,
+        }))
+      );
+    });
+  }, [viewedProfile]);
+
+  // 베스트 레스토랑 불러오기
+  useEffect(() => {
+    const ids = viewedProfile?.best_restaurants;
+    if (!ids || ids.length === 0) {
+      setBestRestaurants([]);
+      return;
+    }
+    const comments = viewedProfile?.best_restaurant_comments ?? [];
+    Promise.all(ids.map((id) => getRestaurantById(id).catch(() => null))).then(
+      (results) =>
+        setBestRestaurants(
+          results
+            .map((r, i) => (r ? { ...r, comment: comments[i] ?? "" } : null))
+            .filter(Boolean)
+        )
+    );
+  }, [viewedProfile]);
+
+  // 팔로워 수 & 팔로우 여부 로딩
+  useEffect(() => {
+    if (!viewedProfile?.auth_id) return;
+    getFollowersCount(viewedProfile.auth_id).then(setFollowersCount);
+    if (!isOwnProfile && profile?.auth_id) {
+      checkIsFollowing(viewedProfile.auth_id).then(setIsFollowing);
+    }
+  }, [viewedProfile, isOwnProfile, profile]);
+
+  const handleFollowToggle = async () => {
+    if (!viewedProfile?.auth_id) return;
+    setFollowLoading(true);
+    try {
+      if (isFollowing) {
+        await unfollow(viewedProfile.auth_id);
+        setIsFollowing(false);
+        setFollowersCount((c) => Math.max(0, c - 1));
+      } else {
+        await follow(viewedProfile.auth_id);
+        setIsFollowing(true);
+        setFollowersCount((c) => c + 1);
+      }
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  const handleOpenFollowingModal = async () => {
+    if (!profile?.auth_id) return;
+    setShowFollowingModal(true);
+    const list = await getFollowing(profile.auth_id);
+    setFollowingList(list);
+  };
+
+  const sortedReviews = useMemo(() => {
+    const copy = [...reviews];
+    if (sortOrder === "latest") return copy.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    if (sortOrder === "rating_high") return copy.sort((a, b) => b.stars - a.stars || new Date(b.createdAt) - new Date(a.createdAt));
+    if (sortOrder === "rating_low") return copy.sort((a, b) => a.stars - b.stars || new Date(b.createdAt) - new Date(a.createdAt));
+    return copy;
+  }, [reviews, sortOrder]);
+
+  const tasteIdentityTags = useMemo(() => {
+    if (!viewedProfile) return [];
+    return [
+      ...(viewedProfile.vibes || []).map((v) => ({
+        label: filterLabelMap[v] || v,
+        icon: "auto_awesome",
+        color: "bg-white text-secondary border-secondary-container/30",
+      })),
+      ...(viewedProfile.flavors || []).map((f) => ({
+        label: filterLabelMap[f] || f,
+        icon: "restaurant",
+        color:
+          "bg-primary-fixed/50 text-on-primary-fixed-variant border-primary-fixed",
+      })),
+      ...(viewedProfile.dietary || []).map((d) => ({
+        label: filterLabelMap[d] || d,
+        icon: "eco",
+        color: "bg-tertiary-fixed text-on-tertiary-fixed border-tertiary",
+      })),
+    ];
+  }, [viewedProfile]);
+
+  if (isLoading || !profile || profileLoading) return null;
+  if (!viewedProfile) return (
+    <Layout>
+      <div className="max-w-7xl mx-auto px-6 py-24 text-center text-slate-400">
+        유저를 찾을 수 없습니다.
+      </div>
+    </Layout>
+  );
 
   return (
     <Layout>
-      <main className="max-w-7xl mx-auto px-6 md:px-10 pb-24">
-        {/* Hero Section */}
+      <main className="max-w-7xl mx-auto px-6 md:px-10 pb-24 text-left">
+        {/* Profile Hero Section */}
         <section className="mt-6 rounded-3xl overflow-hidden bg-white shadow-sm border border-slate-100">
           <div className="h-64 md:h-80 w-full relative">
-            <img src={COVER_IMG} alt="cover" className="w-full h-full object-cover" />
+            <img
+              src={viewedProfile.cover_image || COVER_IMG}
+              alt="cover"
+              className="w-full h-full object-cover"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-            <div className="absolute bottom-6 right-6">
-              <button className="bg-white/20 backdrop-blur-md text-white border border-white/30 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-white/30 transition-all">
-                <span className="material-symbols-outlined text-sm">edit</span>
-                Edit Cover
-              </button>
-            </div>
           </div>
 
-          <div className="px-6 md:px-10 pb-6 md:pb-10 -mt-16 relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between">
-            <div className="flex flex-col md:flex-row items-start md:items-end gap-5">
-              <div className="w-32 h-32 md:w-36 md:h-36 rounded-3xl border-4 border-white overflow-hidden shadow-lg bg-white">
-                <img src={PROFILE_IMG} alt="profile" className="w-full h-full object-cover" />
+          <div className="px-6 md:px-10 pb-10 -mt-16 pt-5 relative z-10 flex flex-col md:flex-row items-end justify-between text-left">
+            <div className="flex flex-col md:flex-row items-end gap-5 text-left">
+              <div className="w-36 h-36 rounded-3xl border-4 border-white overflow-hidden shadow-lg bg-white">
+                <img
+                  src={viewedProfile.profile_image || PROFILE_IMG}
+                  alt="profile"
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="mb-2">
-                <h2 className="font-[Epilogue] text-white md:text-on-surface text-2xl md:text-4xl font-bold">Elena Gastronomy</h2>
-                <p className="text-slate-500 mt-1 max-w-lg text-sm">Culinary explorer & NLP data scientist. Finding the soul of the city through its hidden kitchens and Michelin stars.</p>
+                <h2 className="font-[Epilogue] text-white md:text-on-surface text-2xl md:text-4xl font-bold">
+                  {viewedProfile.nickname || viewedProfile.user_id}
+                </h2>
+                <p className="text-slate-500 text-sm mt-1">
+                  {viewedProfile.bio || "안녕하세요!"}
+                </p>
               </div>
             </div>
-            <div className="mt-5 md:mt-0 flex gap-3 w-full md:w-auto">
-              <button
-                onClick={() => navigate('/profile-settings')}
-                className="flex-1 md:flex-none bg-primary-container text-on-primary px-5 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 shadow-lg shadow-orange-200 active:scale-95 transition-transform"
-              >
-                <span className="material-symbols-outlined text-sm">edit</span>
-                Edit Profile
-              </button>
-              <button className="bg-white border border-slate-200 text-on-surface px-4 py-3 rounded-xl hover:bg-slate-50 transition-colors">
-                <span className="material-symbols-outlined text-sm">share</span>
-              </button>
+            <div className="flex gap-3">
+              {isOwnProfile ? (
+                <button
+                  onClick={() => navigate("/mypage-settings")}
+                  className="bg-primary-container text-on-primary px-5 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-lg shadow-orange-200 active:scale-95 transition-transform"
+                >
+                  <span className="material-symbols-outlined text-sm">edit</span>
+                  프로필 수정
+                </button>
+              ) : null}
             </div>
           </div>
 
-          {/* Stats */}
+          {/* Stats Bar */}
           <div className="px-6 md:px-10 pb-8 grid grid-cols-3 gap-6 border-t border-slate-50 mt-4 pt-6">
-            {[
-              { value: '128', label: 'Reviews' },
-              { value: '12.4k', label: 'Followers' },
-              { value: '842', label: 'Following' },
-            ].map(({ value, label }, i) => (
-              <div key={label} className={`text-center md:text-left ${i === 1 ? 'border-x border-slate-100' : ''}`}>
-                <p className="font-[Epilogue] text-2xl font-semibold text-on-surface">{value}</p>
-                <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">{label}</p>
-              </div>
-            ))}
+            <div>
+              <p className="font-[Epilogue] text-2xl font-semibold text-on-surface">
+                {reviews.length}
+              </p>
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">
+                리뷰
+              </p>
+            </div>
+            <div className="border-x border-slate-100 px-6">
+              <p className="font-[Epilogue] text-2xl font-semibold text-on-surface">
+                {followersCount.toLocaleString()}
+              </p>
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">
+                팔로워
+              </p>
+            </div>
+            {isOwnProfile ? (
+              <button
+                onClick={handleOpenFollowingModal}
+                className="rounded-xl font-bold transition-all active:scale-95 px-4 py-3 bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 text-sm flex items-center justify-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-sm">group</span>
+                팔로우 목록
+              </button>
+            ) : (
+              <button
+                onClick={handleFollowToggle}
+                disabled={followLoading}
+                className={`rounded-xl font-bold transition-all active:scale-95 px-8 py-3 disabled:opacity-60 ${
+                  isFollowing
+                    ? "bg-slate-100 text-slate-600 border border-slate-200"
+                    : "bg-primary text-white shadow-lg shadow-orange-100"
+                }`}
+              >
+                {isFollowing ? "팔로잉" : "팔로우"}
+              </button>
+            )}
           </div>
         </section>
 
-        {/* Taste Identity */}
+        {/* Taste Identity Section */}
         <section className="mt-6">
-          <div className="bg-secondary-fixed/30 rounded-3xl p-6 md:p-8 border border-secondary-fixed">
-            <div className="flex items-center gap-3 mb-5">
-              <span className="material-symbols-outlined text-secondary">psychology</span>
-              <h3 className="font-[Epilogue] text-xl font-semibold text-on-secondary-container">My Taste Identity</h3>
-            </div>
+          <div className="bg-secondary-fixed/30 rounded-3xl p-8 border border-secondary-fixed text-left">
+            <h3 className="font-[Epilogue] text-xl font-semibold mb-5 flex items-center gap-2 text-on-secondary-container text-left">
+              <span className="material-symbols-outlined text-secondary">
+                psychology
+              </span>
+              {isOwnProfile ? "나의" : `${viewedProfile.nickname || viewedProfile.user_id}의`} 취향 정체성
+            </h3>
             <div className="flex flex-wrap gap-3">
-              {tasteIdentity.map(({ label, icon, color }) => (
-                <div key={label} className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold shadow-sm ${color}`}>
-                  <span className="material-symbols-outlined text-sm">{icon}</span>
-                  {label}
+              {tasteIdentityTags.map((tag, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold shadow-sm ${tag.color}`}
+                >
+                  <span className="material-symbols-outlined text-sm">
+                    {tag.icon}
+                  </span>
+                  {tag.label}
                 </div>
               ))}
               <div className="flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-full border border-slate-200 text-sm font-semibold text-slate-500 shadow-sm">
-                <span className="material-symbols-outlined text-sm">search</span>
-                Discovering...
+                <span className="material-symbols-outlined text-sm">
+                  search
+                </span>
+                탐색 중...
               </div>
             </div>
           </div>
         </section>
 
-        {/* Best Restaurants */}
-        <section className="mt-16">
-          <div className="flex items-center justify-between mb-7">
-            <h3 className="font-[Epilogue] text-3xl font-bold text-on-surface">Best Restaurants</h3>
-            <button className="text-primary text-sm font-semibold hover:underline">View all favorites</button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {bestRestaurants.map(({ name, sub, badge, img }) => (
-              <div
-                key={name}
-                className="relative group rounded-3xl overflow-hidden shadow-sm border border-slate-100 bg-white cursor-pointer"
-                onClick={() => navigate('/restaurant/1')}
-              >
-                <div className="h-48 overflow-hidden">
-                  <img src={img} alt={name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+        {/* Best Restaurants Section */}
+        {bestRestaurants.length > 0 && (
+          <section className="mt-16 text-left">
+            <h3 className="font-[Epilogue] text-3xl font-bold text-on-surface mb-7">
+              베스트 식당
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {bestRestaurants.map((r, idx) => (
+                <div
+                  key={r.id}
+                  className="relative group rounded-3xl overflow-hidden shadow-sm border border-slate-100 bg-white cursor-pointer"
+                  onClick={() => navigate(`/restaurant/${r.id}`)}
+                >
+                  <div className="h-48 overflow-hidden bg-slate-100">
+                    <img
+                      src={r.image || defaultRestaurantImg}
+                      alt={r.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="absolute top-4 left-4 bg-primary-container text-on-primary px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-md">
+                    #{idx + 1} 픽
+                  </div>
+                  <div className="p-5 text-left">
+                    <h4 className="font-[Epilogue] text-lg font-semibold text-on-surface">
+                      {r.name}
+                    </h4>
+                    <p className="text-slate-500 text-xs mt-1">
+                      {cuisineMap[r.cuisine] || r.cuisine}{r.price ? ` • ${r.price}` : ""}
+                    </p>
+                    {r.comment && (
+                      <p className="text-slate-400 text-xs mt-2 italic line-clamp-2">
+                        "{r.comment}"
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="absolute top-4 left-4 bg-primary-container text-on-primary px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-md">
-                  {badge}
-                </div>
-                <div className="p-5">
-                  <h4 className="font-[Epilogue] text-lg font-semibold text-on-surface">{name}</h4>
-                  <p className="text-slate-500 text-xs mt-1">{sub}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+              ))}
+            </div>
+          </section>
+        )}
 
-        {/* Review Journal */}
-        <section className="mt-16">
+        {/* Review Journal Section */}
+        <section className="mt-16 text-left">
           <div className="flex items-center justify-between mb-7">
-            <h3 className="font-[Epilogue] text-3xl font-bold text-on-surface">Review Journal</h3>
-            <button className="flex items-center gap-2 text-sm font-medium text-slate-500 border border-slate-200 px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors">
-              Latest First
-              <span className="material-symbols-outlined text-sm">expand_more</span>
-            </button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {reviews.map(({ title, restaurant, date, stars, desc, img }) => (
-              <article
-                key={title}
-                className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-slate-50 group flex flex-col h-full cursor-pointer"
-                onClick={() => navigate('/write-review')}
+            <h3 className="font-[Epilogue] text-3xl font-bold text-on-surface text-left">
+              {isOwnProfile
+                ? "나의 리뷰 일지"
+                : `${viewedProfile.nickname || viewedProfile.user_id}의 리뷰`}
+            </h3>
+            <div className="relative">
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowSortMenu((v) => !v); }}
+                className="flex items-center gap-2 text-sm font-medium text-slate-500 border border-slate-200 px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors"
               >
-                <div className="h-48 relative overflow-hidden">
-                  <img src={img} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute top-3 right-3">
-                    <button className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-slate-400 hover:text-orange-500 transition-all">
-                      <span className="material-symbols-outlined text-sm">edit</span>
+                {sortOrder === "latest" && "최신순"}
+                {sortOrder === "rating_high" && "별점 높은순"}
+                {sortOrder === "rating_low" && "별점 낮은순"}
+                <span className="material-symbols-outlined text-sm">expand_more</span>
+              </button>
+              {showSortMenu && (
+                <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 overflow-hidden min-w-[140px]">
+                  {[
+                    { key: "latest", label: "최신순" },
+                    { key: "rating_high", label: "별점 높은순" },
+                    { key: "rating_low", label: "별점 낮은순" },
+                  ].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={(e) => { e.stopPropagation(); setSortOrder(key); setShowSortMenu(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-orange-50 transition-colors ${sortOrder === key ? "text-primary font-semibold" : "text-slate-600"}`}
+                    >
+                      {label}
                     </button>
-                  </div>
+                  ))}
                 </div>
-                <div className="p-5 flex flex-col flex-1">
-                  <div className="flex items-center gap-0.5 text-orange-500 mb-2">
-                    {[...Array(5)].map((_, i) => (
-                      <span
-                        key={i}
-                        className="material-symbols-outlined text-sm"
-                        style={{ fontVariationSettings: i < stars ? "'FILL' 1" : "'FILL' 0", color: i < stars ? undefined : '#e2e2e4' }}
-                      >
-                        star
-                      </span>
-                    ))}
-                  </div>
-                  <h4 className="font-[Epilogue] text-lg font-semibold text-on-surface mb-2 line-clamp-1">{title}</h4>
-                  <p className="text-slate-500 text-sm line-clamp-2 mb-4">{desc}</p>
-                  <div className="mt-auto pt-4 border-t border-slate-50 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-slate-100 overflow-hidden border border-slate-200 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-slate-400 text-sm">restaurant</span>
-                    </div>
-                    <span className="text-sm font-semibold text-on-surface">{restaurant}</span>
-                    <time className="ml-auto text-xs text-slate-400">{date}</time>
-                  </div>
-                </div>
-              </article>
-            ))}
+              )}
+            </div>
           </div>
+          {sortedReviews.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sortedReviews.map((review) => (
+                <ReviewCard
+                  key={review.id}
+                  review={review}
+                  navigate={navigate}
+                  isOwn={isOwnProfile}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="py-20 text-center border-2 border-dashed border-slate-100 rounded-3xl">
+              <p className="text-slate-400 italic">
+                아직 리뷰가 없습니다.
+              </p>
+            </div>
+          )}
         </section>
       </main>
+
+      {/* 팔로잉 목록 모달 */}
+      {showFollowingModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+          onClick={() => setShowFollowingModal(false)}
+        >
+          <div
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+              <h3 className="font-[Epilogue] text-lg font-bold text-on-surface">팔로우 목록</h3>
+              <button
+                onClick={() => setShowFollowingModal(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="max-h-96 overflow-y-auto">
+              {followingList.length === 0 ? (
+                <div className="py-16 text-center text-slate-400">
+                  <span className="material-symbols-outlined text-3xl mb-2 block">group_off</span>
+                  <p className="text-sm">아직 팔로우한 유저가 없습니다.</p>
+                </div>
+              ) : (
+                followingList.map((user) => (
+                  <button
+                    key={user.auth_id}
+                    onClick={() => {
+                      setShowFollowingModal(false);
+                      navigate(`/mypage/${user.user_id}`);
+                    }}
+                    className="w-full flex items-center gap-4 px-6 py-4 hover:bg-orange-50 transition-colors border-b border-slate-50 last:border-none"
+                  >
+                    <div className="w-11 h-11 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      {user.profile_image
+                        ? <img src={user.profile_image} alt={user.nickname} className="w-full h-full object-cover" />
+                        : <span className="text-primary font-bold text-sm">{(user.nickname || user.user_id).slice(0, 2).toUpperCase()}</span>
+                      }
+                    </div>
+                    <div className="flex-1 text-left min-w-0">
+                      <p className="font-semibold text-sm text-on-surface truncate">{user.nickname || user.user_id}</p>
+                      <p className="text-xs text-slate-400 truncate">{user.user_id}</p>
+                    </div>
+                    <span className="material-symbols-outlined text-slate-300 text-sm">chevron_right</span>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }

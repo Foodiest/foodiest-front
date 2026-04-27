@@ -1,20 +1,139 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useGoogleLogin } from '@react-oauth/google';
+import { signIn } from '../services/authService';
+import { loginWithKakao, loginWithGoogle } from '../utils/socialAuth';
+import { supabase } from '../lib/supabase';
 
-const BG_IMG = "https://lh3.googleusercontent.com/aida-public/AB6AXuAEESejBsvrAH9V2Hra3qnLCX9NFGZ_dP9UhpxIyuNf-xvfdfX4MCTfK3sdrXGa1Gmaj1c6SRp06N0UIWs6cf2tJNwagmaGY18wxtbl2kkbqb1vy0Xmptj-XGF_h8mY7Qv3PbgbC_rKhffxMK0mh3jEauWglbpd65SXRqg-z3h5JryQ5uO0wfTQm_QMVz8eWExDBMzT-W3UipHgCcSiaOb8PWslKC6EeSzARN5Dd7hME0EJhAwAJSlZWVv7Va_UFfPgxOhPjruPu8LB";
-const GOOGLE_LOGO = "https://lh3.googleusercontent.com/aida-public/AB6AXuATt_UcM1PerdrYicyNIsNE3FxcIp_ixHQk-l3BA6QtzILOUkHCwI5aNmHRQu7FG0n_t3E8IVEAUob1k3OCkvxZo1L1Kwegq0y1ZRz-QWGrqlhRJspvTLAs0A0RcQVLOgtaGcBmvTREt1c0KN0tQLzG94x-W6vrF8Dyn7ilkvg62O0e_Khku1_OB5OGwuIqIfqO66S9bQTquNyQDAocnn6E6ISQrIV0y5CehyKzPDSrxeuK76s-8tj1n6kqHxGa2WPR8ghJh30E1nxa";
+const BG_IMG =
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuAEESejBsvrAH9V2Hra3qnLCX9NFGZ_dP9UhpxIyuNf-xvfdfX4MCTfK3sdrXGa1Gmaj1c6SRp06N0UIWs6cf2tJNwagmaGY18wxtbl2kkbqb1vy0Xmptj-XGF_h8mY7Qv3PbgbC_rKhffxMK0mh3jEauWglbpd65SXRqg-z3h5JryQ5uO0wfTQm_QMVz8eWExDBMzT-W3UipHgCcSiaOb8PWslKC6EeSzARN5Dd7hME0EJhAwAJSlZWVv7Va_UFfPgxOhPjruPu8LB";
+const GOOGLE_LOGO = "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      // identifier가 이메일이 아닌 경우 users 테이블에서 이메일 조회
+      let email = identifier;
+      if (!identifier.includes('@')) {
+        const { data } = await supabase
+          .from('users')
+          .select('email')
+          .eq('user_id', identifier)
+          .single();
+        if (!data) {
+          setError('아이디 또는 비밀번호가 올바르지 않습니다.');
+          return;
+        }
+        email = data.email;
+      }
+      await signIn({ email, password });
+      navigate('/');
+    } catch (err) {
+      const msg = err.message || '';
+      if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
+        // 이메일은 맞지만 비밀번호가 틀린 경우 — 소셜 가입 계정인지 확인
+        const resolvedEmail = identifier.includes('@') ? identifier : null;
+        const { data: userRow } = resolvedEmail
+          ? await supabase.from('users').select('provider').eq('email', resolvedEmail).maybeSingle()
+          : { data: null };
+        if (userRow?.provider && userRow.provider !== 'email') {
+          const label = { kakao: '카카오', google: '구글' }[userRow.provider] || userRow.provider;
+          setError(`이 이메일은 ${label}로 가입된 계정입니다. ${label}로 로그인해주세요.`);
+        } else {
+          setError('아이디/이메일 또는 비밀번호가 올바르지 않습니다.');
+        }
+      } else if (msg.includes('Email not confirmed')) {
+        setError('이메일 인증이 필요합니다. 가입 시 받은 이메일을 확인해주세요.');
+      } else {
+        setError(msg || '로그인에 실패했습니다.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const PROVIDER_LABEL = { email: '이메일', kakao: '카카오', google: '구글' };
+
+  const checkEmailConflict = async (email, currentSocialId) => {
+    if (!email) return null;
+    const { data } = await supabase
+      .from('users')
+      .select('provider, social_id')
+      .eq('email', email)
+      .maybeSingle();
+    if (!data) return null;
+    if (data.social_id === currentSocialId) return null; // 본인 계정
+    return data.provider || 'email';
+  };
+
+  const handleSocialLoginResult = async (signInData, signInErr, socialUser, providerName) => {
+    if (!signInErr && signInData?.session) {
+      navigate('/');
+      return;
+    }
+    const conflictProvider = await checkEmailConflict(socialUser.email, socialUser.socialId);
+    if (conflictProvider) {
+      const label = PROVIDER_LABEL[conflictProvider] || conflictProvider;
+      setError(`이미 ${label}로 가입된 이메일입니다. ${label}로 로그인해주세요.`);
+    } else {
+      localStorage.setItem('socialSignupTemp', JSON.stringify(socialUser));
+      navigate('/signup');
+    }
+  };
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setError('');
+      setLoading(true);
+      try {
+        const socialUser = await loginWithGoogle(tokenResponse.access_token);
+        const authEmail = `google_${socialUser.socialId}@google.local`;
+        const { data, error: signInErr } = await supabase.auth.signInWithPassword({
+          email: authEmail,
+          password: `google_${socialUser.socialId}`,
+        });
+        await handleSocialLoginResult(data, signInErr, socialUser, 'google');
+      } catch (err) {
+        setError(err.message || '구글 로그인에 실패했습니다.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: () => setError('구글 로그인에 실패했습니다.'),
+  });
+
+  const handleKakaoLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const socialUser = await loginWithKakao();
+      const authEmail = socialUser.email || `kakao_${socialUser.socialId}@kakao.local`;
+      const { data, error: signInErr } = await supabase.auth.signInWithPassword({
+        email: authEmail,
+        password: `kakao_${socialUser.socialId}`,
+      });
+      await handleSocialLoginResult(data, signInErr, socialUser, 'kakao');
+    } catch (err) {
+      setError(err.message || '카카오 로그인에 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-surface flex flex-col">
-      {/* Header */}
       <header className="fixed top-0 w-full z-50 bg-white border-b border-slate-100 flex items-center justify-between px-6 py-4 shadow-sm font-[Epilogue]">
         <Link to="/" className="text-lg font-bold tracking-tight text-slate-900">Foodiest</Link>
-        <div className="text-slate-500 text-sm font-medium cursor-pointer hover:bg-slate-50 px-3 py-1 rounded-lg">Help</div>
+        <div className="text-slate-500 text-sm font-medium cursor-pointer hover:bg-slate-50 px-3 py-1 rounded-lg">도움말</div>
       </header>
 
       <main className="flex-1 flex items-center justify-center p-4 mt-16">
@@ -25,37 +144,37 @@ export default function LoginPage() {
             style={{ backgroundImage: `url(${BG_IMG})` }}
           >
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-10 text-white">
-              <h2 className="font-[Epilogue] text-4xl font-bold mb-2">The Expert Concierge</h2>
-              <p className="text-lg opacity-90 max-w-xs">Data-driven dining experiences tailored to your sophisticated palate.</p>
+              <h2 className="font-[Epilogue] text-4xl font-bold mb-2">전문 컨시어지</h2>
+              <p className="text-lg opacity-90 max-w-xs">데이터 기반으로 당신의 입맛에 맞춘 다이닝 경험.</p>
             </div>
           </div>
 
           {/* Form Panel */}
           <div className="p-8 md:p-16 flex flex-col justify-center">
             <div className="mb-8">
-              <h1 className="font-[Epilogue] text-3xl font-semibold text-on-surface mb-1">Welcome Back</h1>
-              <p className="text-base text-on-surface-variant">Access your culinary insights and favorites.</p>
+              <h1 className="font-[Epilogue] text-3xl font-semibold text-on-surface mb-1">다시 오셨군요</h1>
+              <p className="text-base text-on-surface-variant">나의 맛집 인사이트와 즐겨찾기를 확인하세요.</p>
             </div>
 
-            <form className="space-y-5" onSubmit={e => { e.preventDefault(); navigate('/'); }}>
+            <form className="space-y-5" onSubmit={handleLogin}>
               <div className="space-y-1.5">
-                <label className="block font-semibold text-sm text-on-surface-variant px-1">Username/Email</label>
+                <label className="block font-semibold text-sm text-on-surface-variant px-1">아이디/이메일</label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">person</span>
                   <input
                     className="w-full pl-12 pr-4 py-4 bg-surface-container-low border-0 rounded-lg focus:ring-2 focus:ring-primary-container text-base"
                     placeholder="chef.jane@example.com"
                     type="text"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
+                    value={identifier}
+                    onChange={(e) => { setIdentifier(e.target.value); setError(''); }}
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center px-1">
-                  <label className="font-semibold text-sm text-on-surface-variant">Password</label>
-                  <a href="#" className="text-xs text-secondary hover:underline">Forgot Password?</a>
+                  <label className="font-semibold text-sm text-on-surface-variant">비밀번호</label>
+                  <a href="#" className="text-xs text-secondary hover:underline">비밀번호를 잊으셨나요?</a>
                 </div>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">lock</span>
@@ -64,40 +183,58 @@ export default function LoginPage() {
                     placeholder="••••••••"
                     type="password"
                     value={password}
-                    onChange={e => setPassword(e.target.value)}
+                    onChange={(e) => { setPassword(e.target.value); setError(''); }}
                   />
                 </div>
               </div>
 
+              {error && (
+                <p className="text-sm text-red-500 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-sm">error</span>
+                  {error}
+                </p>
+              )}
+
               <button
                 type="submit"
-                className="w-full bg-primary-container text-white py-4 rounded-lg font-[Epilogue] font-semibold flex items-center justify-center gap-2 shadow-md hover:brightness-110 active:scale-[0.98] transition-all"
+                disabled={loading}
+                className="w-full bg-primary-container text-white py-4 rounded-lg font-[Epilogue] font-semibold flex items-center justify-center gap-2 shadow-md hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-60"
               >
-                Login
+                {loading ? '로그인 중...' : '로그인'}
                 <span className="material-symbols-outlined">arrow_forward</span>
               </button>
             </form>
 
             <div className="my-6 flex items-center gap-4">
               <div className="h-px bg-surface-variant flex-1"></div>
-              <span className="text-xs font-medium text-outline">OR CONTINUE WITH</span>
+              <span className="text-xs font-medium text-outline">또는 소셜 계정으로</span>
               <div className="h-px bg-surface-variant flex-1"></div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <button className="flex items-center justify-center gap-2 py-3 border border-outline-variant rounded-lg font-semibold text-sm hover:bg-surface-container-high transition-colors active:scale-95">
+              <button
+                type="button"
+                onClick={() => googleLogin()}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 py-3 border border-outline-variant rounded-lg font-semibold text-sm hover:bg-surface-container-high transition-colors active:scale-95 disabled:opacity-60"
+              >
                 <img src={GOOGLE_LOGO} alt="Google" className="w-5 h-5" />
                 Google
               </button>
-              <button className="flex items-center justify-center gap-2 py-3 bg-[#FEE500] text-[#191919] rounded-lg font-semibold text-sm hover:brightness-95 transition-colors active:scale-95">
+              <button
+                type="button"
+                onClick={handleKakaoLogin}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 py-3 bg-[#FEE500] text-[#191919] rounded-lg font-semibold text-sm hover:brightness-95 transition-colors active:scale-95 disabled:opacity-60"
+              >
                 <span className="material-symbols-outlined text-sm">chat_bubble</span>
                 Kakao
               </button>
             </div>
 
             <p className="mt-6 text-center text-base text-on-surface-variant">
-              New to Foodiest?{' '}
-              <Link to="/signup" className="text-primary-container font-semibold hover:underline ml-1">Sign up</Link>
+              처음 오셨나요?{' '}
+              <Link to="/signup" className="text-primary-container font-semibold hover:underline ml-1">회원가입</Link>
             </p>
           </div>
         </div>

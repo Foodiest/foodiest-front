@@ -1,25 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
+import { useAuth } from '../contexts/AuthContext';
+import { vibes, flavors, dietary } from '../data/mockFilters';
 
-const vibeOptions = [
-  { label: 'Quiet', icon: 'volume_off' },
-  { label: 'Lively', icon: 'celebration' },
-  { label: 'Romantic', icon: 'favorite' },
-  { label: 'Business', icon: 'business_center' },
-  { label: 'Family-friendly', icon: 'family_restroom' },
-];
-const tasteOptions = [
-  { label: 'Spicy', icon: 'local_fire_department' },
-  { label: 'Sweet', icon: 'icecream' },
-  { label: 'Savory', icon: 'egg_alt' },
-  { label: 'Umami', icon: 'emoji_food_beverage' },
-  { label: 'Salt-heavy', icon: 'water_drop' },
-];
-const allergyOptions = ['Nut-free', 'Gluten-free', 'Vegan', 'No Seafood', 'No Pork'];
+
+const vibeOptions = vibes.filter(v => ['Quiet', 'Lively', 'Romantic', 'Business', 'Family Friendly'].includes(v.label));
+const tasteOptions = flavors.filter(f => ['Spicy', 'Sweet', 'Savory', 'Umami', 'Salt-heavy'].includes(f.label));
+const allergyOptions = dietary.filter(d => ['Nut-free', 'Gluten-free', 'Vegan', 'No Seafood', 'No Pork'].includes(d.label)).map(d => d.label);
+
 
 export default function ProfileSettingsPage() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [selectedVibes, setSelectedVibes] = useState(['Lively']);
   const [selectedTastes, setSelectedTastes] = useState(['Sweet']);
   const [selectedAllergies, setSelectedAllergies] = useState(['Gluten-free']);
@@ -128,7 +121,7 @@ export default function ProfileSettingsPage() {
       <div className="fixed bottom-0 left-0 w-full bg-white/80 backdrop-blur-lg border-t border-slate-200 py-5 px-6 z-40">
         <div className="max-w-2xl mx-auto flex gap-4">
           <button
-            onClick={() => navigate('/mypage')}
+            onClick={() => navigate(profile?.user_id ? `/mypage/${profile.user_id}` : '/mypage')}
             className="flex-1 py-4 bg-primary-container text-white font-[Epilogue] font-semibold text-lg rounded-xl shadow-xl shadow-primary-container/30 active:scale-95 transition-all duration-150"
           >
             설정 완료 및 시작하기
