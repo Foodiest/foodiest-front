@@ -254,8 +254,12 @@ export default function RestaurantDetailPage() {
       .flatMap(([, v]) => v)
   );
   const customNegativeAll = new Set(reviews.flatMap(r => r.keywords?._negative || []));
-  const positiveKwList = [...new Set(allKwFlat.filter(kw => !negativeKwSet.has(kw) && !customNegativeAll.has(kw)))];
-  const negativeKwList = [...new Set(allKwFlat.filter(kw => negativeKwSet.has(kw) || customNegativeAll.has(kw)))];
+  const positiveKwList = aiAnalysis?.keywords?.positive?.length
+    ? aiAnalysis.keywords.positive
+    : [...new Set(allKwFlat.filter(kw => !negativeKwSet.has(kw) && !customNegativeAll.has(kw)))];
+  const negativeKwList = aiAnalysis?.keywords?.negative?.length
+    ? aiAnalysis.keywords.negative
+    : [...new Set(allKwFlat.filter(kw => negativeKwSet.has(kw) || customNegativeAll.has(kw)))];
   const aiSummary = aiAnalysis?.summary || null;
 
   return (
@@ -373,9 +377,7 @@ export default function RestaurantDetailPage() {
               <h2 className="font-[Epilogue] text-2xl font-semibold flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'wght' 700" }}>psychology</span>
                 AI 리뷰 분석
-                {aiAnalysis && (
-                  <span className="text-[10px] font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Gemini AI</span>
-                )}
+                {/* AI 엔진 배지 삭제됨 */}
               </h2>
               <span className="text-xs text-on-surface-variant">{reviewCount}개의 리뷰 기반</span>
             </div>
@@ -415,7 +417,7 @@ export default function RestaurantDetailPage() {
                   {/* 키워드 */}
                   <div className="bg-surface-container-lowest p-4 rounded-lg border border-surface-variant space-y-4">
                     <h4 className="font-semibold text-sm text-secondary">
-                      {aiAnalysis ? 'AI 키워드 분석' : 'NLP 키워드 추출'}
+                      AI 키워드 분석
                     </h4>
 
                     {positiveKwList.length > 0 && (

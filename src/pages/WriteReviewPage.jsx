@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "../components/Layout";
 import { create, update, remove, getByRestaurant } from "../services/reviewService";
 import { uploadReviewImage } from "../services/storageService";
+import { getById as getRestaurantById } from "../services/restaurantService";
 import { useAuth } from "../contexts/AuthContext";
 
 const keywordGroups = [
@@ -68,6 +69,8 @@ export default function WriteReviewPage() {
   const navigate = useNavigate();
   const { session, profile } = useAuth();
 
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   const [searchParams] = useSearchParams();
 
   const reviewId = searchParams.get("reviewId");
@@ -88,6 +91,7 @@ export default function WriteReviewPage() {
     _negative: [],
   });
 
+  const [restaurant, setRestaurant] = useState(null);
   const [images, setImages] = useState([]);
   const [negativeReviews, setNegativeReviews] = useState([]);
   const [negativeInput, setNegativeInput] = useState("");
@@ -95,6 +99,10 @@ export default function WriteReviewPage() {
   const [deleting, setDeleting] = useState(false);
   const [customKeywords, setCustomKeywords] = useState({ Vibe: [], Taste: [], Service: [] });
   const [customInputs, setCustomInputs] = useState({ Vibe: '', Taste: '', Service: '' });
+
+  useEffect(() => {
+    getRestaurantById(restaurantId).then(setRestaurant).catch(() => {});
+  }, [restaurantId]);
 
   // Load review data if in edit mode
   useEffect(() => {
@@ -254,12 +262,14 @@ export default function WriteReviewPage() {
 
             <div className="md:col-span-8 space-y-5">
               <div className="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant flex items-center gap-5">
-                <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
-                  <img
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkmlXH30uvSRzLTC12UKIlCtQ0qOFCAgZK-LEp2CLLsoyn96hP-XrpX9hxNe1QlcQZTfkzJb7jWvd87UUWPmJPUS-LHz1XEq3qfigbFmwJbOEkO0PVfS5BZvvj3UKOr06RXRQfJrmRvh_99ySQhJ5dCu4o7cIHL0-chfvUE-56dJ_Hp4YsJn4gq8q2RZAhqjPV9oAPt-LSKcrqNd-11Kj0GaCzXJhPQgWIw-aqLvFMPd67tLVq8EQ1FFuFXRZb4GD3Xfq1rGcIlH7V"
-                    alt="restaurant"
-                    className="w-full h-full object-cover"
-                  />
+                <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container">
+                  {restaurant?.image && (
+                    <img
+                      src={restaurant.image}
+                      alt={restaurant.name}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
                 </div>
 
                 <div>
@@ -268,14 +278,14 @@ export default function WriteReviewPage() {
                   </span>
 
                   <h2 className="font-[Epilogue] text-xl font-semibold text-on-surface">
-                    L'Anima Trattoria
+                    {restaurant?.name ?? '...'}
                   </h2>
 
                   <p className="text-sm text-on-surface-variant flex items-center gap-1">
                     <span className="material-symbols-outlined text-sm">
                       location_on
                     </span>{" "}
-                    Gangnam, Seoul
+                    {restaurant?.address ?? ''}
                   </p>
                 </div>
               </div>
