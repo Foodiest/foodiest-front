@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useState, useMemo, useEffect } from "react";
+import { cleanProfanity } from '../utils/profanityFilter';
 import Layout from "../components/Layout";
 import defaultRestaurantImg from "../assets/default-restaurant.svg";
 import { useAuth } from "../contexts/AuthContext";
@@ -246,17 +247,14 @@ export default function MyPage() {
       setReviews(
         data.map((r) => ({
           id: r.id,
-          title:
-            r.review_text.length > 20
-              ? r.review_text.slice(0, 20) + "..."
-              : r.review_text,
+          title: (() => { const t = cleanProfanity(r.review_text ?? ''); return t.length > 20 ? t.slice(0, 20) + '...' : t; })(),
           restaurant: r.restaurants?.name ?? "",
           restaurantId: r.restaurant_id,
           date: new Date(r.created_at)
             .toLocaleDateString("en-US", { month: "short", day: "numeric" })
             .toUpperCase(),
           stars: r.rating,
-          desc: r.review_text,
+          desc: cleanProfanity(r.review_text ?? ''),
           keywords: r.keywords ?? {},
           images: r.images?.length ? r.images : [defaultRestaurantImg],
           createdAt: r.created_at,
