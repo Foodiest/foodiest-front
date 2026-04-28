@@ -208,6 +208,7 @@ function KakaoMapView({
   const mapRef = useRef(null);
   const markersRef = useRef([]);
   const userMarkerRef = useRef(null);
+  const selectedOverlayRef = useRef(null);
   const [mapError, setMapError] = useState("");
 
   useEffect(() => {
@@ -219,8 +220,10 @@ function KakaoMapView({
           return;
         }
 
-        const initialLat = userLocation ? userLocation.lat : restaurants[0]?.y;
-        const initialLng = userLocation ? userLocation.lng : restaurants[0]?.x;
+        const firstWithCoords = restaurants.find((r) => r.x && r.y);
+        const initialLat = userLocation ? userLocation.lat : firstWithCoords?.y;
+        const initialLng = userLocation ? userLocation.lng : firstWithCoords?.x;
+        if (!initialLat || !initialLng) return;
         const center = new kakao.maps.LatLng(initialLat, initialLng);
         const map = new kakao.maps.Map(mapElRef.current, {
           center,
@@ -239,18 +242,20 @@ function KakaoMapView({
           userMarkerRef.current = userOverlay;
         }
 
-        markersRef.current = restaurants.map((restaurant) => {
-          const marker = new kakao.maps.Marker({
-            map,
-            position: new kakao.maps.LatLng(restaurant.y, restaurant.x),
-            clickable: true,
-          });
+        markersRef.current = restaurants
+          .filter((restaurant) => restaurant.x && restaurant.y)
+          .map((restaurant) => {
+            const marker = new kakao.maps.Marker({
+              map,
+              position: new kakao.maps.LatLng(restaurant.y, restaurant.x),
+              clickable: true,
+            });
 
-          kakao.maps.event.addListener(marker, "click", () =>
-            onSelectRestaurant(restaurant.id),
-          );
-          return { id: restaurant.id, marker };
-        });
+            kakao.maps.event.addListener(marker, "click", () =>
+              onSelectRestaurant(restaurant.id),
+            );
+            return { id: restaurant.id, marker };
+          });
       })
       .catch((error) => {
         if (!isUnmounted) {
@@ -266,6 +271,10 @@ function KakaoMapView({
         userMarkerRef.current.setMap(null);
         userMarkerRef.current = null;
       }
+      if (selectedOverlayRef.current) {
+        selectedOverlayRef.current.setMap(null);
+        selectedOverlayRef.current = null;
+      }
       mapRef.current = null;
     };
   }, [onSelectRestaurant, restaurants, userLocation]);
@@ -278,15 +287,65 @@ function KakaoMapView({
     const selected = restaurants.find(
       (restaurant) => restaurant.id === selectedRestaurantId,
     );
-    if (!selected) {
+    if (!selected || !selected.x || !selected.y) {
       return;
     }
 
     const selectedLatLng = new window.kakao.maps.LatLng(selected.y, selected.x);
     mapRef.current.panTo(selectedLatLng);
 
+    // 기존 강조 오버레이 제거
+    if (selectedOverlayRef.current) {
+      selectedOverlayRef.current.setMap(null);
+    }
+
+    // 선택된 식당 위치에 강조 오버레이 표시
+    const content = `
+      <div style="
+        position:relative;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        transform:translateY(-100%);
+      ">
+        <div style="
+          background:#f97316;
+          color:white;
+          font-size:11px;
+          font-weight:700;
+          padding:4px 8px;
+          border-radius:8px;
+          white-space:nowrap;
+          box-shadow:0 2px 8px rgba(0,0,0,0.25);
+          max-width:120px;
+          overflow:hidden;
+          text-overflow:ellipsis;
+        ">${selected.name}</div>
+        <div style="
+          width:0;height:0;
+          border-left:6px solid transparent;
+          border-right:6px solid transparent;
+          border-top:8px solid #f97316;
+        "></div>
+        <div style="
+          width:10px;height:10px;border-radius:50%;
+          background:#f97316;
+          border:2px solid white;
+          box-shadow:0 0 0 2px #f97316;
+          margin-top:-2px;
+        "></div>
+      </div>
+    `;
+    selectedOverlayRef.current = new window.kakao.maps.CustomOverlay({
+      position: selectedLatLng,
+      content,
+      zIndex: 20,
+    });
+    selectedOverlayRef.current.setMap(mapRef.current);
+
+    // 일반 마커는 z-index만 조정
     markersRef.current.forEach(({ id, marker }) => {
-      marker.setZIndex(id === selectedRestaurantId ? 10 : 1);
+      marker.setZIndex(id === selectedRestaurantId ? 5 : 1);
     });
   }, [restaurants, selectedRestaurantId]);
 
