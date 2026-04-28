@@ -1,12 +1,17 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  kpiCards,
-  flaggedReviews,
-  trendingKeywords,
-  userGrowth,
   navItems,
   ADMIN_AVATAR,
 } from '../data/mockAdminData';
+import {
+  adminGetKpiStats,
+  adminGetWeeklyReviewCounts,
+  adminGetSentimentStats,
+  adminGetTopKeywords,
+  adminGetMonthlyUserGrowth,
+} from '../services/adminDashboardService';
+import { getReportedReviews } from '../services/reportService';
 import { getAll, adminRemove } from '../services/reviewService';
 import {
   getAll as getAllRestaurants,
@@ -340,14 +345,18 @@ function KakaoMapPicker({ selectedAddress, selectedX, selectedY, onSelect }) {
           resolve(new kakao.maps.LatLng(Number(selectedY), Number(selectedX)));
           return;
         }
-        navigator.geolocation?.getCurrentPosition(
-          (pos) =>
-            resolve(
-              new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude)
-            ),
-          () => resolve(new kakao.maps.LatLng(37.5665, 126.978)),
-          { timeout: 5000 }
-        ) ?? resolve(new kakao.maps.LatLng(37.5665, 126.978));
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) =>
+              resolve(
+                new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude)
+              ),
+            () => resolve(new kakao.maps.LatLng(37.5665, 126.978)),
+            { timeout: 5000 }
+          );
+        } else {
+          resolve(new kakao.maps.LatLng(37.5665, 126.978));
+        }
       });
 
     loadKakaoWithServices()
@@ -576,6 +585,7 @@ function RestaurantsTab() {
     const updated = await adminUpdate(r.id, { event: newEvent });
     setRestaurants((prev) => prev.map((x) => (x.id === r.id ? updated : x)));
   };
+
 
   return (
     <>
@@ -1129,255 +1139,257 @@ function ReviewsTab() {
 }
 
 function DashboardTab() {
+  const [kpi, setKpi] = useState(null);
+  const [weeklyReviews, setWeeklyReviews] = useState([]);
+  const [sentiment, setSentiment] = useState(null);
+  const [reportedReviews, setReportedReviews] = useState([]);
+  const [keywords, setKeywords] = useState([]);
+  const [monthlyGrowth, setMonthlyGrowth] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
+
+  useEffect(() => {
+    Promise.all([
+      adminGetKpiStats(),
+      adminGetWeeklyReviewCounts(),
+      adminGetSentimentStats(),
+      getReportedReviews(),
+      adminGetTopKeywords(10),
+      adminGetMonthlyUserGrowth(4),
+    ])
+      .then(([kpiData, weekly, sentimentData, reported, kws, growth]) => {
+        setKpi(kpiData);
+        setWeeklyReviews(weekly);
+        setSentiment(sentimentData);
+        setReportedReviews(reported);
+        setKeywords(kws);
+        setMonthlyGrowth(growth);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleDeleteReported = async (reviewId) => {
+    setDeletingId(reviewId);
+    try {
+      await adminRemove(reviewId);
+      setReportedReviews((prev) => prev.filter((r) => r.id !== reviewId));
+      setKpi((prev) => prev ? { ...prev, reportCount: Math.max(0, prev.reportCount - 1) } : prev);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const kpiCards = [
+    {
+      icon: 'person_add',
+      title: '전체 유저',
+      value: kpi?.userCount?.toLocaleString() ?? '-',
+      color: 'bg-orange-50 text-primary',
+      badgeColor: 'text-slate-400 bg-slate-50',
+      badge: '명',
+    },
+    {
+      icon: 'reviews',
+      title: '전체 리뷰',
+      value: kpi?.reviewCount?.toLocaleString() ?? '-',
+      color: 'bg-blue-50 text-secondary',
+      badgeColor: 'text-slate-400 bg-slate-50',
+      badge: '건',
+    },
+    {
+      icon: 'storefront',
+      title: '활성 식당',
+      value: kpi?.restaurantCount?.toLocaleString() ?? '-',
+      color: 'bg-purple-50 text-purple-600',
+      badgeColor: 'text-slate-400 bg-slate-50',
+      badge: '곳',
+    },
+    {
+      icon: 'report',
+      title: '신고된 리뷰',
+      value: kpi?.reportCount?.toLocaleString() ?? '-',
+      color: 'bg-error-container text-error',
+      badgeColor: 'text-error bg-error-container',
+      badge: kpi?.reportCount > 0 ? '긴급' : '없음',
+      urgent: (kpi?.reportCount ?? 0) > 0,
+    },
+  ];
+
+  const maxWeekly = Math.max(...weeklyReviews.map((r) => r.count), 1);
+
+  const pos = sentiment?.positive ?? 0;
+  const neu = sentiment?.neutral ?? 0;
+  const neg = sentiment?.negative ?? 0;
+
   return (
     <>
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        {kpiCards.map(
-          ({ icon, title, value, badge, color, badgeColor, urgent }) => (
-            <div
-              key={title}
-              className={`bg-white p-6 rounded-xl shadow-sm border flex flex-col justify-between ${urgent ? 'border-error-container ring-1 ring-error/10' : 'border-slate-100'}`}
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className={`p-2 rounded-lg ${color}`}>
-                  <span className="material-symbols-outlined text-sm">
-                    {icon}
-                  </span>
-                </div>
-                <span
-                  className={`text-xs font-semibold px-2 py-1 rounded-full ${badgeColor} ${urgent ? 'animate-pulse' : ''}`}
-                >
-                  {badge}
-                </span>
+        {kpiCards.map(({ icon, title, value, badge, color, badgeColor, urgent }) => (
+          <div
+            key={title}
+            className={`bg-white p-6 rounded-xl shadow-sm border flex flex-col justify-between ${urgent ? 'border-error-container ring-1 ring-error/10' : 'border-slate-100'}`}
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div className={`p-2 rounded-lg ${color}`}>
+                <span className="material-symbols-outlined text-sm">{icon}</span>
               </div>
-              <div>
-                <p className="text-sm font-medium text-slate-500 mb-1">
-                  {title}
-                </p>
-                <h3
-                  className={`text-2xl font-bold ${urgent ? 'text-error' : 'text-slate-900'}`}
-                >
-                  {value}
-                </h3>
-              </div>
+              <span className={`text-xs font-semibold px-2 py-1 rounded-full ${badgeColor} ${urgent ? 'animate-pulse' : ''}`}>
+                {badge}
+              </span>
             </div>
-          )
-        )}
+            <div>
+              <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
+              <h3 className={`text-2xl font-bold ${urgent ? 'text-error' : 'text-slate-900'}`}>
+                {loading ? <span className="inline-block w-16 h-7 bg-slate-100 rounded animate-pulse" /> : value}
+              </h3>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-12 gap-6 mb-6">
+        {/* 주간 리뷰 바 차트 */}
         <div className="col-span-12 lg:col-span-8 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
           <div className="flex justify-between items-center mb-6">
-            <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900">
-              주간 리뷰 트렌드
-            </h4>
-            <select className="text-xs font-medium bg-surface-container-low border-none rounded-lg focus:ring-0">
-              <option>최근 7일</option>
-              <option>최근 30일</option>
-            </select>
+            <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900">주간 리뷰 트렌드</h4>
+            <span className="text-xs text-slate-400">최근 7일</span>
           </div>
-          <div className="h-48 relative flex items-end justify-between gap-2 pt-4">
-            <div className="absolute inset-0 flex items-end">
-              <svg
-                className="w-full h-full"
-                viewBox="0 0 800 200"
-                preserveAspectRatio="none"
-              >
-                <defs>
-                  <linearGradient id="grad1" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop
-                      offset="0%"
-                      style={{ stopColor: '#b02f00', stopOpacity: 1 }}
+          {loading ? (
+            <div className="h-48 flex items-center justify-center text-slate-300 text-sm">불러오는 중...</div>
+          ) : (
+            <div className="h-48 flex items-end gap-2">
+              {weeklyReviews.map(({ date, count }) => {
+                const pct = (count / maxWeekly) * 100;
+                const label = new Date(date + 'T12:00:00').toLocaleDateString('ko-KR', { weekday: 'short' });
+                return (
+                  <div key={date} className="flex flex-col items-center flex-1 gap-1 h-full justify-end">
+                    <span className="text-[10px] text-slate-500 font-semibold">{count > 0 ? count : ''}</span>
+                    <div
+                      className="w-full bg-primary/20 rounded-t hover:bg-primary/40 transition-colors"
+                      style={{ height: `${Math.max(pct, 2)}%` }}
+                      title={`${count}건`}
                     />
-                    <stop
-                      offset="100%"
-                      style={{ stopColor: '#ffffff', stopOpacity: 0 }}
-                    />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M0 150 Q 100 100, 200 130 T 400 80 T 600 110 T 800 50"
-                  fill="none"
-                  stroke="#b02f00"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M0 150 Q 100 100, 200 130 T 400 80 T 600 110 T 800 50 L 800 200 L 0 200 Z"
-                  fill="url(#grad1)"
-                  opacity="0.1"
-                />
-              </svg>
+                    <span className="text-[10px] text-slate-400 font-medium">{label}</span>
+                  </div>
+                );
+              })}
             </div>
-            {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((day) => (
-              <div key={day} className="flex flex-col items-center flex-1 z-10">
-                <span className="w-2 h-2 rounded-full bg-primary mb-2"></span>
-                <span className="text-[10px] text-slate-400 font-medium">
-                  {day}
-                </span>
-              </div>
-            ))}
-          </div>
+          )}
         </div>
 
+        {/* 감정 분석 도넛 */}
         <div className="col-span-12 lg:col-span-4 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-          <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900 mb-5">
-            감정 분석
-          </h4>
-          <div className="flex flex-col items-center">
-            <div className="relative w-40 h-40 mb-5">
-              <svg
-                className="w-full h-full transform -rotate-90"
-                viewBox="0 0 36 36"
-              >
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="16"
-                  fill="transparent"
-                  stroke="#f1f5f9"
-                  strokeWidth="4"
-                />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="16"
-                  fill="transparent"
-                  stroke="#b02f00"
-                  strokeDasharray="70 100"
-                  strokeLinecap="round"
-                  strokeWidth="4"
-                />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="16"
-                  fill="transparent"
-                  stroke="#4c56af"
-                  strokeDasharray="20 100"
-                  strokeDashoffset="-70"
-                  strokeLinecap="round"
-                  strokeWidth="4"
-                />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="16"
-                  fill="transparent"
-                  stroke="#fca5a5"
-                  strokeDasharray="10 100"
-                  strokeDashoffset="-90"
-                  strokeLinecap="round"
-                  strokeWidth="4"
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-2xl font-bold text-slate-900">70%</span>
-                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
-                  긍정
-                </span>
+          <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900 mb-1">별점 분포</h4>
+          <p className="text-xs text-slate-400 mb-4">전체 리뷰 {sentiment?.total?.toLocaleString() ?? 0}건 기준</p>
+          {loading ? (
+            <div className="flex items-center justify-center h-36 text-slate-300 text-sm">불러오는 중...</div>
+          ) : (
+            <div className="flex flex-col items-center">
+              <div className="relative w-36 h-36 mb-4">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="16" fill="transparent" stroke="#f1f5f9" strokeWidth="4" />
+                  <circle cx="18" cy="18" r="16" fill="transparent" stroke="#b02f00"
+                    strokeDasharray={`${pos} 100`} strokeLinecap="round" strokeWidth="4" />
+                  <circle cx="18" cy="18" r="16" fill="transparent" stroke="#4c56af"
+                    strokeDasharray={`${neu} 100`} strokeDashoffset={`-${pos}`} strokeLinecap="round" strokeWidth="4" />
+                  <circle cx="18" cy="18" r="16" fill="transparent" stroke="#fca5a5"
+                    strokeDasharray={`${neg} 100`} strokeDashoffset={`-${pos + neu}`} strokeLinecap="round" strokeWidth="4" />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-2xl font-bold text-slate-900">{pos}%</span>
+                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">긍정</span>
+                </div>
+              </div>
+              <div className="w-full space-y-2">
+                {[
+                  { color: 'bg-primary', label: '긍정 (4-5점)', pct: `${pos}%` },
+                  { color: 'bg-secondary', label: '중립 (3점)', pct: `${neu}%` },
+                  { color: 'bg-red-300', label: '부정 (1-2점)', pct: `${neg}%` },
+                ].map(({ color, label, pct }) => (
+                  <div key={label} className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-3 h-3 rounded-full ${color}`} />
+                      <span className="text-sm font-medium text-slate-600">{label}</span>
+                    </div>
+                    <span className="text-sm font-bold text-slate-900">{pct}</span>
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="w-full space-y-2">
-              {[
-                { color: 'bg-primary', label: '긍정', pct: '70%' },
-                { color: 'bg-secondary', label: '중립', pct: '20%' },
-                { color: 'bg-red-300', label: '부정', pct: '10%' },
-              ].map(({ color, label, pct }) => (
-                <div key={label} className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-3 h-3 rounded-full ${color}`}></span>
-                    <span className="text-sm font-medium text-slate-600">
-                      {label}
-                    </span>
-                  </div>
-                  <span className="text-sm font-bold text-slate-900">
-                    {pct}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Table + Sidebar */}
+      {/* 신고된 리뷰 테이블 + 사이드바 */}
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 lg:col-span-9 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-          <div className="p-5 border-b border-slate-50 flex justify-between items-center">
-            <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900">
-              신고된 리뷰
-            </h4>
-            <button className="text-primary font-medium text-sm hover:underline">
-              전체 보기
-            </button>
+          <div className="p-5 border-b border-slate-50">
+            <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900">신고된 리뷰</h4>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead className="bg-surface-container-low text-slate-500 text-[10px] font-semibold uppercase tracking-wider">
                 <tr>
-                  {['유저', '식당', '사유', '날짜', '상태', '액션'].map((h) => (
-                    <th key={h} className="px-5 py-3">
-                      {h}
-                    </th>
+                  {['유저', '식당', '리뷰 내용', '신고수', '날짜', '삭제'].map((h) => (
+                    <th key={h} className="px-5 py-3 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {flaggedReviews.map(
-                  ({ user, restaurant, reason, date, status }) => (
-                    <tr
-                      key={user}
-                      className="hover:bg-slate-50 transition-colors"
-                    >
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-16 text-center text-slate-400 text-sm">불러오는 중...</td>
+                  </tr>
+                ) : reportedReviews.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-16 text-center text-slate-400 text-sm">신고된 리뷰가 없습니다.</td>
+                  </tr>
+                ) : (
+                  reportedReviews.map((r) => (
+                    <tr key={r.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">
-                            {user
-                              .split(' ')
-                              .map((n) => n[0])
-                              .join('')}
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0 overflow-hidden">
+                            {r.users?.profile_image
+                              ? <img src={r.users.profile_image} alt="" className="w-full h-full object-cover" />
+                              : (r.users?.nickname || r.users?.user_id || '?').slice(0, 2).toUpperCase()}
                           </div>
-                          <span className="text-sm font-semibold text-slate-900">
-                            {user}
+                          <span className="text-sm font-semibold text-slate-900 whitespace-nowrap">
+                            {r.users?.nickname || r.users?.user_id || '-'}
                           </span>
                         </div>
                       </td>
-                      <td className="px-5 py-4 text-sm text-slate-600">
-                        {restaurant}
+                      <td className="px-5 py-4 text-sm text-slate-600 whitespace-nowrap">
+                        {r.restaurants?.name || '-'}
+                      </td>
+                      <td className="px-5 py-4 max-w-xs">
+                        <p className="text-sm text-slate-600 truncate">{r.review_text}</p>
                       </td>
                       <td className="px-5 py-4">
-                        <span className="text-xs bg-red-50 text-red-700 px-2 py-1 rounded">
-                          {reason}
+                        <span className="flex items-center gap-1 text-xs font-semibold text-red-500">
+                          <span className="material-symbols-outlined text-sm">warning</span>
+                          {r.reportCount}건
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-sm text-slate-500">
-                        {date}
-                      </td>
-                      <td className="px-5 py-4">
-                        {status === 'pending' ? (
-                          <span className="flex items-center gap-1.5 text-xs text-orange-600 font-medium">
-                            <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>{' '}
-                            대기중
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>{' '}
-                            처리됨
-                          </span>
-                        )}
+                      <td className="px-5 py-4 text-xs text-slate-400 whitespace-nowrap">
+                        {new Date(r.created_at).toLocaleDateString('ko-KR')}
                       </td>
                       <td className="px-5 py-4">
                         <button
-                          className={`text-sm font-medium ${status === 'pending' ? 'text-secondary hover:underline' : 'text-slate-400'}`}
+                          onClick={() => handleDeleteReported(r.id)}
+                          disabled={deletingId === r.id}
+                          className="text-slate-400 hover:text-red-500 transition-colors disabled:opacity-40"
+                          title="리뷰 삭제"
                         >
-                          {status === 'pending' ? '검토' : '보관'}
+                          <span className="material-symbols-outlined text-sm">
+                            {deletingId === r.id ? 'refresh' : 'delete'}
+                          </span>
                         </button>
                       </td>
                     </tr>
-                  )
+                  ))
                 )}
               </tbody>
             </table>
@@ -1385,53 +1397,53 @@ function DashboardTab() {
         </div>
 
         <div className="col-span-12 lg:col-span-3 space-y-5">
+          {/* 인기 키워드 */}
           <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
-            <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900 mb-3">
-              인기 NLP 키워드
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {trendingKeywords.map((kw, i) => (
-                <span
-                  key={kw}
-                  className={`px-3 py-1 text-sm font-medium rounded-full ${
-                    i % 2 === 0
-                      ? 'bg-secondary/10 text-secondary'
-                      : i % 3 === 0
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-surface-container-high text-slate-600'
-                  }`}
-                >
-                  {kw}
-                </span>
-              ))}
-            </div>
+            <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900 mb-3">인기 키워드</h4>
+            {loading ? (
+              <div className="text-slate-300 text-sm">불러오는 중...</div>
+            ) : keywords.length === 0 ? (
+              <p className="text-sm text-slate-400">키워드 데이터가 없습니다.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {keywords.map((kw, i) => (
+                  <span
+                    key={kw}
+                    className={`px-3 py-1 text-sm font-medium rounded-full ${
+                      i % 3 === 0
+                        ? 'bg-secondary/10 text-secondary'
+                        : i % 3 === 1
+                          ? 'bg-primary/10 text-primary'
+                          : 'bg-surface-container-high text-slate-600'
+                    }`}
+                  >
+                    {kw}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
+          {/* 유저 성장 */}
           <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
-            <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900 mb-4">
-              유저 성장
-            </h4>
-            <div className="space-y-4">
-              {userGrowth.map(({ month, value, pct, color }) => (
-                <div key={month}>
-                  <div className="flex justify-between text-xs font-medium mb-1">
-                    <span className="text-slate-500">{month}</span>
-                    <span className="text-slate-900 font-bold">
-                      {value.toLocaleString()} 신규
-                    </span>
+            <h4 className="font-[Epilogue] text-lg font-semibold text-slate-900 mb-4">월별 신규 유저</h4>
+            {loading ? (
+              <div className="text-slate-300 text-sm">불러오는 중...</div>
+            ) : (
+              <div className="space-y-4">
+                {monthlyGrowth.map(({ month, value, pct, color }) => (
+                  <div key={month}>
+                    <div className="flex justify-between text-xs font-medium mb-1">
+                      <span className="text-slate-500">{month}</span>
+                      <span className="text-slate-900 font-bold">{value.toLocaleString()}명 신규</span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div className={`${color} h-full rounded-full`} style={{ width: `${pct}%` }} />
+                    </div>
                   </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div
-                      className={`${color} h-full rounded-full`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button className="w-full mt-5 py-2 border-2 border-secondary text-secondary rounded-lg font-medium text-sm hover:bg-secondary/5 transition-colors">
-              성장 리포트 보기
-            </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1441,13 +1453,17 @@ function DashboardTab() {
 
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState('대시보드');
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-surface text-on-surface flex">
       {/* Sidebar */}
       <aside className="fixed left-0 top-0 h-full w-64 z-40 bg-white border-r border-slate-200 shadow-sm font-[Epilogue] text-sm">
         <div className="p-6">
-          <div className="flex items-center gap-3 mb-8">
+          <div
+            className="flex items-center gap-3 mb-8 cursor-pointer"
+            onClick={() => navigate('/')}
+          >
             <div className="w-10 h-10 overflow-hidden">
               <img
                 src={LOGO_URL}
@@ -1514,7 +1530,7 @@ export default function AdminDashboardPage() {
             <div className="flex items-center gap-3 cursor-pointer">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-bold text-slate-900">
-                  어드민 프로필
+                  관리자
                 </p>
                 <p className="text-xs text-slate-500">최고 관리자</p>
               </div>

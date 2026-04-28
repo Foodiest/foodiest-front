@@ -347,7 +347,7 @@ export default function RestaurantDetailPage() {
     if (!restaurant || reviews.length === 0) return;
     setAiLoading(true);
     setAiError('');
-    analyzeReviews(restaurant.name, reviews)
+    analyzeReviews(restaurant.id, restaurant.name, reviews)
       .then((result) => setAiAnalysis(result))
       .catch((err) => setAiError(err.message))
       .finally(() => setAiLoading(false));
@@ -468,16 +468,40 @@ export default function RestaurantDetailPage() {
           return (
             <div className="grid grid-cols-4 grid-rows-2 gap-3 mb-6" style={{ gridTemplateRows: 'repeat(2, 200px)' }}>
               <div className="col-span-2 row-span-2 relative overflow-hidden rounded-lg">
-                <img src={imgs[0] || defaultRestaurantImg} alt="restaurant" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
+                <img
+                  src={imgs[0] || defaultRestaurantImg}
+                  alt="restaurant"
+                  className={`w-full h-full object-cover transition-opacity${allImgs[0] ? ' cursor-pointer hover:opacity-90' : ''}`}
+                  onClick={() => allImgs[0] && openLightbox(allImgs, 0)}
+                  onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }}
+                />
               </div>
               <div className="col-span-1 row-span-1 relative overflow-hidden rounded-lg">
-                <img src={imgs[1] || defaultRestaurantImg} alt="sub 1" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
+                <img
+                  src={imgs[1] || defaultRestaurantImg}
+                  alt="sub 1"
+                  className={`w-full h-full object-cover transition-opacity${allImgs[1] ? ' cursor-pointer hover:opacity-90' : ''}`}
+                  onClick={() => allImgs[1] && openLightbox(allImgs, 1)}
+                  onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }}
+                />
               </div>
               <div className="col-span-1 row-span-1 relative overflow-hidden rounded-lg">
-                <img src={imgs[2] || defaultRestaurantImg} alt="sub 2" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
+                <img
+                  src={imgs[2] || defaultRestaurantImg}
+                  alt="sub 2"
+                  className={`w-full h-full object-cover transition-opacity${allImgs[2] ? ' cursor-pointer hover:opacity-90' : ''}`}
+                  onClick={() => allImgs[2] && openLightbox(allImgs, 2)}
+                  onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }}
+                />
               </div>
               <div className="col-span-2 row-span-1 relative overflow-hidden rounded-lg">
-                <img src={imgs[3] || defaultRestaurantImg} alt="sub 3" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
+                <img
+                  src={imgs[3] || defaultRestaurantImg}
+                  alt="sub 3"
+                  className={`w-full h-full object-cover transition-opacity${allImgs[3] ? ' cursor-pointer hover:opacity-90' : ''}`}
+                  onClick={() => allImgs[3] && openLightbox(allImgs, 3)}
+                  onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }}
+                />
               </div>
             </div>
           );
@@ -558,12 +582,14 @@ export default function RestaurantDetailPage() {
         {/* Left (2/3) */}
         <div className="lg:col-span-2 space-y-8">
           {/* Overview */}
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-50">
-            <h2 className="font-[Epilogue] text-2xl font-semibold mb-3">소개</h2>
-            <p className="text-base text-on-surface-variant mb-5 leading-relaxed">
-              {restaurant.description || "도심 속 숨겨진 보석 같은 공간으로, 수제 파스타와 제철 재료를 전문으로 한 아늑한 분위기를 자랑합니다."}
-            </p>
-          </div>
+          {restaurant.description && (
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-50">
+              <h2 className="font-[Epilogue] text-2xl font-semibold mb-3">소개</h2>
+              <p className="text-base text-on-surface-variant mb-5 leading-relaxed">
+                {restaurant.description}
+              </p>
+            </div>
+          )}
 
           {/* AI Analysis */}
           <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-50">

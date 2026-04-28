@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { getAll, search as searchDB } from "../services/restaurantService";
+import { useLocation } from "react-router-dom";
+import { getAll, search as searchDB, getById } from "../services/restaurantService";
+import { getByRestaurant as getMenusByRestaurant } from "../services/menuService";
 import { cuisineMap } from "../data/mockFilters";
 import botAvatar from "../assets/chatbot.png";
 
@@ -18,6 +20,12 @@ function calcDistance(lat1, lon1, lat2, lon2) {
 const BOT_AVATAR = botAvatar;
 
 export default function AIChatBot() {
+  const location = useLocation();
+
+  // /restaurant/:id 페이지 감지
+  const restaurantMatch = location.pathname.match(/^\/restaurant\/(\d+)/);
+  const currentRestaurantId = restaurantMatch ? Number(restaurantMatch[1]) : null;
+
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
@@ -30,15 +38,17 @@ export default function AIChatBot() {
   const [isLoading, setIsLoading] = useState(false);
   const apiKey = import.meta.env.VITE_GROQ_API_KEY || "";
   const [userLocation, setUserLocation] = useState(null);
+  const [currentRestaurant, setCurrentRestaurant] = useState(null);
+  const [currentMenus, setCurrentMenus] = useState([]);
+  // ref로 최신 값을 항상 동기적으로 참조 (closure stale 방지)
+  const currentRestaurantRef = useRef(null);
+  const currentMenusRef = useRef([]);
   const messagesContainerRef = useRef(null);
   const chatContainerRef = useRef(null);
 
-  const suggestions = [
-    "조용한 카페 추천해줘",
-    "근처 최고의 파스타",
-    "건강한 점심 옵션",
-    "야외 다이닝",
-  ];
+  const suggestions = currentRestaurantId
+    ? ["메뉴 목록 보여줘", "가성비 좋은 메뉴는?", "인기 메뉴 추천해줘", "오늘 뭐 먹을까?"]
+    : ["근처 맛집 추천해줘", "가성비 좋은 곳 어디야?", "혼밥하기 좋은 곳", "오늘 점심 뭐 먹을까?"];
 
   const formatBotMessage = (text) => {
     if (!text) return "";
@@ -59,6 +69,77 @@ export default function AIChatBot() {
       return <span key={`${part}-${index}`}>{part}</span>;
     });
   };
+
+  const isMenuListRequest = (text) => {
+    const patterns = [
+      "메뉴 리스트", "메뉴리스트",
+      "메뉴 목록", "메뉴목록",
+      "전체 메뉴", "메뉴 전체",
+      "메뉴 보여", "메뉴보여",
+      "메뉴 알려줘", "메뉴 보고 싶",
+      "메뉴 뭐", "무슨 메뉴", "어떤 메뉴",
+      "메뉴 있어", "메뉴 종류",
+    ];
+    return patterns.some((p) => text.includes(p));
+  };
+
+  const extractRestaurantNameFromQuery = (text) => {
+    const markers = [
+      "전체 메뉴", "메뉴 리스트", "메뉴리스트", "메뉴 목록", "메뉴목록",
+      "메뉴 보여", "메뉴보여", "메뉴 알려줘", "메뉴 보고 싶",
+      "메뉴 뭐", "무슨 메뉴", "어떤 메뉴", "메뉴 있어", "메뉴 종류", "메뉴",
+    ];
+    let idx = -1;
+    for (const marker of markers) {
+      const pos = text.indexOf(marker);
+      if (pos !== -1 && (idx === -1 || pos < idx)) idx = pos;
+    }
+    if (idx <= 0) return "";
+    return text
+      .substring(0, idx)
+      .replace(/^(근처|여기|이\s*근처|주변의?|이\s*동네)\s*/g, "")
+      .replace(/\s*(의|을|를|은|는|이|가)\s*$/, "")
+      .trim();
+  };
+
+  const renderMenuCard = (msg) => (
+    <div className="w-full min-w-[220px]">
+      <p className="text-sm text-slate-600 mb-3 leading-relaxed">{renderBotMessage(msg.text)}</p>
+      <div className="divide-y divide-slate-100 rounded-xl border border-slate-200 overflow-hidden">
+        {msg.menus.map((m) => (
+          <div key={m.id} className="flex justify-between items-center px-4 py-3 bg-white hover:bg-slate-50 transition-colors">
+            <span className="text-sm font-medium text-slate-800">{m.name}</span>
+            <span className="text-sm font-bold text-[#FF5722] ml-4 flex-shrink-0">
+              {m.price.toLocaleString()}원
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // 식당 페이지일 때 식당 정보 + 메뉴 로드
+  useEffect(() => {
+    if (!currentRestaurantId) {
+      setCurrentRestaurant(null);
+      setCurrentMenus([]);
+      return;
+    }
+    Promise.all([
+      getById(currentRestaurantId),
+      getMenusByRestaurant(currentRestaurantId),
+    ]).then(([restaurant, menus]) => {
+      setCurrentRestaurant(restaurant);
+      setCurrentMenus(menus);
+      currentRestaurantRef.current = restaurant;
+      currentMenusRef.current = menus;
+      setMessages([{
+        id: 1,
+        from: "bot",
+        text: `**${restaurant.name}**에 오신 걸 환영해요! 메뉴 추천이나 궁금한 점을 물어보세요 🍽️`,
+      }]);
+    }).catch(() => {});
+  }, [currentRestaurantId]);
 
   // 사용자 위치 가져오기
   useEffect(() => {
@@ -93,7 +174,99 @@ export default function AIChatBot() {
     setIsLoading(true);
 
     try {
-      // 사용자 질문 기반 맛집 검색
+      // 식당 상세 페이지: 메뉴 기반 추천 (ref로 최신 데이터 참조)
+      const restaurant = currentRestaurantRef.current;
+      const menus = currentMenusRef.current;
+
+      if (currentRestaurantId && restaurant) {
+        if (isMenuListRequest(userMsg)) {
+          const botMsg = menus.length > 0
+            ? { id: Date.now() + 1, from: "bot", type: "menu", menus, text: `**${restaurant.name}**의 전체 메뉴입니다.` }
+            : { id: Date.now() + 1, from: "bot", text: "현재 등록된 메뉴 정보가 없습니다." };
+          setMessages((prev) => [...prev, botMsg]);
+          return;
+        }
+
+        const menuLines = menus.length > 0
+          ? menus.map((m) => `${m.name} (${m.price.toLocaleString()}원)`).join("\n")
+          : null;
+
+        const systemPrompt = `너는 "${restaurant.name}" 식당의 AI 어시스턴트야. 반드시 한글로만 답변해.
+
+[식당 정보]
+- 카테고리: ${cuisineMap[restaurant.cuisine] || restaurant.cuisine || "미분류"}
+- 평점: ${restaurant.rating || "정보 없음"}/5.0
+- 가격대: ${restaurant.price || "정보 없음"}
+- 분위기: ${restaurant.vibes?.join(", ") || "정보 없음"}
+- 설명: ${restaurant.description || "정보 없음"}
+
+${menuLines
+  ? `[메뉴판 - 반드시 이 목록만 사용할 것]
+${menuLines}
+
+규칙:
+1. 메뉴 관련 질문에는 위 메뉴판에 있는 항목만 답변해. 목록에 없는 메뉴는 절대 언급하지 마.
+2. 메뉴를 소개할 때는 반드시 메뉴명과 가격을 함께 알려줘.
+3. 메뉴판에 없는 메뉴를 추천하거나 가격을 지어내지 마.`
+  : `[메뉴 정보 없음]
+등록된 메뉴가 없어. 메뉴 관련 질문에는 "현재 메뉴 정보가 등록되어 있지 않습니다"라고만 답해.`}`;
+
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+          body: JSON.stringify({
+            model: "llama-3.1-8b-instant",
+            messages: [
+              { role: "system", content: systemPrompt },
+              ...nextMessages.slice(1).map((m) => ({ role: m.from === "user" ? "user" : "assistant", content: m.text })),
+            ],
+            temperature: 0.3,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data?.error?.message || `HTTP ${response.status}`);
+        const botReply = data?.choices?.[0]?.message?.content?.trim() || "응답을 받아오지 못했어요.";
+        setMessages((prev) => [...prev, { id: Date.now() + 1, from: "bot", text: botReply }]);
+        return;
+      }
+
+      // 일반 페이지: 특정 식당 메뉴 목록 요청
+      if (isMenuListRequest(userMsg)) {
+        const restaurantName = extractRestaurantNameFromQuery(userMsg);
+        if (!restaurantName) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now() + 1,
+              from: "bot",
+              text: "어떤 식당의 메뉴가 궁금하신가요? 식당 이름을 함께 말씀해주세요!\n예: \"맥도날드 메뉴 보여줘\"",
+            },
+          ]);
+          return;
+        }
+        const searchResults = await searchDB(restaurantName);
+        if (searchResults.length === 0) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now() + 1,
+              from: "bot",
+              text: `"${restaurantName}"에 해당하는 식당을 찾을 수 없어요. 이름을 다시 확인해보세요.`,
+            },
+          ]);
+          return;
+        }
+        const found = searchResults[0];
+        const foundMenus = await getMenusByRestaurant(found.id);
+        const botMsg =
+          foundMenus.length > 0
+            ? { id: Date.now() + 1, from: "bot", type: "menu", menus: foundMenus, text: `**${found.name}**의 전체 메뉴입니다.` }
+            : { id: Date.now() + 1, from: "bot", text: `**${found.name}**에 등록된 메뉴 정보가 없습니다.` };
+        setMessages((prev) => [...prev, botMsg]);
+        return;
+      }
+
+      // 일반 페이지: 맛집 검색 기반 추천
       let relevantRestaurants = [];
 
       if (userLocation) {
@@ -107,13 +280,24 @@ export default function AIChatBot() {
           .sort((a, b) => a.distanceKm - b.distanceKm)
           .slice(0, 10);
 
-        relevantRestaurants =
+        const combined =
           keywordResults.length > 0
-            ? keywordResults.slice(0, 5).map((r) => ({ ...r, distanceKm: calcDistance(userLocation.lat, userLocation.lng, r.y, r.x) }))
+            ? keywordResults.map((r) => ({ ...r, distanceKm: calcDistance(userLocation.lat, userLocation.lng, r.y, r.x) }))
             : nearbyResults;
+        const seen = new Set();
+        relevantRestaurants = combined.filter((r) => {
+          if (seen.has(r.id)) return false;
+          seen.add(r.id);
+          return true;
+        }).slice(0, 5);
       } else {
         const results = await searchDB(userMsg);
-        relevantRestaurants = results.slice(0, 5);
+        const seen = new Set();
+        relevantRestaurants = results.filter((r) => {
+          if (seen.has(r.id)) return false;
+          seen.add(r.id);
+          return true;
+        }).slice(0, 5);
       }
 
       // 맛집 정보를 텍스트로 변환
@@ -144,7 +328,7 @@ export default function AIChatBot() {
 
 중요: 반드시 순수한 한글로만 답변해. 한자나 일본어를 절대 사용하지 마. 예: "料理" 대신 "요리", "店" 대신 "집" 사용.
 
-아래 데이터에 있는 정보만 사용하고, 없는 정보는 지어내지 마.
+아래 데이터에 있는 정보만 사용하고, 없는 정보는 지어내지 마. 같은 식당을 중복으로 언급하지 마.
 
 === ${userLocation ? "근처 맛집 정보" : "추천 맛집 정보"} ===
 ${restaurantContext}
@@ -167,7 +351,7 @@ ${userLocation ? "거리 정보를 포함해서 가까운 순서대로 추천해
                 role: "system",
                 content: systemPrompt,
               },
-              ...nextMessages.map((message) => ({
+              ...nextMessages.slice(1).map((message) => ({
                 role: message.from === "user" ? "user" : "assistant",
                 content: message.text,
               })),
@@ -279,15 +463,19 @@ ${userLocation ? "거리 정보를 포함해서 가까운 순서대로 추천해
                   </div>
                 )}
                 <div
-                  className={`p-3 rounded-2xl shadow-sm max-w-[80%] text-sm ${
+                  className={`p-3 rounded-2xl shadow-sm text-sm ${
                     msg.from === "bot"
                       ? "bg-white rounded-tl-none border border-slate-100 text-slate-800"
                       : "bg-[#FF5722] rounded-tr-none text-white"
-                  }`}
+                  } ${msg.type === "menu" ? "max-w-[92%] w-full" : "max-w-[80%]"}`}
                 >
-                  <span className="whitespace-pre-wrap break-words leading-relaxed">
-                    {msg.from === "bot" ? renderBotMessage(msg.text) : msg.text}
-                  </span>
+                  {msg.type === "menu" ? (
+                    renderMenuCard(msg)
+                  ) : (
+                    <span className="whitespace-pre-wrap break-words leading-relaxed">
+                      {msg.from === "bot" ? renderBotMessage(msg.text) : msg.text}
+                    </span>
+                  )}
                 </div>
               </div>
             ))}

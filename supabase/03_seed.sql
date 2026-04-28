@@ -84,8 +84,10 @@ values
   null, null, null, null)
 
 on conflict (id) do update set
-  image = excluded.image,
-  sub_images = excluded.sub_images;
+  image      = excluded.image,
+  sub_images = excluded.sub_images,
+  vibes      = excluded.vibes,
+  flavors    = excluded.flavors;
 
 -- serial 시퀀스를 seed 다음 값으로 맞춤
 select setval('public.restaurants_id_seq', (select max(id) from public.restaurants));
