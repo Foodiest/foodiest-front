@@ -1,0 +1,314 @@
+[
+  {
+    "user_id": "hyuk_dev",
+    "nickname": "Hyuk Dev",
+    "email": "hyuk_dev@foodiest.com",
+    "phone": null,
+    "profile_image": null,
+    "provider": "email",
+    "social_id": null,
+    "vibes": [],
+    "flavors": [],
+    "dietary": [],
+    "allergies": [],
+    "created_at": "2026-04-24T12:23:25.681876+00:00",
+    "updated_at": "2026-04-24T16:07:28.860801+00:00",
+    "password": "$2a$10$3JQIeeHqCCcMCWYdWBpuae7zf.vY6YH5C8.GYY2BCi.LjEK6ibS6m",
+    "role": "user",
+    "auth_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "id": 1,
+    "bio": null,
+    "best_restaurants": null,
+    "cover_image": null,
+    "best_restaurant_comments": []
+  },
+  {
+    "user_id": "jane_gourmet",
+    "nickname": "Jane Gourmet",
+    "email": "jane_gourmet@foodiest.com",
+    "phone": null,
+    "profile_image": null,
+    "provider": "email",
+    "social_id": null,
+    "vibes": [],
+    "flavors": [],
+    "dietary": [],
+    "allergies": [],
+    "created_at": "2026-04-24T12:23:25.681876+00:00",
+    "updated_at": "2026-04-24T16:07:28.860801+00:00",
+    "password": "$2a$10$sKuHh.r80V2GRByJEizhj.DYSzAuT6eBSMfiWFoRBGVSQDogtJ8EK",
+    "role": "user",
+    "auth_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "id": 2,
+    "bio": null,
+    "best_restaurants": null,
+    "cover_image": null,
+    "best_restaurant_comments": []
+  },
+  {
+    "user_id": "mike_foodie",
+    "nickname": "Mike Foodie",
+    "email": "mike_foodie@foodiest.com",
+    "phone": null,
+    "profile_image": null,
+    "provider": "email",
+    "social_id": null,
+    "vibes": [],
+    "flavors": [],
+    "dietary": [],
+    "allergies": [],
+    "created_at": "2026-04-24T12:23:25.681876+00:00",
+    "updated_at": "2026-04-24T16:07:28.860801+00:00",
+    "password": "$2a$10$XwtsHo19NFYS87zEETFiFu/i.e1mNndVS4OmSYT0uKhcs6wq91a/y",
+    "role": "user",
+    "auth_id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+    "id": 3,
+    "bio": null,
+    "best_restaurants": null,
+    "cover_image": null,
+    "best_restaurant_comments": []
+  },
+  {
+    "user_id": "hyuk11",
+    "nickname": "hyuk11",
+    "email": "hyuk11@email.com",
+    "phone": "",
+    "profile_image": null,
+    "provider": "email",
+    "social_id": null,
+    "vibes": [
+      "Lively"
+    ],
+    "flavors": [
+      "Sweet Treats"
+    ],
+    "dietary": [
+      "Vegan"
+    ],
+    "allergies": [],
+    "created_at": "2026-04-26T02:22:02.182785+00:00",
+    "updated_at": "2026-04-26T02:22:02.372088+00:00",
+    "password": "$2a$10$ivWWp/ZQkMPlhdEqYAQhde.n5fhIUkMiIJktteNCP5/Mtl3rC8qt.",
+    "role": "user",
+    "auth_id": "e0ee150f-855e-4fae-a4d3-13ab202bbf0a",
+    "id": 6,
+    "bio": null,
+    "best_restaurants": null,
+    "cover_image": null,
+    "best_restaurant_comments": []
+  },
+  {
+    "user_id": "hyuk",
+    "nickname": "hyuk3333",
+    "email": "hyuk@email.com",
+    "phone": "",
+    "profile_image": "https://adgskjyflkvydvngmtmr.supabase.co/storage/v1/object/public/review-images/profile/b349ee52-ee73-4034-a8f3-0c0ce10f646c/avatar.jpg?t=1777250830244",
+    "provider": "email",
+    "social_id": null,
+    "vibes": [
+      "Lively"
+    ],
+    "flavors": [
+      "Sweet Treats"
+    ],
+    "dietary": [
+      "Vegan"
+    ],
+    "allergies": [
+      "Dairy",
+      "Wheat",
+      "Soy"
+    ],
+    "created_at": "2026-04-24T15:34:01.525232+00:00",
+    "updated_at": "2026-04-27T06:29:50.085434+00:00",
+    "password": "$2a$10$WNr8HDmzvs8ch/31/1U3L.3Ej/uCbGEVnPyliOnRGUtASphMWZCd2",
+    "role": "admin",
+    "auth_id": "b349ee52-ee73-4034-a8f3-0c0ce10f646c",
+    "id": 5,
+    "bio": "하이요11",
+    "best_restaurants": [
+      7,
+      2,
+      4
+    ],
+    "cover_image": "https://adgskjyflkvydvngmtmr.supabase.co/storage/v1/object/public/review-images/profile/b349ee52-ee73-4034-a8f3-0c0ce10f646c/cover.webp?t=1777167279808",
+    "best_restaurant_comments": [
+      "1",
+      "2",
+      "3"
+    ]
+  },
+  {
+    "user_id": "dayekim02",
+    "nickname": "김다예",
+    "email": "dayekim02@nate.com",
+    "phone": "",
+    "profile_image": null,
+    "provider": "email",
+    "social_id": null,
+    "vibes": [
+      "Lively"
+    ],
+    "flavors": [
+      "Sweet Treats",
+      "Salt-heavy"
+    ],
+    "dietary": [
+      "Vegan"
+    ],
+    "allergies": [
+      "Soy"
+    ],
+    "created_at": "2026-04-26T04:34:23.027582+00:00",
+    "updated_at": "2026-04-27T03:17:17.499126+00:00",
+    "password": "$2a$10$CMYAj6kJRhWVFJieWqB6bu1ZAxY29mhSGYVfX7L6ev9L.E3OPcJ.W",
+    "role": "user",
+    "auth_id": "fc5f155f-ebb9-4c85-a4fd-dd9cf66a70d3",
+    "id": 8,
+    "bio": null,
+    "best_restaurants": null,
+    "cover_image": null,
+    "best_restaurant_comments": []
+  },
+  {
+    "user_id": "dbk1102",
+    "nickname": "dbk1102",
+    "email": "dbk1102@gmail.com",
+    "phone": null,
+    "profile_image": null,
+    "provider": "email",
+    "social_id": null,
+    "vibes": [],
+    "flavors": [],
+    "dietary": [],
+    "allergies": [],
+    "created_at": "2026-04-27T07:03:36.455648+00:00",
+    "updated_at": "2026-04-27T07:03:36.455648+00:00",
+    "password": "",
+    "role": "user",
+    "auth_id": "73100b0f-14ba-431f-a51b-d40033ad414b",
+    "id": 27,
+    "bio": null,
+    "best_restaurants": null,
+    "cover_image": null,
+    "best_restaurant_comments": []
+  },
+  {
+    "user_id": "hyuk.developmentee",
+    "nickname": "hyuk lee",
+    "email": "hyuk.development@gmail.com",
+    "phone": "",
+    "profile_image": null,
+    "provider": "google",
+    "social_id": "110433288794018103068",
+    "vibes": [
+      "Lively"
+    ],
+    "flavors": [
+      "Sweet Treats"
+    ],
+    "dietary": [
+      "Vegan"
+    ],
+    "allergies": [],
+    "created_at": "2026-04-27T08:09:32.791547+00:00",
+    "updated_at": "2026-04-27T08:09:33.021961+00:00",
+    "password": "$2a$10$c0vwMFHx6QCSc7ud.ACWCeU2.mDsOu1sO3CWLc8NfVsZ18wQCGnB.",
+    "role": "user",
+    "auth_id": "cc5f61c5-f5e3-4a55-b90b-cbeba6d8c53a",
+    "id": 36,
+    "bio": null,
+    "best_restaurants": null,
+    "cover_image": null,
+    "best_restaurant_comments": []
+  },
+  {
+    "user_id": "jj143041342",
+    "nickname": "진환유",
+    "email": "jj14304134@gmail.com",
+    "phone": "",
+    "profile_image": null,
+    "provider": "google",
+    "social_id": "109257136400035469189",
+    "vibes": [
+      "Lively"
+    ],
+    "flavors": [
+      "Sweet Treats"
+    ],
+    "dietary": [
+      "Vegan"
+    ],
+    "allergies": [],
+    "created_at": "2026-04-27T07:26:02.900497+00:00",
+    "updated_at": "2026-04-27T07:26:03.04243+00:00",
+    "password": "$2a$10$OW1fFrp2Pb3mU9FmkTQyyOs2ZRPf.ECr8pCcjQSbc7taxrvF.7IUG",
+    "role": "user",
+    "auth_id": "3dfb24e1-c756-4e56-879b-1d0b78cc620c",
+    "id": 31,
+    "bio": null,
+    "best_restaurants": null,
+    "cover_image": null,
+    "best_restaurant_comments": []
+  },
+  {
+    "user_id": "eeeee",
+    "nickname": "eeeee",
+    "email": "eeeee@eee.com",
+    "phone": "",
+    "profile_image": null,
+    "provider": "email",
+    "social_id": null,
+    "vibes": [
+      "Lively",
+      "Romantic"
+    ],
+    "flavors": [
+      "Sweet Treats",
+      "Savory"
+    ],
+    "dietary": [
+      "Vegan"
+    ],
+    "allergies": [],
+    "created_at": "2026-04-26T02:34:22.010326+00:00",
+    "updated_at": "2026-04-27T09:12:33.723627+00:00",
+    "password": "$2a$10$9FwycJDhmdDW379D0sW22.Z1BgujkdoCDGtyXkZXnEUWa92gYelyi",
+    "role": "user",
+    "auth_id": "41a09ed3-0562-4465-9cd3-d79771e36110",
+    "id": 7,
+    "bio": "",
+    "best_restaurants": null,
+    "cover_image": null,
+    "best_restaurant_comments": []
+  },
+  {
+    "user_id": "jj1430413",
+    "nickname": "진환유",
+    "email": "jj1430413@gmail.com",
+    "phone": "",
+    "profile_image": null,
+    "provider": "kakao",
+    "social_id": "4860865353",
+    "vibes": [
+      "Lively"
+    ],
+    "flavors": [
+      "Sweet Treats"
+    ],
+    "dietary": [
+      "Vegan"
+    ],
+    "allergies": [],
+    "created_at": "2026-04-27T07:49:12.046032+00:00",
+    "updated_at": "2026-04-27T07:49:12.112293+00:00",
+    "password": "$2a$10$ew.v3AYe6nR6Huwih0RmSucYDrlc4.Uu3xlt9FGA4PMi.1DAoiKmm",
+    "role": "user",
+    "auth_id": "673a2bea-6038-4f39-803c-03b3979017cd",
+    "id": 34,
+    "bio": null,
+    "best_restaurants": null,
+    "cover_image": null,
+    "best_restaurant_comments": []
+  }
+]

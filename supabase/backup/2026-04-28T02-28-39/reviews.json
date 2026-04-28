@@ -1,0 +1,720 @@
+[
+  {
+    "id": "rev-aaa-001",
+    "restaurant_id": 1,
+    "review_text": "트러플 파스타의 풍미가 정말 깊어요. 조용한 분위기 덕분에 대화하기 좋고, 직원들도 매우 친절합니다. 로마의 트라토리아에 온 것 같은 착각이 들 정도예요.",
+    "rating": 5,
+    "images": [
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuDbV0RFghqxJ3lMU65T3gmU91Hb6Mx5TewTu4Nl6OuqrzYLlp0LtnhJST9KJhwFTdx10i-07-5YZPfaGEGZmgn2iC741ofDyTb1SDLLYCPV0Dj7nzGXCgXoYhHR2LhlRe8l5i2_XHHsXdhZrniz3FHr5g8O3Qi3S69WX8SAleqKwhXGHv2evns6brXEL5eaoHzqX6CL8W6G564--ntDO0qo1vRg6kICXPMJG-nCEwwdailk3XGabsnujTUxeSRUD3RAj3-xRdqBRXA3"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Quiet"
+      ],
+      "Taste": [
+        "Umami-rich"
+      ],
+      "Service": [
+        "Attentive"
+      ]
+    },
+    "created_at": "2026-04-10T10:00:00+00:00",
+    "updated_at": "2026-04-24T16:10:29.628047+00:00",
+    "user_id": 1,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-aaa-002",
+    "restaurant_id": 2,
+    "review_text": "미니멀한 인테리어와 신선한 사시미가 인상적입니다. 정갈한 맛이지만 가격이 다소 높습니다. 그래도 특별한 날 방문하기엔 최고의 선택입니다.",
+    "rating": 4,
+    "images": [
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBzUfzwLMQ32xHuDnvGV8J-QyTSOpMJNoPibvjsKk4axh9rixwT76n_RYoOqNt5eZNeYE1qHOFl1RPhacE3sZyr-fZ6gpQAA7yx-7iVv0gtkekzaTYYsjwA1EfMMsygdrWrGxN3tbbRhFn2U3OborWQk9oeupPUufCk29ggypT949zsz-p15VtMWsJFiXG0WsVDEtsfUyayadS-l9pfC7Iu1VYfLTMxB507nBBwePxJ-kZIuYkZGZuv65aO1pptr4yxfBjFKg_ET7GDd"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Minimalist"
+      ],
+      "Taste": [
+        "Authentic"
+      ],
+      "Service": [
+        "Fast"
+      ]
+    },
+    "created_at": "2026-04-15T11:00:00+00:00",
+    "updated_at": "2026-04-24T16:10:29.628047+00:00",
+    "user_id": 1,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-aaa-003",
+    "restaurant_id": 6,
+    "review_text": "참숯 직화로 구운 와규 불고기가 정말 일품이에요. 반찬 종류도 다양하고 신선합니다. 가족들과 함께 방문했는데 모두 만족했습니다. 주차도 편리해서 자주 오게 될 것 같아요.",
+    "rating": 5,
+    "images": [
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuAGrKERkAoI4x2VQxH3TC3zd4gK_6TAjyvhvkYrBW3hrZGjE5SDBNJEuSXLJB74A84iybZnN7lssT39Yn2wVTghJ52TxCrxq1_eK6NqxUTf1MfRWOfAPHXxPL-wWgJRRG1hj3SO1P_xhmDLbFWMriEFXKg7LvDcy8EwMSHlGmOFIFEM3tyB2Z0FHMeG9BJXh__3s55GIon_3HlDIYGsAfswKKLI1RE0l0i6Ch2jo_TOTW1F-5FHCs4cGHqd8Zv9XuVUO-O-7iQpyppA"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Lively"
+      ],
+      "Taste": [
+        "Savory"
+      ],
+      "Service": [
+        "Friendly"
+      ]
+    },
+    "created_at": "2026-04-18T10:30:00+00:00",
+    "updated_at": "2026-04-24T16:10:29.628047+00:00",
+    "user_id": 1,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-aaa-004",
+    "restaurant_id": 8,
+    "review_text": "72시간 끓인 돈코츠 육수는 정말 별미입니다. 면의 탄력도 훌륭하고 차슈도 두꺼워서 만족스러워요. 웨이팅이 조금 있지만 충분히 기다릴 만한 가치가 있습니다.",
+    "rating": 5,
+    "images": [
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuDWfiTamkqsO7J-p2pjn_rBQZjm25m7UARi9O5Mu4sSC0hY00aWr7dIaThsPOoq41-okk6iybbx9CTPhjUlmq43YK8WdswzT4lLAZaFc23J2-qBd9_pHKXXnkpBI7ZHR4ms_-HgpY9hC78UeOvkChUJFz6zAjsLUY5cbyPl8ZVRPxGiVItrs5nP2zy-22TKLoUQjHAqZVae_JDS9LxP0lHqRtF93eAEppC2a1wqVXjwK91sM6-3-vC4b9GeSB573R4KK5m1qEJdAOei"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Cozy"
+      ],
+      "Taste": [
+        "Umami-rich"
+      ],
+      "Service": [
+        "Attentive"
+      ]
+    },
+    "created_at": "2026-04-20T03:30:00+00:00",
+    "updated_at": "2026-04-24T16:10:29.628047+00:00",
+    "user_id": 1,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-aaa-005",
+    "restaurant_id": 15,
+    "review_text": "유기농 재료라 그런지 속이 편해요. 식물원 같은 분위기도 너무 맘에 듭니다. 콜드프레스 주스가 특히 맛있고, 직원들이 메뉴 설명을 친절하게 해줍니다.",
+    "rating": 5,
+    "images": [
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuDvdqc2VoexOAJdxt7---KdH4tn8CXYxIMdrxtjqNEW-YgwJk9IW1NVVHlT__lK4wFLJBcIC-9liRa3xwQi8vraA_7Pu6wom5dspTMvUY3wahKPbeXI6qAfn2B7XS-WPxZps6waSUqtmiWJiLksTu0JeCJE9eKa0cSFg2kFH4aXOf3gDSvlFqK-_dchpPRbPAz0mRnIpmAg-4MX445vS74uvHSsCRZhFfxrATblMGTguGHKzSWFetFgGmeb99qs_l5DO8vjBnkaJkIv"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Sophisticated"
+      ],
+      "Taste": [
+        "Savory"
+      ],
+      "Service": [
+        "Friendly"
+      ]
+    },
+    "created_at": "2026-04-21T02:00:00+00:00",
+    "updated_at": "2026-04-24T16:10:29.628047+00:00",
+    "user_id": 1,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-bbb-001",
+    "restaurant_id": 3,
+    "review_text": "볼드한 스파이스와 활기찬 분위기가 정말 인상적이에요. 정통 카레의 풍미가 깊고 단체로 오기에도 딱 좋습니다. 채식 메뉴도 다양해서 채식주의자 친구들과 함께 방문하기 좋아요.",
+    "rating": 5,
+    "images": [
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuDbV0RFghqxJ3lMU65T3gmU91Hb6Mx5TewTu4Nl6OuqrzYLlp0LtnhJST9KJhwFTdx10i-07-5YZPfaGEGZmgn2iC741ofDyTb1SDLLYCPV0Dj7nzGXCgXoYhHR2LhlRe8l5i2_XHHsXdhZrniz3FHr5g8O3Qi3S69WX8SAleqKwhXGHv2evns6brXEL5eaoHzqX6CL8W6G564--ntDO0qo1vRg6kICXPMJG-nCEwwdailk3XGabsnujTUxeSRUD3RAj3-xRdqBRXA3"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Vibrant"
+      ],
+      "Taste": [
+        "Spicy"
+      ],
+      "Service": [
+        "Friendly"
+      ]
+    },
+    "created_at": "2026-04-12T10:00:00+00:00",
+    "updated_at": "2026-04-24T16:10:29.628047+00:00",
+    "user_id": 2,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-bbb-002",
+    "restaurant_id": 7,
+    "review_text": "태국 현지 셰프가 만든 팟타이는 정말 현지 맛과 똑같아요! 마사만 커리도 부드럽고 풍부한 맛입니다. 망고 스티키 라이스는 꼭 주문해보세요, 완전 강추입니다.",
+    "rating": 5,
+    "images": [
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBtLh1NYpD8QI9ZAlSIh6ro1uhnW8KKtq244wpGDLTECRQmqHpdjbmfiMtCHH_CnowDIL1pAuzMqmqFvkmK_9_7hxqDrzNXlAM80ROwjcpzhyGKn4dvOTCOEtbiSuBPVEu_2p843aJViWGH9qh0xC5hUmbrg8zkxwVwdsqb3OPCHcXqup0e-YmylykNTg4iYBTOdGshaS1DQcD2Rm1uNTWiYAsx73taEt3-t5mEfa9v3G6tl34I_4YuieUfyVlCnyJg2OwftROktxg_"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Lively"
+      ],
+      "Taste": [
+        "Spicy"
+      ],
+      "Service": [
+        "Fast"
+      ]
+    },
+    "created_at": "2026-04-14T10:00:00+00:00",
+    "updated_at": "2026-04-24T16:10:29.628047+00:00",
+    "user_id": 2,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-bbb-003",
+    "restaurant_id": 9,
+    "review_text": "스매시 버거 패티가 너무 맛있어요! 바삭하게 구워진 겉면과 육즙이 가득한 속면의 조화가 완벽합니다. 트러플 감자튀김도 꼭 같이 드세요. 크래프트 맥주와 완벽한 조합!",
+    "rating": 4,
+    "images": [
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuDvzp1mVk2qPX231Hyp9yTkS5ysLEaXNZlES_hj7DmJQ66i1SDKM_Xwayg374qG4OWy7kHf1wLpbYXjhSeWIRA1q7ZXTPVEvZ6Ln3YZRRivBY7oD4fPmkITP2Jav8doC9zVzUNdehVIMSzTBItSayO90fYD6CnuVotRvTUrQEY2FKY4H_PPqOzvlgwp_p7WPmpPOh2u0HoHhGBDMP30lEqhc-m2rNLyE7opfijNqgbIf9L5AdqITXFtuu40i_ELPnb5qGroIf2ij10P"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Casual"
+      ],
+      "Taste": [
+        "Savory"
+      ],
+      "Service": [
+        "Fast"
+      ]
+    },
+    "created_at": "2026-04-17T04:00:00+00:00",
+    "updated_at": "2026-04-24T16:10:29.628047+00:00",
+    "user_id": 2,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-bbb-004",
+    "restaurant_id": 10,
+    "review_text": "하몬 이베리코와 파에야가 진짜 스페인 현지 맛입니다. 분위기도 플라멩코 음악이 흘러 더욱 낭만적이에요. 스페인 와인 셀렉션도 훌륭하고, 직원들이 페어링 추천을 잘 해줍니다.",
+    "rating": 5,
+    "images": [
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuDCHccFkc2uCwTcGjfOMhFy-sPVDo65WJGA7hUis74RATxXWmfXzDS2Qcff7hacPldcnzIysc_KjaY2ZoNH9J4F87LsQQmPdW9jVV-5RUqEz9JxhyJxrQDJtMJIiBbdFoCVqobulcX9TFTBQSVMePEfahLfPvxm1QKTw7YifgoHHUKcGZ4N4STv4e2wH942hAL-7fIgDtNQG_JeeXovvAuAExAB8L0KYPi1yhKlz1wDOmUL6Pf3Wa1IJJ1tbuyvIgJyFl0jksI-oCCl"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Romantic"
+      ],
+      "Taste": [
+        "Savory"
+      ],
+      "Service": [
+        "Attentive"
+      ]
+    },
+    "created_at": "2026-04-19T11:00:00+00:00",
+    "updated_at": "2026-04-24T16:10:29.628047+00:00",
+    "user_id": 2,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-bbb-005",
+    "restaurant_id": 13,
+    "review_text": "아보카도 에그 베네딕트 플레이팅이 너무 예쁘고 맛도 훌륭해요. 스페셜티 커피도 맛있고 직원들도 친절합니다. 주말 웨이팅은 좀 있지만 기다릴 가치가 있는 브런치 맛집입니다.",
+    "rating": 4,
+    "images": [
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuCHmDnYklZfS2ovFicfL3qOTQgj0DGWejlakVViEcksvnKsVjtdJ3mPWYvZV6ycd5Ggy-_QJ7Fx69dEAtecAM7bQT1FBDND4SUGMQ8GnXezodjCHiPwxYusXpPQ-3uF9C6BVglpIsSdgNd98DARCu6s1pzD2LFvmFA9XyiRLrAsGvR5dhk7-FCvFMifTQrF03fQpmbfg02bChaqCSDVaNs6WpRxt2ji4LBBhP6W4vl9Fr9gQsAjlU-Nm5XThu_e0OK9wENkvjBibqo3"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Social"
+      ],
+      "Taste": [
+        "Sweet"
+      ],
+      "Service": [
+        "Friendly"
+      ]
+    },
+    "created_at": "2026-04-22T01:30:00+00:00",
+    "updated_at": "2026-04-24T16:10:29.628047+00:00",
+    "user_id": 2,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-ccc-001",
+    "restaurant_id": 1,
+    "review_text": "비즈니스 미팅하기 최적의 장소입니다. 서버들이 매우 전문적이고, 조용한 분위기에서 중요한 대화를 나누기 좋습니다. 와인 리스트도 훌륭하고 파스타는 모든 종류가 다 맛있습니다.",
+    "rating": 5,
+    "images": [
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuAGrKERkAoI4x2VQxH3TC3zd4gK_6TAjyvhvkYrBW3hrZGjE5SDBNJEuSXLJB74A84iybZnN7lssT39Yn2wVTghJ52TxCrxq1_eK6NqxUTf1MfRWOfAPHXxPL-wWgJRRG1hj3SO1P_xhmDLbFWMriEFXKg7LvDcy8EwMSHlGmOFIFEM3tyB2Z0FHMeG9BJXh__3s55GIon_3HlDIYGsAfswKKLI1RE0l0i6Ch2jo_TOTW1F-5FHCs4cGHqd8Zv9XuVUO-O-7iQpyppA"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Sophisticated"
+      ],
+      "Taste": [
+        "Savory"
+      ],
+      "Service": [
+        "Valet Park"
+      ]
+    },
+    "created_at": "2026-04-05T10:00:00+00:00",
+    "updated_at": "2026-04-24T16:10:29.628047+00:00",
+    "user_id": 3,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-ccc-002",
+    "restaurant_id": 2,
+    "review_text": "조용하고 정중한 서비스가 돋보입니다. 가격만큼의 가치를 하네요. 오마카세를 주문했는데 셰프의 선택 하나하나가 훌륭했습니다. 특히 오토로가 입에서 녹는 듯한 맛이었어요.",
+    "rating": 5,
+    "images": [
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBtLh1NYpD8QI9ZAlSIh6ro1uhnW8KKtq244wpGDLTECRQmqHpdjbmfiMtCHH_CnowDIL1pAuzMqmqFvkmK_9_7hxqDrzNXlAM80ROwjcpzhyGKn4dvOTCOEtbiSuBPVEu_2p843aJViWGH9qh0xC5hUmbrg8zkxwVwdsqb3OPCHcXqup0e-YmylykNTg4iYBTOdGshaS1DQcD2Rm1uNTWiYAsx73taEt3-t5mEfa9v3G6tl34I_4YuieUfyVlCnyJg2OwftROktxg_"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Quiet"
+      ],
+      "Taste": [
+        "Authentic"
+      ],
+      "Service": [
+        "Attentive"
+      ]
+    },
+    "created_at": "2026-04-08T11:00:00+00:00",
+    "updated_at": "2026-04-24T16:10:29.628047+00:00",
+    "user_id": 3,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-ccc-003",
+    "restaurant_id": 5,
+    "review_text": "프라임 스테이크가 정말 완벽하게 구워졌어요. 미디엄 레어로 주문했는데 완벽한 핑크 빛깔과 육즙이 인상적입니다. 비즈니스 디너에 강력 추천합니다. 프라이빗 룸 예약이 가능한 점도 좋아요.",
+    "rating": 5,
+    "images": [
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuDvzp1mVk2qPX231Hyp9yTkS5ysLEaXNZlES_hj7DmJQ66i1SDKM_Xwayg374qG4OWy7kHf1wLpbYXjhSeWIRA1q7ZXTPVEvZ6Ln3YZRRivBY7oD4fPmkITP2Jav8doC9zVzUNdehVIMSzTBItSayO90fYD6CnuVotRvTUrQEY2FKY4H_PPqOzvlgwp_p7WPmpPOh2u0HoHhGBDMP30lEqhc-m2rNLyE7opfijNqgbIf9L5AdqITXFtuu40i_ELPnb5qGroIf2ij10P"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Professional"
+      ],
+      "Taste": [
+        "Savory"
+      ],
+      "Service": [
+        "Attentive"
+      ]
+    },
+    "created_at": "2026-04-10T11:30:00+00:00",
+    "updated_at": "2026-04-24T16:10:29.628047+00:00",
+    "user_id": 3,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-ccc-004",
+    "restaurant_id": 14,
+    "review_text": "소믈리에의 와인 추천이 정말 탁월했습니다. 내추럴 와인 컬렉션이 국내 최고 수준이에요. 치즈 & 샤퀴트리 보드도 고급스럽고 와인과의 페어링이 완벽합니다. 데이트 장소로 강력 추천!",
+    "rating": 5,
+    "images": [
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuB6KO-M3xKogRmdAQc3tuFwF0Ifa-4Nvv0FB2agawLXLE4kt5hZG_SfvdzLPpMMODoZVDnZSzHdCxZV-wCUEzqiNZ2ZCZmYRnZuViu--wwHNbgbO92n9Dwr2nJf64hl3ZsOPgI44wxFUBJkg6UrnZ7r3jU3BPR7aG-RACAXhwQNRysAfF6Oe9IeosgimB0djze3lxIN1E23RY7zR7xvNRs3y4MFCtk2CzucuOpw3Tbl0lv_YMA3hGs3iWzsjQvrz3MqasK1TnqLpRf5"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Romantic"
+      ],
+      "Taste": [
+        "Savory"
+      ],
+      "Service": [
+        "Attentive"
+      ]
+    },
+    "created_at": "2026-04-16T12:00:00+00:00",
+    "updated_at": "2026-04-24T16:10:29.628047+00:00",
+    "user_id": 3,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-ccc-005",
+    "restaurant_id": 11,
+    "review_text": "지중해식 메제 플레터가 정말 풍성합니다. 후무스와 바바가누쉬의 맛이 이렇게 다를 수 있구나 싶었어요. 할루미 치즈 구이도 맛있었고 전반적으로 건강하고 맛있는 한 끼였습니다.",
+    "rating": 4,
+    "images": [
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuD-asKVKC_AIuRh5Mv7Awg8xE8-YYJP7_b5Qkri9mLbihVlfZrUulIgjwvVqUgYw-LgJHRoxRHyZKs7PA91HtA1ayoL7Vqa4qveVAtteI_4cYgQ0G7ZLBT4mXu53R_N9nPTg-5XKZjyoUlNYCWLtMo7-K5U8vrMc5YKRdBF6QUKPnxIkh4XNL6ofasWZhrvXbELUD2PghMKuRB4mWxdGc73D_KXkJ8GlaaHjPm_52S-LlJ2nSHURAYB-noG0d8qR-pc8KJuMYzIqsij"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Quiet"
+      ],
+      "Taste": [
+        "Savory"
+      ],
+      "Service": [
+        "Friendly"
+      ]
+    },
+    "created_at": "2026-04-23T04:00:00+00:00",
+    "updated_at": "2026-04-24T16:10:29.628047+00:00",
+    "user_id": 3,
+    "negative_keywords": []
+  },
+  {
+    "id": "532022ee-b30c-44d2-993b-5944961870be",
+    "restaurant_id": 9,
+    "review_text": "버거 패티가 두껍고 육즙이 살아있어요. 번도 직접 굽는지 따뜻하고 폭신했습니다. 감자튀김은 조금 짰지만 버거 자체는 정말 만족스러웠어요. 가성비 좋고 양도 넉넉해서 든든하게 한 끼 해결하기에 최고입니다.",
+    "rating": 4,
+    "images": [],
+    "keywords": {
+      "vibe": [
+        "캐주얼한",
+        "활기찬"
+      ],
+      "flavor": [
+        "짭쪼름한",
+        "고소한"
+      ],
+      "service": [
+        "빠른"
+      ]
+    },
+    "created_at": "2026-04-04T15:53:50.311884+00:00",
+    "updated_at": "2026-04-24T16:10:29.628047+00:00",
+    "user_id": 5,
+    "negative_keywords": []
+  },
+  {
+    "id": "f12b65a6-d458-4159-abe1-8695badf8b90",
+    "restaurant_id": 14,
+    "review_text": "와인 셀렉션이 정말 다양하고 소믈리에 추천이 탁월했어요. 제 예산과 취향을 말씀드리니 딱 맞는 병을 골라주셨는데 너무 만족스러웠습니다. 안주 플래터도 치즈 구성이 좋고, 조명과 인테리어가 데이트 분위기 내기에 완벽한 곳이에요.",
+    "rating": 5,
+    "images": [],
+    "keywords": {
+      "vibe": [
+        "로맨틱한",
+        "고급스러운"
+      ],
+      "flavor": [
+        "풍부한",
+        "복합적인"
+      ],
+      "service": [
+        "전문적인",
+        "친절한"
+      ]
+    },
+    "created_at": "2026-03-25T15:53:50.311884+00:00",
+    "updated_at": "2026-04-24T16:10:29.628047+00:00",
+    "user_id": 5,
+    "negative_keywords": []
+  },
+  {
+    "id": "210b098c-d7a3-4d4e-9ec2-75242de6fe97",
+    "restaurant_id": 13,
+    "review_text": "주말 브런치로 딱인 곳! 에그베네딕트가 홀란다이즈 소스 비율이 완벽했고, 커피도 스페셜티 원두를 써서 퀄리티가 좋았어요. 창가 자리에 앉아서 햇살 받으며 먹으니 기분이 너무 좋았습니다. 웨이팅이 있을 수 있으니 예약 추천드려요!!!",
+    "rating": 5,
+    "images": [],
+    "keywords": {
+      "vibe": [
+        "여유로운",
+        "아늑한"
+      ],
+      "flavor": [
+        "고소한",
+        "신선한"
+      ],
+      "service": [
+        "친절한"
+      ]
+    },
+    "created_at": "2026-04-12T15:53:50.311884+00:00",
+    "updated_at": "2026-04-26T00:57:44.00757+00:00",
+    "user_id": 5,
+    "negative_keywords": []
+  },
+  {
+    "id": "10bd1fc4-a7b9-4580-b007-79bdf53fe5c9",
+    "restaurant_id": 3,
+    "review_text": "향신료 조합이 정말 탁월해요. 매운맛이 강하지만 깊이 있는 풍미가 있어서 자꾸 생각나는 맛입니다.",
+    "rating": 4,
+    "images": [
+      "https://adgskjyflkvydvngmtmr.supabase.co/storage/v1/object/public/review-images/b349ee52-ee73-4034-a8f3-0c0ce10f646c/1777166216169.webp",
+      "https://adgskjyflkvydvngmtmr.supabase.co/storage/v1/object/public/review-images/b349ee52-ee73-4034-a8f3-0c0ce10f646c/1777167446301.jpg"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Lively"
+      ],
+      "Taste": [
+        "Spicy"
+      ],
+      "Service": [
+        "Friendly"
+      ]
+    },
+    "created_at": "2026-04-26T01:06:59.58644+00:00",
+    "updated_at": "2026-04-27T01:30:38.918757+00:00",
+    "user_id": 5,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-8-1777179401766",
+    "restaurant_id": 3,
+    "review_text": "맛은 그냥저냥이나 너무 시끄러워서 다시는 안갑니다.",
+    "rating": 2,
+    "images": [],
+    "keywords": {
+      "Vibe": [
+        "Sophisticated",
+        "더러운",
+        "Noisy"
+      ],
+      "Taste": [
+        "Umami-rich",
+        "Authentic",
+        "짠"
+      ],
+      "Service": [
+        "Friendly",
+        "Valet Park",
+        "Long Wait"
+      ],
+      "_negative": [
+        "더러운",
+        "짠"
+      ]
+    },
+    "created_at": "2026-04-26T04:56:42.004809+00:00",
+    "updated_at": "2026-04-26T04:56:42.004809+00:00",
+    "user_id": 8,
+    "negative_keywords": []
+  },
+  {
+    "id": "6ffe384a-ba56-4b61-9928-92b193a07c69",
+    "restaurant_id": 6,
+    "review_text": "강남에서 이 정도 불고기집은 손에 꼽을 것 같아요. 고기 질이 좋고 양념이 과하지 않아서 재료 본연의 맛이 살아있어요. 직원분들도 테이블 간격도 적당하고 전체적으로 편안한 분위기였습니다. 주차도 편리해서 자주 오게 될 것 같아요.",
+    "rating": 4,
+    "images": [
+      "https://adgskjyflkvydvngmtmr.supabase.co/storage/v1/object/public/review-images/b349ee52-ee73-4034-a8f3-0c0ce10f646c/1777166304327.jpg"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Sophisticated",
+        "Crowded"
+      ],
+      "vibe": [
+        "편안한",
+        "활기찬"
+      ],
+      "Taste": [
+        "Savory",
+        "Oily"
+      ],
+      "flavor": [
+        "달콤한",
+        "고소한"
+      ],
+      "Service": [
+        "Rude"
+      ],
+      "service": [
+        "빠른",
+        "친절한"
+      ],
+      "_negative": [
+        "Rude",
+        "Oily",
+        "Crowded"
+      ]
+    },
+    "created_at": "2026-04-17T15:53:50.311884+00:00",
+    "updated_at": "2026-04-27T06:34:10.326985+00:00",
+    "user_id": 5,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-8-1777178679803",
+    "restaurant_id": 1,
+    "review_text": "맛은 조금 싱거웠고 기름졌습니다.\n가성비가 좀 별로인듯했습니다..",
+    "rating": 1,
+    "images": [
+      "https://adgskjyflkvydvngmtmr.supabase.co/storage/v1/object/public/review-images/fc5f155f-ebb9-4c85-a4fd-dd9cf66a70d3/1777178678822.jpg",
+      "https://adgskjyflkvydvngmtmr.supabase.co/storage/v1/object/public/review-images/fc5f155f-ebb9-4c85-a4fd-dd9cf66a70d3/1777178678898.jfif",
+      "https://adgskjyflkvydvngmtmr.supabase.co/storage/v1/object/public/review-images/fc5f155f-ebb9-4c85-a4fd-dd9cf66a70d3/1777178678937.jfif"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Sophisticated",
+        "Noisy"
+      ],
+      "Taste": [
+        "Bland",
+        "Oily",
+        "Overpriced",
+        "불친절",
+        "Fresh"
+      ],
+      "Service": [
+        "Slow",
+        "Rude"
+      ]
+    },
+    "created_at": "2026-04-26T04:44:40.01837+00:00",
+    "updated_at": "2026-04-26T08:28:08.000982+00:00",
+    "user_id": 8,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-1-1777249819006",
+    "restaurant_id": 1,
+    "review_text": "음식이 정말 맛있고 분위기도 좋았어요. 다음에 또 방문하고 싶습니다.",
+    "rating": 5,
+    "images": [],
+    "keywords": {
+      "Vibe": [
+        "Cozy"
+      ],
+      "Taste": [
+        "Delicious"
+      ],
+      "Service": [
+        "Friendly"
+      ]
+    },
+    "created_at": "2026-04-27T00:30:19.047545+00:00",
+    "updated_at": "2026-04-27T00:30:19.047545+00:00",
+    "user_id": 1,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-5-1777341847161",
+    "restaurant_id": 6,
+    "review_text": "**** ㄹㅇ 점장 나와",
+    "rating": 4,
+    "images": [
+      "/src/assets/default-restaurant.svg"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Crowded",
+        "Noisy"
+      ],
+      "Taste": [
+        "Oily",
+        "Overpriced",
+        "Bland"
+      ],
+      "Service": [
+        "Slow",
+        "Rude"
+      ],
+      "_negative": [
+        "Crowded",
+        "Noisy",
+        "Oily",
+        "Overpriced",
+        "Bland",
+        "Slow",
+        "Rude"
+      ]
+    },
+    "created_at": "2026-04-28T02:04:05.89029+00:00",
+    "updated_at": "2026-04-28T02:04:05.89029+00:00",
+    "user_id": 5,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-5-1777247950562",
+    "restaurant_id": 2,
+    "review_text": "너무 사람이 많고 좀 비싸요....",
+    "rating": 4,
+    "images": [
+      "https://adgskjyflkvydvngmtmr.supabase.co/storage/v1/object/public/review-images/b349ee52-ee73-4034-a8f3-0c0ce10f646c/1777247950335.jpg"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Sophisticated",
+        "더러운",
+        "Romantic"
+      ],
+      "Taste": [
+        "Oily"
+      ],
+      "Service": [
+        "Friendly",
+        "Rude",
+        "웨이팅 긺"
+      ],
+      "_negative": [
+        "더러운",
+        "웨이팅 긺"
+      ]
+    },
+    "created_at": "2026-04-26T23:59:02.843344+00:00",
+    "updated_at": "2026-04-27T01:30:05.494925+00:00",
+    "user_id": 5,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-5-1777258050809",
+    "restaurant_id": 5,
+    "review_text": "음식은 무난하지만 웨이팅 지옥이고 진짜 불친절해요,, 다신 안가",
+    "rating": 2,
+    "images": [
+      "https://adgskjyflkvydvngmtmr.supabase.co/storage/v1/object/public/review-images/b349ee52-ee73-4034-a8f3-0c0ce10f646c/1777258050187.jpg",
+      "https://adgskjyflkvydvngmtmr.supabase.co/storage/v1/object/public/review-images/b349ee52-ee73-4034-a8f3-0c0ce10f646c/1777258050237.jpg",
+      "https://adgskjyflkvydvngmtmr.supabase.co/storage/v1/object/public/review-images/b349ee52-ee73-4034-a8f3-0c0ce10f646c/1777258050282.jpg"
+    ],
+    "keywords": {
+      "Vibe": [
+        "사람 많음",
+        "Noisy"
+      ],
+      "Taste": [
+        "짠",
+        "너무 싱거움"
+      ],
+      "Service": [
+        "Slow",
+        "웨이팅 지옥",
+        "Rude"
+      ],
+      "_negative": [
+        "사람 많음",
+        "짠",
+        "너무 싱거움",
+        "웨이팅 지옥",
+        "Noisy"
+      ]
+    },
+    "created_at": "2026-04-27T02:47:23.040202+00:00",
+    "updated_at": "2026-04-28T02:16:04.555214+00:00",
+    "user_id": 5,
+    "negative_keywords": []
+  },
+  {
+    "id": "rev-5-1777338606092",
+    "restaurant_id": 22,
+    "review_text": "여기 맛이 ㅄ이다.",
+    "rating": 4,
+    "images": [
+      "/src/assets/default-restaurant.svg"
+    ],
+    "keywords": {
+      "Vibe": [
+        "Sophisticated"
+      ],
+      "Taste": [
+        "Umami-rich"
+      ],
+      "Service": [
+        "Friendly"
+      ],
+      "_negative": []
+    },
+    "created_at": "2026-04-28T01:10:04.876995+00:00",
+    "updated_at": "2026-04-28T01:10:04.876995+00:00",
+    "user_id": 5,
+    "negative_keywords": []
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1,
+    "restaurant_id": 2,
+    "saved_at": "2026-04-24T12:27:50.044495+00:00",
+    "user_id": 1
+  },
+  {
+    "id": 2,
+    "restaurant_id": 5,
+    "saved_at": "2026-04-24T12:27:50.044495+00:00",
+    "user_id": 1
+  },
+  {
+    "id": 3,
+    "restaurant_id": 14,
+    "saved_at": "2026-04-24T12:27:50.044495+00:00",
+    "user_id": 1
+  },
+  {
+    "id": 4,
+    "restaurant_id": 7,
+    "saved_at": "2026-04-24T12:27:50.044495+00:00",
+    "user_id": 2
+  },
+  {
+    "id": 5,
+    "restaurant_id": 10,
+    "saved_at": "2026-04-24T12:27:50.044495+00:00",
+    "user_id": 2
+  },
+  {
+    "id": 6,
+    "restaurant_id": 13,
+    "saved_at": "2026-04-24T12:27:50.044495+00:00",
+    "user_id": 2
+  },
+  {
+    "id": 7,
+    "restaurant_id": 1,
+    "saved_at": "2026-04-24T12:27:50.044495+00:00",
+    "user_id": 3
+  },
+  {
+    "id": 8,
+    "restaurant_id": 5,
+    "saved_at": "2026-04-24T12:27:50.044495+00:00",
+    "user_id": 3
+  },
+  {
+    "id": 9,
+    "restaurant_id": 14,
+    "saved_at": "2026-04-24T12:27:50.044495+00:00",
+    "user_id": 3
+  },
+  {
+    "id": 13,
+    "restaurant_id": 3,
+    "saved_at": "2026-04-26T04:46:19.176404+00:00",
+    "user_id": 8
+  },
+  {
+    "id": 14,
+    "restaurant_id": 2,
+    "saved_at": "2026-04-27T06:16:15.255216+00:00",
+    "user_id": 5
+  },
+  {
+    "id": 15,
+    "restaurant_id": 1,
+    "saved_at": "2026-04-27T06:47:20.442207+00:00",
+    "user_id": 5
+  }
+]
