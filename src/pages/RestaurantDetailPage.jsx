@@ -913,7 +913,7 @@ export default function RestaurantDetailPage() {
               disabled={resLoading || !!myExistingReservation || justBooked}
               className="w-full bg-primary text-white py-4 rounded-lg font-[Epilogue] font-semibold hover:opacity-90 transition-all shadow-lg shadow-primary/20 active:scale-95 mb-2 disabled:opacity-60"
             >
-              {resLoading ? '예약 중...' : '예약 확인'}
+              {resLoading ? '예약 중...' : '예약'}
             </button>
             <p className="text-center text-xs text-on-surface-variant flex items-center justify-center gap-1">
               <span className="material-symbols-outlined text-sm">bolt</span> 즉시 확인
