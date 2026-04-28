@@ -492,10 +492,18 @@ export default function RestaurantDetailPage() {
                 <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: restaurant.rating ? "'FILL' 1" : "'FILL' 0" }}>star</span>
                 {restaurant.rating || '0.0'} ({reviewCount}개 리뷰)
               </span>
-              <span className="text-on-surface-variant">•</span>
-              <span className="text-on-surface-variant">{cuisineMap[restaurant.cuisine] || restaurant.cuisine}</span>
-              <span className="text-on-surface-variant">•</span>
-              <span className="text-on-surface-variant">{restaurant.price}</span>
+              {(cuisineMap[restaurant.cuisine] || restaurant.cuisine) && (
+                <>
+                  <span className="text-on-surface-variant">•</span>
+                  <span className="text-on-surface-variant">{cuisineMap[restaurant.cuisine] || restaurant.cuisine}</span>
+                </>
+              )}
+              {restaurant.price && (
+                <>
+                  <span className="text-on-surface-variant">•</span>
+                  <span className="text-on-surface-variant">{restaurant.price}</span>
+                </>
+              )}
             </div>
           </div>
           <div className="flex gap-3 flex-wrap">
@@ -879,26 +887,12 @@ export default function RestaurantDetailPage() {
                 disabled={resLoading || !!myExistingReservation || justBooked}
                 className="w-full bg-primary text-white py-4 rounded-lg font-[Epilogue] font-semibold hover:opacity-90 transition-all shadow-lg shadow-primary/20 active:scale-95 mb-2 disabled:opacity-60"
               >
-                {resLoading ? '예약 중...' : '예약 확인'}
+                {resLoading ? '예약 중...' : '예약'}
               </button>
-              <p className="text-center text-xs text-on-surface-variant flex items-center justify-center gap-1">
-                <span className="material-symbols-outlined text-sm">bolt</span> 즉시 확인
-              </p>
-            )}
-            <button
-              onClick={handleReservation}
-              disabled={resLoading || !!myExistingReservation || justBooked}
-              className="w-full bg-primary text-white py-4 rounded-lg font-[Epilogue] font-semibold hover:opacity-90 transition-all shadow-lg shadow-primary/20 active:scale-95 mb-2 disabled:opacity-60"
-            >
-              {resLoading ? '예약 중...' : '예약'}
-            </button>
-            <p className="text-center text-xs text-on-surface-variant flex items-center justify-center gap-1">
-              <span className="material-symbols-outlined text-sm">bolt</span> 즉시 확인
-            </p>
-            {myExistingReservation && (
-              <p className="text-center text-xs text-slate-400 mt-2">이미 예약한 적 있는 식당입니다.</p>
-            )}
-          </div>
+{myExistingReservation && (
+                <p className="text-center text-xs text-slate-400 mt-2">이미 예약한 적 있는 식당입니다.</p>
+              )}
+            </div>
 
             {/* Info */}
             <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-50 space-y-4">
