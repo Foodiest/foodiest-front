@@ -582,6 +582,58 @@ function RestaurantsTab() {
     setRestaurants((prev) => prev.map((x) => (x.id === r.id ? updated : x)));
   };
 
+  const [geocoding, setGeocoding] = useState(false);
+  const [geocodeStatus, setGeocodeStatus] = useState('');
+
+  const handleAutoGeocode = async () => {
+    setGeocoding(true);
+    setGeocodeStatus('카카오 SDK 로딩 중...');
+    try {
+      const kakao = await loadKakaoWithServices();
+      const ps = new kakao.maps.services.Places();
+
+      const targets = restaurants.filter((r) => !r.x || !r.y);
+      if (targets.length === 0) {
+        setGeocodeStatus('좌표가 없는 식당이 없습니다.');
+        setGeocoding(false);
+        return;
+      }
+
+      let done = 0;
+      for (const r of targets) {
+        setGeocodeStatus(`검색 중... ${r.name} (${done}/${targets.length})`);
+        await new Promise((resolve) => {
+          ps.keywordSearch(r.name, async (result, status) => {
+            if (status === kakao.maps.services.Status.OK && result.length > 0) {
+              const { x, y, address_name } = result[0];
+              try {
+                const updated = await adminUpdate(r.id, {
+                  x: Number(x),
+                  y: Number(y),
+                  address: address_name || r.address || null,
+                });
+                setRestaurants((prev) =>
+                  prev.map((item) => (item.id === r.id ? updated : item))
+                );
+              } catch (e) {
+                console.error(`업데이트 실패: ${r.name}`, e);
+              }
+            }
+            done++;
+            resolve();
+          });
+        });
+        // API 호출 간격 (카카오 rate limit 방지)
+        await new Promise((res) => setTimeout(res, 300));
+      }
+      setGeocodeStatus(`완료! ${done}개 식당 처리됨`);
+    } catch (e) {
+      setGeocodeStatus(`오류: ${e.message}`);
+    } finally {
+      setGeocoding(false);
+    }
+  };
+
   return (
     <>
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
@@ -602,6 +654,19 @@ function RestaurantsTab() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-sm text-slate-400">{filtered.length}건</span>
+            <button
+              onClick={handleAutoGeocode}
+              disabled={geocoding}
+              className="flex items-center gap-1.5 px-4 py-2 bg-indigo-500 text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60"
+            >
+              <span className="material-symbols-outlined text-sm">
+                {geocoding ? 'refresh' : 'my_location'}
+              </span>
+              {geocoding ? '위치 설정 중...' : '위치 자동설정'}
+            </button>
+            {geocodeStatus && (
+              <span className="text-xs text-slate-500 max-w-[160px] truncate">{geocodeStatus}</span>
+            )}
             <button
               onClick={openAdd}
               className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity"
