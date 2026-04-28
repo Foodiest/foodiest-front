@@ -1,16 +1,54 @@
+import axios from 'axios';
+
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY?.trim().replace(/[^\x20-\x7E]/g, '');
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7일
 
-const cache = new Map();
+function getCacheKey(restaurantId) {
+  return `foodiest_ai_${restaurantId}`;
+}
 
-export async function analyzeReviews(restaurantName, reviews) {
+function loadCache(restaurantId) {
+  try {
+    const raw = localStorage.getItem(getCacheKey(restaurantId));
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function saveCache(restaurantId, reviewCount, latestReviewAt, result) {
+  try {
+    localStorage.setItem(getCacheKey(restaurantId), JSON.stringify({
+      reviewCount,
+      latestReviewAt,
+      analyzedAt: Date.now(),
+      result,
+    }));
+  } catch {
+    // localStorage 용량 초과 등
+  }
+}
+
+export async function analyzeReviews(restaurantId, restaurantName, reviews) {
   if (!GROQ_API_KEY || GROQ_API_KEY === 'YOUR_GROQ_API_KEY_HERE') {
     throw new Error('VITE_GROQ_API_KEY가 설정되지 않았습니다. .env 파일을 확인해 주세요.');
   }
   if (!reviews?.length) return null;
 
-  const cacheKey = `${restaurantName}_${reviews.length}`;
-  if (cache.has(cacheKey)) return cache.get(cacheKey);
+  const latestReviewAt = reviews[0]?.created_at ?? '';
+  const reviewCount = reviews.length;
+
+  const cached = loadCache(restaurantId);
+  if (
+    cached &&
+    cached.reviewCount === reviewCount &&
+    cached.latestReviewAt === latestReviewAt &&
+    Date.now() - cached.analyzedAt < CACHE_TTL_MS
+  ) {
+    return cached.result;
+  }
 
   const reviewTexts = reviews.slice(0, 20).map((r, i) =>
     `리뷰 ${i + 1} (별점: ${r.rating}/5): ${r.review_text}`
@@ -37,38 +75,32 @@ keywords 추출 규칙:
 - 각 키워드는 10자 이내의 간결한 표현으로 작성하세요.`;
 
   try {
-    const response = await fetch(GROQ_URL, {
-      method: 'POST',
+    const { data } = await axios.post(GROQ_URL, {
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      temperature: 0.2,
+      max_tokens: 1024,
+      response_format: { type: 'json_object' },
+    }, {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_API_KEY}`
+        Authorization: `Bearer ${GROQ_API_KEY}`,
       },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.2,
-        max_tokens: 1024,
-        response_format: { type: "json_object" }
-      }),
     });
 
-    if (!response.ok) {
-      const err = await response.json().catch(() => null);
-      throw new Error(err?.error?.message || `Groq API 오류: ${response.status}`);
-    }
-
-    const data = await response.json();
     const content = data.choices[0]?.message?.content;
-    
     if (!content) throw new Error('Groq API 응답이 비어있습니다.');
 
     const result = JSON.parse(content);
-    cache.set(cacheKey, result);
+    saveCache(restaurantId, reviewCount, latestReviewAt, result);
     return result;
   } catch (error) {
+    if (error.response) {
+      throw new Error(error.response.data?.error?.message || `Groq API 오류: ${error.response.status}`);
+    }
     console.error('[Groq 분석 오류]', error);
     throw error;
   }
