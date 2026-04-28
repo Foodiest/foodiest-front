@@ -54,8 +54,8 @@ function CalendarPicker({ value, onChange }) {
 
   const displayValue = value
     ? new Date(value + 'T00:00:00').toLocaleDateString('ko-KR', {
-        year: 'numeric', month: 'long', day: 'numeric', weekday: 'short',
-      })
+      year: 'numeric', month: 'long', day: 'numeric', weekday: 'short',
+    })
     : '날짜 선택';
 
   return (
@@ -108,15 +108,14 @@ function CalendarPicker({ value, onChange }) {
                   type="button"
                   disabled={isPast}
                   onClick={() => { onChange(dateStr); setOpen(false); }}
-                  className={`text-xs py-1.5 rounded-full text-center transition-colors ${
-                    isPast
-                      ? 'text-slate-300 cursor-not-allowed'
-                      : isSelected
+                  className={`text-xs py-1.5 rounded-full text-center transition-colors ${isPast
+                    ? 'text-slate-300 cursor-not-allowed'
+                    : isSelected
                       ? 'bg-primary text-white font-bold'
                       : isToday
-                      ? 'border border-primary text-primary font-semibold hover:bg-primary/10'
-                      : 'hover:bg-orange-50 text-slate-700'
-                  }`}
+                        ? 'border border-primary text-primary font-semibold hover:bg-primary/10'
+                        : 'hover:bg-orange-50 text-slate-700'
+                    }`}
                 >
                   {day}
                 </button>
@@ -178,38 +177,33 @@ function KakaoLocationMiniMap({ x, y }) {
   const mapElementRef = useRef(null);
   const [mapError, setMapError] = useState('');
 
+  const hasCoords = x && y;
+
   useEffect(() => {
+    if (!hasCoords) return;
     let isUnmounted = false;
 
     loadKakaoMapSdk()
       .then(kakao => {
-        if (isUnmounted || !mapElementRef.current) {
-          return;
-        }
-
-        const center = new kakao.maps.LatLng(y, x);
-        const map = new kakao.maps.Map(mapElementRef.current, {
-          center,
-          level: 4,
-        });
+        if (isUnmounted || !mapElementRef.current) return;
+        const center = new kakao.maps.LatLng(Number(y), Number(x));
+        const map = new kakao.maps.Map(mapElementRef.current, { center, level: 4 });
         mapRef.current = map;
-
-        new kakao.maps.Marker({
-          map,
-          position: center,
-        });
+        new kakao.maps.Marker({ map, position: center });
       })
-      .catch(error => {
-        if (!isUnmounted) {
-          setMapError(error.message);
-        }
-      });
+      .catch(error => { if (!isUnmounted) setMapError(error.message); });
 
-    return () => {
-      isUnmounted = true;
-      mapRef.current = null;
-    };
+    return () => { isUnmounted = true; mapRef.current = null; };
   }, [x, y]);
+
+  if (!hasCoords) {
+    return (
+      <div className="w-full h-full bg-slate-100 flex items-center justify-center text-xs text-slate-400">
+        <span className="material-symbols-outlined text-sm mr-1">location_off</span>
+        위치 정보 없음
+      </div>
+    );
+  }
 
   if (mapError) {
     return (
@@ -374,7 +368,7 @@ export default function RestaurantDetailPage() {
 
   useEffect(() => {
     if (!restaurant || !resDate) { setBookedSlots([]); return; }
-    getBookedSlots(restaurant.id, resDate).then(setBookedSlots).catch(() => {});
+    getBookedSlots(restaurant.id, resDate).then(setBookedSlots).catch(() => { });
   }, [restaurant, resDate]);
 
   useEffect(() => {
@@ -507,11 +501,10 @@ export default function RestaurantDetailPage() {
             <button
               onClick={handleEventReport}
               disabled={reportSubmitting}
-              className={`px-5 py-3 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 ${
-                eventReported
-                  ? 'bg-red-100 text-red-500 border border-red-300 hover:bg-red-200'
-                  : 'bg-red-50 text-red-500 border border-red-200 hover:bg-red-100'
-              }`}
+              className={`px-5 py-3 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 ${eventReported
+                ? 'bg-red-100 text-red-500 border border-red-300 hover:bg-red-200'
+                : 'bg-red-50 text-red-500 border border-red-200 hover:bg-red-100'
+                }`}
             >
               <span className="material-symbols-outlined text-sm">
                 {eventReported ? 'cancel' : 'warning'}
@@ -535,8 +528,8 @@ export default function RestaurantDetailPage() {
             <button
               onClick={handleSaveToggle}
               className={`px-5 py-3 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1 ${saved
-                  ? 'bg-primary text-white hover:opacity-90'
-                  : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-variant'
+                ? 'bg-primary text-white hover:opacity-90'
+                : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-variant'
                 }`}
             >
               <span
@@ -557,38 +550,10 @@ export default function RestaurantDetailPage() {
         <div className="lg:col-span-2 space-y-8">
           {/* Overview */}
           <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-50">
-            <h2 className="font-[Epilogue] text-2xl font-semibold mb-3">개요</h2>
+            <h2 className="font-[Epilogue] text-2xl font-semibold mb-3">소개</h2>
             <p className="text-base text-on-surface-variant mb-5 leading-relaxed">
               {restaurant.description || "도심 속 숨겨진 보석 같은 공간으로, 수제 파스타와 제철 재료를 전문으로 한 아늑한 분위기를 자랑합니다."}
             </p>
-            <div className="flex flex-wrap gap-3 mb-5">
-              {(restaurant.tags || ['Handmade Pasta', 'Quiet Atmosphere', 'Extensive Wine List']).map(tag => (
-                <span key={tag} className="bg-[#E8EAF6] text-secondary px-4 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1">
-                  <span className="material-symbols-outlined text-sm">restaurant</span> {tag}
-                </span>
-              ))}
-            </div>
-            {/* Match Status */}
-            <div className="bg-surface-container-low rounded-lg p-3 border border-outline-variant/30">
-              <div className="flex items-start gap-3">
-                <div className="bg-primary/10 p-1.5 rounded-full">
-                  <span className="material-symbols-outlined text-primary text-sm">verified_user</span>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-sm text-on-surface">"조용한" 및 "이탈리안" 취향과 일치합니다</h4>
-                  <p className="text-xs text-on-surface-variant mt-1">최근 검색 기록 및 저장 목록을 기반으로 합니다.</p>
-                </div>
-              </div>
-              <div className="mt-3 pt-3 border-t border-outline-variant/20 flex items-start gap-3">
-                <div className="bg-error/10 p-1.5 rounded-full">
-                  <span className="material-symbols-outlined text-error text-sm">warning</span>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-sm text-error">주의: 견과류 포함 가능</h4>
-                  <p className="text-xs text-on-surface-variant mt-1">"견과류 없음" 식이 필터와 맞지 않습니다. 주방에서 페스토용 호두를 취급합니다.</p>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* AI Analysis */}
@@ -738,8 +703,8 @@ export default function RestaurantDetailPage() {
                       key={value}
                       onClick={() => setSortOrder(value)}
                       className={`px-3 py-1.5 transition-colors ${sortOrder === value
-                          ? 'bg-secondary text-white'
-                          : 'bg-white text-on-surface-variant hover:bg-surface-container'
+                        ? 'bg-secondary text-white'
+                        : 'bg-white text-on-surface-variant hover:bg-surface-container'
                         }`}
                     >
                       {label}
@@ -859,53 +824,64 @@ export default function RestaurantDetailPage() {
         {/* Sidebar */}
         <aside className="space-y-4">
           <div className="sticky top-20 space-y-4">
-          {/* Book */}
-          <div className="bg-white rounded-lg p-5 shadow-md border border-primary/10">
-            <h3 className="font-[Epilogue] text-xl font-semibold mb-4">테이블 예약</h3>
+            {/* Book */}
+            <div className="bg-white rounded-lg p-5 shadow-md border border-primary/10">
+              <h3 className="font-[Epilogue] text-xl font-semibold mb-4">테이블 예약</h3>
 
-            <div className="space-y-3 mb-4">
-              <CalendarPicker value={resDate} onChange={setResDate} />
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm pointer-events-none">group</span>
-                <select
-                  value={resPartySize}
-                  onChange={(e) => setResPartySize(Number(e.target.value))}
-                  className="w-full pl-10 pr-4 py-3 border border-surface-variant rounded-lg bg-surface-bright focus:ring-primary focus:border-primary text-sm"
-                >
-                  {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                    <option key={n} value={n}>{n}명</option>
-                  ))}
-                </select>
+              <div className="space-y-3 mb-4">
+                <CalendarPicker value={resDate} onChange={setResDate} />
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm pointer-events-none">group</span>
+                  <select
+                    value={resPartySize}
+                    onChange={(e) => setResPartySize(Number(e.target.value))}
+                    className="w-full pl-10 pr-4 py-3 border border-surface-variant rounded-lg bg-surface-bright focus:ring-primary focus:border-primary text-sm"
+                  >
+                    {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                      <option key={n} value={n}>{n}명</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm pointer-events-none">schedule</span>
+                  <select
+                    value={resTime}
+                    onChange={(e) => setResTime(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-surface-variant rounded-lg bg-surface-bright focus:ring-primary focus:border-primary text-sm"
+                  >
+                    <option value="">시간 선택</option>
+                    {TIME_SLOTS.map((t) => {
+                      const isBooked = bookedSlots.includes(t);
+                      return (
+                        <option key={t} value={t} disabled={isBooked}>
+                          {t}{isBooked ? ' (마감)' : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
               </div>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm pointer-events-none">schedule</span>
-                <select
-                  value={resTime}
-                  onChange={(e) => setResTime(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-surface-variant rounded-lg bg-surface-bright focus:ring-primary focus:border-primary text-sm"
-                >
-                  <option value="">시간 선택</option>
-                  {TIME_SLOTS.map((t) => {
-                    const isBooked = bookedSlots.includes(t);
-                    return (
-                      <option key={t} value={t} disabled={isBooked}>
-                        {t}{isBooked ? ' (마감)' : ''}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-            </div>
-            {resError && (
-              <p className="text-xs text-red-500 mb-3 flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">error</span>
-                {resError}
-              </p>
-            )}
-            {resSuccess && (
-              <p className="text-xs text-green-600 mb-3 flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">check_circle</span>
-                예약이 완료되었습니다.
+              {resError && (
+                <p className="text-xs text-red-500 mb-3 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-sm">error</span>
+                  {resError}
+                </p>
+              )}
+              {resSuccess && (
+                <p className="text-xs text-green-600 mb-3 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-sm">check_circle</span>
+                  예약이 완료되었습니다.
+                </p>
+              )}
+              <button
+                onClick={handleReservation}
+                disabled={resLoading || !!myExistingReservation || justBooked}
+                className="w-full bg-primary text-white py-4 rounded-lg font-[Epilogue] font-semibold hover:opacity-90 transition-all shadow-lg shadow-primary/20 active:scale-95 mb-2 disabled:opacity-60"
+              >
+                {resLoading ? '예약 중...' : '예약 확인'}
+              </button>
+              <p className="text-center text-xs text-on-surface-variant flex items-center justify-center gap-1">
+                <span className="material-symbols-outlined text-sm">bolt</span> 즉시 확인
               </p>
             )}
             <button
@@ -923,36 +899,36 @@ export default function RestaurantDetailPage() {
             )}
           </div>
 
-          {/* Info */}
-          <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-50 space-y-4">
-            <div>
-              <h4 className="font-semibold text-sm text-on-surface mb-1 flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">location_on</span> 위치
-              </h4>
-              <p className="text-sm text-on-surface-variant">124 Via Della Conciliazione, Historic Center</p>
-              <div className="mt-2 h-28 rounded-lg overflow-hidden">
-                <KakaoLocationMiniMap x={restaurantLocation.x} y={restaurantLocation.y} />
+            {/* Info */}
+            <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-50 space-y-4">
+              <div>
+                <h4 className="font-semibold text-sm text-on-surface mb-1 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-sm">location_on</span> 위치
+                </h4>
+                <p className="text-sm text-on-surface-variant">{restaurant.address || '주소 정보 없음'}</p>
+                <div className="mt-2 h-28 rounded-lg overflow-hidden">
+                  <KakaoLocationMiniMap x={restaurantLocation.x} y={restaurantLocation.y} />
+                </div>
               </div>
+              <div>
+                <h4 className="font-semibold text-sm text-on-surface mb-1 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-sm">schedule</span> 영업시간
+                </h4>
+                <ul className="text-xs space-y-1 text-on-surface-variant">
+                  <li className="flex justify-between"><span>월 - 금</span><span>{restaurant.hours?.weekday || '17:00 - 23:00'}</span></li>
+                  <li className="flex justify-between font-bold text-on-surface"><span>토 - 일</span><span>{restaurant.hours?.weekend || '12:00 - 24:00'}</span></li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold text-sm text-on-surface mb-1 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-sm">call</span> 전화
+                </h4>
+                <p className="text-sm text-on-surface-variant">{restaurant.phone || '+1 (555) 012-3456'}</p>
+              </div>
+              <button className="w-full py-2.5 text-secondary font-semibold text-sm flex items-center justify-center gap-1 hover:bg-secondary/5 rounded-lg transition-colors">
+                <span className="material-symbols-outlined text-sm">open_in_new</span> 웹사이트 방문
+              </button>
             </div>
-            <div>
-              <h4 className="font-semibold text-sm text-on-surface mb-1 flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">schedule</span> 영업시간
-              </h4>
-              <ul className="text-xs space-y-1 text-on-surface-variant">
-                <li className="flex justify-between"><span>월 - 금</span><span>{restaurant.hours?.weekday || '17:00 - 23:00'}</span></li>
-                <li className="flex justify-between font-bold text-on-surface"><span>토 - 일</span><span>{restaurant.hours?.weekend || '12:00 - 24:00'}</span></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm text-on-surface mb-1 flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">call</span> 전화
-              </h4>
-              <p className="text-sm text-on-surface-variant">{restaurant.phone || '+1 (555) 012-3456'}</p>
-            </div>
-            <button className="w-full py-2.5 text-secondary font-semibold text-sm flex items-center justify-center gap-1 hover:bg-secondary/5 rounded-lg transition-colors">
-              <span className="material-symbols-outlined text-sm">open_in_new</span> 웹사이트 방문
-            </button>
-          </div>
           </div>
         </aside>
       </main>
