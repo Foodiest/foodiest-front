@@ -582,12 +582,14 @@ export default function RestaurantDetailPage() {
         {/* Left (2/3) */}
         <div className="lg:col-span-2 space-y-8">
           {/* Overview */}
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-50">
-            <h2 className="font-[Epilogue] text-2xl font-semibold mb-3">소개</h2>
-            <p className="text-base text-on-surface-variant mb-5 leading-relaxed">
-              {restaurant.description || "도심 속 숨겨진 보석 같은 공간으로, 수제 파스타와 제철 재료를 전문으로 한 아늑한 분위기를 자랑합니다."}
-            </p>
-          </div>
+          {restaurant.description && (
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-50">
+              <h2 className="font-[Epilogue] text-2xl font-semibold mb-3">소개</h2>
+              <p className="text-base text-on-surface-variant mb-5 leading-relaxed">
+                {restaurant.description}
+              </p>
+            </div>
+          )}
 
           {/* AI Analysis */}
           <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-50">
