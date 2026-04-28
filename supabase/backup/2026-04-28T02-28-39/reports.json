@@ -1,0 +1,56 @@
+[
+  {
+    "id": "6c0ec49a-4e32-42c0-bdea-8741a14df4a5",
+    "reporter_id": "b349ee52-ee73-4034-a8f3-0c0ce10f646c",
+    "report_type": "review_event",
+    "review_id": null,
+    "restaurant_id": 3,
+    "reported_user_id": null,
+    "created_at": "2026-04-27T01:30:22.939948+00:00"
+  },
+  {
+    "id": "25899134-e25c-448f-ac50-e16cd41e5eb4",
+    "reporter_id": "b349ee52-ee73-4034-a8f3-0c0ce10f646c",
+    "report_type": "review_event",
+    "review_id": null,
+    "restaurant_id": 2,
+    "reported_user_id": null,
+    "created_at": "2026-04-27T05:44:07.572652+00:00"
+  },
+  {
+    "id": "1199d6f0-84e7-4747-b30b-5d792b7243ce",
+    "reporter_id": "41a09ed3-0562-4465-9cd3-d79771e36110",
+    "report_type": "review_event",
+    "review_id": null,
+    "restaurant_id": 1,
+    "reported_user_id": null,
+    "created_at": "2026-04-27T05:45:41.462659+00:00"
+  },
+  {
+    "id": "bf2b3e17-6482-4e9d-a5b1-03f70fac7c46",
+    "reporter_id": "b349ee52-ee73-4034-a8f3-0c0ce10f646c",
+    "report_type": "review_event",
+    "review_id": null,
+    "restaurant_id": 1,
+    "reported_user_id": null,
+    "created_at": "2026-04-27T05:49:45.465789+00:00"
+  },
+  {
+    "id": "6871f8f0-270f-4559-8292-2a67ee1d416b",
+    "reporter_id": "b349ee52-ee73-4034-a8f3-0c0ce10f646c",
+    "report_type": "review",
+    "review_id": "rev-8-1777178679803",
+    "restaurant_id": null,
+    "reported_user_id": null,
+    "created_at": "2026-04-27T06:39:04.703029+00:00"
+  },
+  {
+    "id": "b514b72e-e8a9-4d3d-8251-4b4b5111e533",
+    "reporter_id": "b349ee52-ee73-4034-a8f3-0c0ce10f646c",
+    "report_type": "review",
+    "review_id": "rev-8-1777179401766",
+    "restaurant_id": null,
+    "reported_user_id": null,
+    "created_at": "2026-04-27T06:39:12.938769+00:00"
+  }
+]
