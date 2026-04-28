@@ -1,1 +1,0 @@
-<a href="#" target="_self" role="button" class="place_thumb"><img src="https://search.pstatic.net/common/?autoRotate=true&amp;type=w560_sharpen&amp;src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20251010_263%2F17600640067145OsV1_PNG%2F1759476321422.png" class="K0PDV" alt="업체_1" width="100%" height="auto" id="업체_1"></a>
