@@ -340,14 +340,18 @@ function KakaoMapPicker({ selectedAddress, selectedX, selectedY, onSelect }) {
           resolve(new kakao.maps.LatLng(Number(selectedY), Number(selectedX)));
           return;
         }
-        navigator.geolocation?.getCurrentPosition(
-          (pos) =>
-            resolve(
-              new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude)
-            ),
-          () => resolve(new kakao.maps.LatLng(37.5665, 126.978)),
-          { timeout: 5000 }
-        ) ?? resolve(new kakao.maps.LatLng(37.5665, 126.978));
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) =>
+              resolve(
+                new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude)
+              ),
+            () => resolve(new kakao.maps.LatLng(37.5665, 126.978)),
+            { timeout: 5000 }
+          );
+        } else {
+          resolve(new kakao.maps.LatLng(37.5665, 126.978));
+        }
       });
 
     loadKakaoWithServices()
