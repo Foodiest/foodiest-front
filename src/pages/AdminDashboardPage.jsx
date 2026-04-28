@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   kpiCards,
   flaggedReviews,
@@ -1441,13 +1442,17 @@ function DashboardTab() {
 
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState('대시보드');
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-surface text-on-surface flex">
       {/* Sidebar */}
       <aside className="fixed left-0 top-0 h-full w-64 z-40 bg-white border-r border-slate-200 shadow-sm font-[Epilogue] text-sm">
         <div className="p-6">
-          <div className="flex items-center gap-3 mb-8">
+          <div
+            className="flex items-center gap-3 mb-8 cursor-pointer"
+            onClick={() => navigate('/')}
+          >
             <div className="w-10 h-10 overflow-hidden">
               <img
                 src={LOGO_URL}
