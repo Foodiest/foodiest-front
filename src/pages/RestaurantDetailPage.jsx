@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { cleanProfanity } from '../utils/profanityFilter';
 import Layout from '../components/Layout';
 import { filterLabelMap, cuisineMap } from '../data/mockFilters';
 import { getById } from '../services/restaurantService';
@@ -799,7 +800,7 @@ export default function RestaurantDetailPage() {
                           </div>
                         );
                       })()}
-                      <p className="text-base mb-3">{review.review_text}</p>
+                      <p className="text-base mb-3">{cleanProfanity(review.review_text ?? '')}</p>
                       {review.images?.length > 0 && (
                         <div className="flex gap-3 overflow-x-auto pb-1">
                           {review.images.map((img, i) => (

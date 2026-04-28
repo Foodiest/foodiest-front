@@ -1,3 +1,4 @@
+import { cleanProfanity } from '../utils/profanityFilter';
 import { supabase } from '../lib/supabase';
 import { supabaseAdmin } from '../lib/supabaseAdmin';
 import { getMyUserId } from '../lib/getMyUserId';
@@ -34,7 +35,7 @@ export async function create({ restaurantId, reviewText, rating, images, keyword
       id,
       user_id: userId,
       restaurant_id: restaurantId,
-      review_text: reviewText,
+      review_text: cleanProfanity(reviewText ?? ''),
       rating,
       images: images ?? [],
       keywords: keywords ?? {},
@@ -53,7 +54,7 @@ export async function update(reviewId, { reviewText, rating, images, keywords, n
   const { data, error } = await supabase
     .from('reviews')
     .update({
-      review_text: reviewText,
+      review_text: cleanProfanity(reviewText ?? ''),
       rating,
       images,
       keywords,
