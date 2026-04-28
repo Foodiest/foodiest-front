@@ -2,15 +2,15 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
-import { getMyReservations, cancelReservation } from '../services/reservationService';
+import { getMyReservations, cancelReservation, deleteReservation } from '../services/reservationService';
 import { cuisineMap } from '../data/mockFilters';
 import defaultRestaurantImg from '../assets/default-restaurant.svg';
 
-const STATUS_LABEL = { pending: '대기 중', confirmed: '확정', cancelled: '취소됨' };
+const STATUS_LABEL = { confirmed: '확정', cancelled: '취소됨', completed: '방문 완료' };
 const STATUS_COLOR = {
-  pending: 'bg-amber-50 text-amber-600 border border-amber-200',
   confirmed: 'bg-green-50 text-green-600 border border-green-200',
   cancelled: 'bg-slate-100 text-slate-400 border border-slate-200',
+  completed: 'bg-blue-50 text-blue-600 border border-blue-200',
 };
 
 export default function ReservationsPage() {
@@ -19,6 +19,7 @@ export default function ReservationsPage() {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(null);
+  const [deleting, setDeleting] = useState(null);
 
   useEffect(() => {
     if (isLoading) return;
@@ -27,6 +28,16 @@ export default function ReservationsPage() {
       .then(setReservations)
       .finally(() => setLoading(false));
   }, [isLoggedIn, isLoading, navigate]);
+
+  const handleDelete = async (id) => {
+    setDeleting(id);
+    try {
+      await deleteReservation(id);
+      setReservations(prev => prev.filter(r => r.id !== id));
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   const handleCancel = async (id) => {
     setCancelling(id);
@@ -77,11 +88,12 @@ export default function ReservationsPage() {
             {reservations.map(r => {
               const dateObj = new Date(r.date + 'T00:00:00');
               const dateStr = dateObj.toLocaleDateString('ko-KR', {
-                year: 'numeric', month: 'long', day: 'numeric', weekday: 'short',
+                year: 'numeric', month: 'long', day: 'numeric',
               });
+              const weekday = dateObj.toLocaleDateString('ko-KR', { weekday: 'short' });
               const canCancel = r.status === 'pending' || r.status === 'confirmed';
               return (
-                <div key={r.id} className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 flex gap-4">
+                <div key={r.id} className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 flex gap-4 transition-all duration-200 hover:shadow-md hover:border-slate-200 hover:-translate-y-0.5">
                   <div
                     className="w-20 h-20 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 cursor-pointer"
                     onClick={() => navigate(`/restaurant/${r.restaurant_id}`)}
@@ -94,24 +106,19 @@ export default function ReservationsPage() {
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <h3
-                        className="font-semibold text-base text-slate-900 cursor-pointer hover:text-primary transition-colors truncate"
-                        onClick={() => navigate(`/restaurant/${r.restaurant_id}`)}
-                      >
-                        {r.restaurants?.name || '식당'}
-                      </h3>
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${STATUS_COLOR[r.status]}`}>
-                        {STATUS_LABEL[r.status]}
-                      </span>
-                    </div>
+                    <h3
+                      className="font-semibold text-base text-slate-900 cursor-pointer hover:text-primary transition-colors truncate mb-1"
+                      onClick={() => navigate(`/restaurant/${r.restaurant_id}`)}
+                    >
+                      {r.restaurants?.name || '식당'}
+                    </h3>
                     <p className="text-xs text-slate-500 mb-2">
                       {cuisineMap[r.restaurants?.cuisine] || r.restaurants?.cuisine}
                     </p>
                     <div className="flex flex-wrap gap-3 text-sm text-slate-600">
                       <span className="flex items-center gap-1">
                         <span className="material-symbols-outlined text-sm text-slate-400">calendar_month</span>
-                        {dateStr}
+                        {dateStr} <span className="font-bold text-orange-500">{weekday}</span>
                       </span>
                       <span className="flex items-center gap-1">
                         <span className="material-symbols-outlined text-sm text-slate-400">schedule</span>
@@ -123,8 +130,23 @@ export default function ReservationsPage() {
                       </span>
                     </div>
                   </div>
-                  {canCancel && (
-                    <div className="flex items-end flex-shrink-0">
+                  <div className="flex flex-col items-end justify-between flex-shrink-0">
+                    {(r.status === 'cancelled' || r.status === 'completed') && (
+                      <button
+                        onClick={() => handleDelete(r.id)}
+                        disabled={deleting === r.id}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded-lg transition-colors disabled:opacity-50"
+                        title="삭제"
+                      >
+                        <span className="material-symbols-outlined text-lg">delete</span>
+                      </button>
+                    )}
+                    {r.status !== 'pending' && (
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_COLOR[r.status]}`}>
+                        {STATUS_LABEL[r.status]}
+                      </span>
+                    )}
+                    {canCancel && (
                       <button
                         onClick={() => handleCancel(r.id)}
                         disabled={cancelling === r.id}
@@ -132,8 +154,8 @@ export default function ReservationsPage() {
                       >
                         {cancelling === r.id ? '취소 중...' : '예약 취소'}
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               );
             })}
