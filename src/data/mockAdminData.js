@@ -76,11 +76,9 @@ export const userGrowth = [
 
 export const navItems = [
   { icon: "dashboard", label: "대시보드", to: "/admin", active: true },
-  { icon: "analytics", label: "분석", to: "/admin" },
   { icon: "group", label: "유저", to: "/admin" },
   { icon: "restaurant", label: "식당", to: "/admin" },
   { icon: "rate_review", label: "리뷰", to: "/admin" },
-  { icon: "settings", label: "설정", to: "/admin" },
 ];
 
 export const LOGO_URL =

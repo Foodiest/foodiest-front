@@ -5,7 +5,6 @@ import { create, update, remove, getByRestaurant } from "../services/reviewServi
 import { uploadReviewImage } from "../services/storageService";
 import { getById as getRestaurantById } from "../services/restaurantService";
 import { useAuth } from "../contexts/AuthContext";
-import { submitReport, hasReported, REPORT_TYPE } from "../services/reportService";
 import defaultRestaurantImg from "../assets/default-restaurant.svg";
 
 const keywordGroups = [
@@ -95,7 +94,6 @@ export default function WriteReviewPage() {
 
   const [restaurant, setRestaurant] = useState(null);
   const [images, setImages] = useState([]);
-  const [isEvent, setIsEvent] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [customKeywords, setCustomKeywords] = useState({ Vibe: [], Taste: [], Service: [] });
@@ -124,11 +122,6 @@ export default function WriteReviewPage() {
         });
         setCustomKeywords(detected);
         setImages(review.images.map((src, idx) => ({ id: `edit-${idx}`, src })));
-        const alreadyReported = await hasReported({
-          reportType: REPORT_TYPE.REVIEW_EVENT,
-          restaurantId,
-        });
-        setIsEvent(alreadyReported);
       }
     })();
   }, [isEditMode, reviewId, restaurantId]);
@@ -232,16 +225,7 @@ export default function WriteReviewPage() {
       await create({ restaurantId, ...payload });
     }
 
-    if (isEvent) {
-      try {
-        await submitReport({
-          reportType: REPORT_TYPE.REVIEW_EVENT,
-          restaurantId,
-        });
-      } catch (e) {
-        // 이미 신고한 경우 무시
-      }
-    }
+
 
     navigate(profile?.user_id ? `/mypage/${profile.user_id}` : "/mypage");
   };
@@ -437,21 +421,6 @@ export default function WriteReviewPage() {
                 </h3>
               </div>
 
-              <label className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-xl cursor-pointer mb-5 hover:bg-red-100/60 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={isEvent}
-                  onChange={(e) => setIsEvent(e.target.checked)}
-                  className="w-4 h-4 accent-red-500 shrink-0"
-                />
-                <div>
-                  <p className="text-sm font-semibold text-red-700 flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm text-red-500">warning</span>
-                    리뷰 이벤트 시행 중
-                  </p>
-                  <p className="text-[11px] text-red-400 mt-0.5">이벤트 참여 리뷰는 신뢰도에 영향을 줄 수 있습니다.</p>
-                </div>
-              </label>
 
               <div className="space-y-5">
                 {keywordGroups.map(({ category, displayCategory, icon, positive, negative }) => (
