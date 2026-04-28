@@ -97,7 +97,7 @@ function RestaurantCard({ r, selectedVibes, selectedFlavors, selectedDietary, on
           </div>
           <p className="text-slate-500 text-xs mb-3">{cuisineMap[r.cuisine] || r.cuisine}</p>
           <div className="flex flex-wrap gap-2 mb-3">
-            {r.tags.map((tag) => (
+            {(r.tags || []).map((tag) => (
               <span key={tag} className="bg-secondary-container/20 text-on-secondary-container px-3 py-1 rounded-full text-xs flex items-center gap-1">
                 <span className="material-symbols-outlined text-xs">auto_awesome</span>
                 {tag}
@@ -105,19 +105,19 @@ function RestaurantCard({ r, selectedVibes, selectedFlavors, selectedDietary, on
             ))}
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {r.vibes.map((v) => (
+            {(r.vibes || []).map((v) => (
               <span key={v} className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${selectedVibes.includes(v) ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-indigo-50 text-indigo-500 border-indigo-100'}`}>
                 <span className="material-symbols-outlined text-[12px]">mood</span>
                 {filterLabelMap[v] || v}
               </span>
             ))}
-            {r.flavors.map((f) => (
+            {(r.flavors || []).map((f) => (
               <span key={f} className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${selectedFlavors.includes(f) ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-50 text-amber-500 border-amber-100'}`}>
                 <span className="material-symbols-outlined text-[12px]">restaurant_menu</span>
                 {filterLabelMap[f] || f}
               </span>
             ))}
-            {r.dietary.map((d) => (
+            {(r.dietary || []).map((d) => (
               <span key={d} className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${selectedDietary.includes(d) ? 'bg-green-500 text-white border-green-500' : 'bg-green-50 text-green-600 border-green-100'}`}>
                 <span className="material-symbols-outlined text-[12px]">eco</span>
                 {filterLabelMap[d] || d}
