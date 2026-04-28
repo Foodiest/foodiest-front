@@ -178,38 +178,33 @@ function KakaoLocationMiniMap({ x, y }) {
   const mapElementRef = useRef(null);
   const [mapError, setMapError] = useState('');
 
+  const hasCoords = x && y;
+
   useEffect(() => {
+    if (!hasCoords) return;
     let isUnmounted = false;
 
     loadKakaoMapSdk()
       .then(kakao => {
-        if (isUnmounted || !mapElementRef.current) {
-          return;
-        }
-
-        const center = new kakao.maps.LatLng(y, x);
-        const map = new kakao.maps.Map(mapElementRef.current, {
-          center,
-          level: 4,
-        });
+        if (isUnmounted || !mapElementRef.current) return;
+        const center = new kakao.maps.LatLng(Number(y), Number(x));
+        const map = new kakao.maps.Map(mapElementRef.current, { center, level: 4 });
         mapRef.current = map;
-
-        new kakao.maps.Marker({
-          map,
-          position: center,
-        });
+        new kakao.maps.Marker({ map, position: center });
       })
-      .catch(error => {
-        if (!isUnmounted) {
-          setMapError(error.message);
-        }
-      });
+      .catch(error => { if (!isUnmounted) setMapError(error.message); });
 
-    return () => {
-      isUnmounted = true;
-      mapRef.current = null;
-    };
+    return () => { isUnmounted = true; mapRef.current = null; };
   }, [x, y]);
+
+  if (!hasCoords) {
+    return (
+      <div className="w-full h-full bg-slate-100 flex items-center justify-center text-xs text-slate-400">
+        <span className="material-symbols-outlined text-sm mr-1">location_off</span>
+        위치 정보 없음
+      </div>
+    );
+  }
 
   if (mapError) {
     return (
@@ -929,7 +924,7 @@ export default function RestaurantDetailPage() {
               <h4 className="font-semibold text-sm text-on-surface mb-1 flex items-center gap-1">
                 <span className="material-symbols-outlined text-sm">location_on</span> 위치
               </h4>
-              <p className="text-sm text-on-surface-variant">124 Via Della Conciliazione, Historic Center</p>
+              <p className="text-sm text-on-surface-variant">{restaurant.address || '주소 정보 없음'}</p>
               <div className="mt-2 h-28 rounded-lg overflow-hidden">
                 <KakaoLocationMiniMap x={restaurantLocation.x} y={restaurantLocation.y} />
               </div>

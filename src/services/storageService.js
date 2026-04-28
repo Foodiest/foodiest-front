@@ -40,6 +40,15 @@ export async function uploadReviewImage(file) {
   return data.publicUrl;
 }
 
+export async function uploadRestaurantImage(file) {
+  const ext = file.name.split('.').pop();
+  const path = `restaurants/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false });
+  if (error) throw error;
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
 export async function deleteReviewImage(publicUrl) {
   const url = new URL(publicUrl);
   // URL 형식: /storage/v1/object/public/review-images/{path}
