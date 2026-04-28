@@ -468,16 +468,40 @@ export default function RestaurantDetailPage() {
           return (
             <div className="grid grid-cols-4 grid-rows-2 gap-3 mb-6" style={{ gridTemplateRows: 'repeat(2, 200px)' }}>
               <div className="col-span-2 row-span-2 relative overflow-hidden rounded-lg">
-                <img src={imgs[0] || defaultRestaurantImg} alt="restaurant" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
+                <img
+                  src={imgs[0] || defaultRestaurantImg}
+                  alt="restaurant"
+                  className={`w-full h-full object-cover transition-opacity${allImgs[0] ? ' cursor-pointer hover:opacity-90' : ''}`}
+                  onClick={() => allImgs[0] && openLightbox(allImgs, 0)}
+                  onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }}
+                />
               </div>
               <div className="col-span-1 row-span-1 relative overflow-hidden rounded-lg">
-                <img src={imgs[1] || defaultRestaurantImg} alt="sub 1" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
+                <img
+                  src={imgs[1] || defaultRestaurantImg}
+                  alt="sub 1"
+                  className={`w-full h-full object-cover transition-opacity${allImgs[1] ? ' cursor-pointer hover:opacity-90' : ''}`}
+                  onClick={() => allImgs[1] && openLightbox(allImgs, 1)}
+                  onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }}
+                />
               </div>
               <div className="col-span-1 row-span-1 relative overflow-hidden rounded-lg">
-                <img src={imgs[2] || defaultRestaurantImg} alt="sub 2" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
+                <img
+                  src={imgs[2] || defaultRestaurantImg}
+                  alt="sub 2"
+                  className={`w-full h-full object-cover transition-opacity${allImgs[2] ? ' cursor-pointer hover:opacity-90' : ''}`}
+                  onClick={() => allImgs[2] && openLightbox(allImgs, 2)}
+                  onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }}
+                />
               </div>
               <div className="col-span-2 row-span-1 relative overflow-hidden rounded-lg">
-                <img src={imgs[3] || defaultRestaurantImg} alt="sub 3" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }} />
+                <img
+                  src={imgs[3] || defaultRestaurantImg}
+                  alt="sub 3"
+                  className={`w-full h-full object-cover transition-opacity${allImgs[3] ? ' cursor-pointer hover:opacity-90' : ''}`}
+                  onClick={() => allImgs[3] && openLightbox(allImgs, 3)}
+                  onError={(e) => { e.currentTarget.src = defaultRestaurantImg; }}
+                />
               </div>
             </div>
           );
