@@ -40,6 +40,15 @@ export async function cancelReservation(id) {
   if (error) throw error;
 }
 
+export async function deleteReservation(id) {
+  const { error } = await supabase
+    .from('reservations')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
 export async function getBookedSlots(restaurantId, date) {
   const { data, error } = await supabase
     .from('reservations')
