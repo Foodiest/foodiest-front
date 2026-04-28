@@ -347,7 +347,7 @@ export default function RestaurantDetailPage() {
     if (!restaurant || reviews.length === 0) return;
     setAiLoading(true);
     setAiError('');
-    analyzeReviews(restaurant.name, reviews)
+    analyzeReviews(restaurant.id, restaurant.name, reviews)
       .then((result) => setAiAnalysis(result))
       .catch((err) => setAiError(err.message))
       .finally(() => setAiLoading(false));
