@@ -1,37 +1,28 @@
 """
-csv_to_sql.py
-─────────────────────────────────────────────────────────────
-식당 CSV 데이터를 Supabase restaurants / menus / reviews
-INSERT/UPDATE SQL 실행문으로 변환하는 스크립트
-
-사용법:
-    python csv_to_sql.py --input <CSV파일> [옵션]
-
-옵션:
-    --input   -i   변환할 CSV 파일 경로 (필수)
-    --output  -o   출력 SQL 파일 경로 (기본: <입력파일명>.sql)
-    --base    -b   기존 CSV 파일 경로 (id 매핑용, 없으면 전부 NEW INSERT)
-    --id-start     새 식당 시작 id (기본: 1, --base 사용 시 자동 계산)
-    --menu-id-start  메뉴 시작 id (기본: 1, --base 사용 시 자동 계산)
-    --user-id      리뷰에 사용할 user_id (기본: 1)
-
-예시:
-    # 최초 시드 (기존 DB 없음)
-    python csv_to_sql.py -i restaurant_final_complete.csv
-
-    # 추가/수정 데이터 (기존 파일 참조해서 id 자동 매핑)
-    python csv_to_sql.py -i restaurant_retry_data.csv -b restaurant_final_complete.csv
-
-    # 출력 파일명 지정
-    python csv_to_sql.py -i new_data.csv -b base.csv -o output/seed.sql
-─────────────────────────────────────────────────────────────
+csv_to_sql.py  —  CSV -> Supabase SQL 변환기
+==============================================
+아래 설정만 바꾸고  python csv_to_sql.py  실행하면 끝!
 """
 
-import argparse
 import re
 import sys
 import uuid
 from pathlib import Path
+
+# =============================================
+# 여기만 수정하세요
+# =============================================
+
+# 변환할 CSV 파일 이름 (프로젝트 루트 기준)
+INPUT_CSV = "restaurant_retry_fixed.csv"
+
+# 기존 DB의 기준 CSV (id 중복 방지용). 처음 시드라면 None 으로
+BASE_CSV = "restaurant_final_complete.csv"
+
+# 리뷰에 사용할 user_id (Supabase users 테이블에 실제 존재하는 id)
+USER_ID = 1
+
+# =============================================
 
 try:
     import pandas as pd
@@ -138,9 +129,8 @@ def build_menu_sql(rid: int, name: str, menus: list, menu_id: int, is_new: bool)
         lines.append(f"DELETE FROM public.menus WHERE restaurant_id = {rid};")
 
     for mname, mprice in menus:
-        lines.append("INSERT INTO public.menus (id, restaurant_id, name, price)")
-        lines.append(f"VALUES ({menu_id}, {rid}, '{escape_sql(mname)}', {mprice});")
-        menu_id += 1
+        lines.append("INSERT INTO public.menus (restaurant_id, name, price)")
+        lines.append(f"VALUES ({rid}, '{escape_sql(mname)}', {mprice});")
 
     return lines, menu_id
 
@@ -289,60 +279,34 @@ def convert(
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write('\n'.join(lines))
 
-    print(f"✅ SQL 생성 완료: {output_path}")
-    print(f"   식당 {len(df)}개 (NEW {new_count} / UPDATE {update_count})")
-    print(f"   메뉴 {total_menus}건 / 리뷰 {total_reviews}건")
+    print(f"완료: 식당 {len(df)}개 (NEW {new_count} / UPDATE {update_count}), 메뉴 {total_menus}건, 리뷰 {total_reviews}건")
 
 
 # ─────────────────────────────────────────────
-# CLI
+# 실행
 # ─────────────────────────────────────────────
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="식당 CSV → Supabase SQL 변환기",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-예시:
-  # 최초 시드
-  python csv_to_sql.py -i restaurant_final_complete.csv
+if __name__ == '__main__':
+    # CSV 파일은 프로젝트 루트(src/python 두 단계 위)에서 찾음
+    root = Path(__file__).parent.parent.parent
+    input_path = root / INPUT_CSV
+    base_path  = (root / BASE_CSV) if BASE_CSV else None
+    output_path = input_path.with_suffix('.sql')
 
-  # 추가/수정 데이터 (기존 파일 기반 id 자동 매핑)
-  python csv_to_sql.py -i retry_data.csv -b restaurant_final_complete.csv
-
-  # 출력 경로 지정
-  python csv_to_sql.py -i new.csv -b base.csv -o output/seed.sql
-        """
-    )
-    parser.add_argument('-i', '--input',   required=True, help='변환할 CSV 파일 경로')
-    parser.add_argument('-o', '--output',  default=None,  help='출력 SQL 파일 경로 (기본: 입력파일명.sql)')
-    parser.add_argument('-b', '--base',    default=None,  help='기존 CSV 파일 경로 (id 매핑용)')
-    parser.add_argument('--id-start',      type=int, default=None, help='새 식당 시작 id (기본: 자동)')
-    parser.add_argument('--menu-id-start', type=int, default=None, help='메뉴 시작 id (기본: 자동)')
-    parser.add_argument('--user-id',       type=int, default=1,    help='리뷰 user_id (기본: 1)')
-
-    args = parser.parse_args()
-
-    input_path = args.input
-    output_path = args.output or str(Path(input_path).with_suffix('.sql'))
-
-    if not Path(input_path).exists():
-        print(f"❌ 파일을 찾을 수 없습니다: {input_path}")
+    if not input_path.exists():
+        print(f"파일을 찾을 수 없습니다: {input_path}")
         sys.exit(1)
 
-    if args.base and not Path(args.base).exists():
-        print(f"❌ base 파일을 찾을 수 없습니다: {args.base}")
+    if base_path and not base_path.exists():
+        print(f"BASE_CSV 파일을 찾을 수 없습니다: {base_path}")
         sys.exit(1)
 
     convert(
-        input_path=input_path,
-        output_path=output_path,
-        base_path=args.base,
-        id_start=args.id_start,
-        menu_id_start=args.menu_id_start,
-        user_id=args.user_id,
+        input_path=str(input_path),
+        output_path=str(output_path),
+        base_path=str(base_path) if base_path else None,
+        id_start=None,
+        menu_id_start=None,
+        user_id=USER_ID,
     )
-
-
-if __name__ == '__main__':
-    main()
+    print(f"SQL 저장 위치: {output_path}")

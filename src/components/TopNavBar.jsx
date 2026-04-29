@@ -24,6 +24,7 @@ export default function TopNavBar() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -116,7 +117,8 @@ export default function TopNavBar() {
 
   return (
     <nav className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
-      <div className="flex justify-between items-center h-16 px-6 max-w-7xl mx-auto font-[Epilogue] antialiased">
+      <div className="max-w-7xl mx-auto font-[Epilogue] antialiased">
+      <div className="flex justify-between items-center h-16 px-4 md:px-6">
 
         <Link to="/" onClick={() => { window.location.href = '/'; }} className="flex items-center gap-2">
           <img
@@ -146,7 +148,18 @@ export default function TopNavBar() {
           })}
         </div>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center gap-3">
+          {/* 모바일 햄버거 버튼 */}
+          <button
+            className="md:hidden flex items-center text-gray-600 active:scale-95 transition-transform"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            aria-label="메뉴 열기"
+          >
+            <span className="material-symbols-outlined">
+              {mobileMenuOpen ? 'close' : 'menu'}
+            </span>
+          </button>
+
           {isLoggedIn ? (
             <>
               {/* 알림 버튼 */}
@@ -164,7 +177,7 @@ export default function TopNavBar() {
                 </button>
 
                 {notifOpen && (
-                  <div className="absolute right-0 top-10 w-80 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden">
+                  <div className="absolute right-0 top-10 w-[min(320px,calc(100vw-1rem))] bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden">
                     <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
                       <h4 className="font-semibold text-sm text-slate-800">알림</h4>
                       {notifications.length > 0 && (
@@ -271,6 +284,30 @@ export default function TopNavBar() {
             </Link>
           )}
         </div>
+      </div>
+
+      {/* 모바일 드롭다운 메뉴 */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-gray-100 bg-white">
+          {navLinks.map((link) => {
+            const isActive = location.pathname === link.to;
+            return (
+              <Link
+                key={link.to}
+                to={link.to}
+                onClick={(e) => { handleNavClick(e, link); setMobileMenuOpen(false); }}
+                className={`block px-6 py-3 text-sm font-medium border-b border-gray-50 transition-colors ${
+                  isActive
+                    ? 'text-orange-600 bg-orange-50'
+                    : 'text-gray-600 hover:text-orange-600 hover:bg-gray-50'
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
       </div>
     </nav>
   );

@@ -33,9 +33,9 @@ function RestaurantCard({ r, selectedVibes, selectedFlavors, selectedDietary, on
   return (
     <div
       onClick={onSelect}
-      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 overflow-hidden flex flex-col md:flex-row w-full h-[19rem]"
+      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 overflow-hidden flex flex-col md:flex-row w-full md:h-[19rem]"
     >
-      <div className="md:w-1/3 min-w-0 relative min-h-[12rem] md:min-h-0">
+      <div className="md:w-1/3 min-w-0 relative h-48 md:h-full flex-shrink-0">
         <img
           src={allImgs[imgIdx] || defaultRestaurantImg}
           alt={r.name}
@@ -72,7 +72,7 @@ function RestaurantCard({ r, selectedVibes, selectedFlavors, selectedDietary, on
           </div>
         )}
       </div>
-      <div className="p-6 md:w-2/3 flex flex-col justify-between">
+      <div className="p-4 md:p-6 md:w-2/3 flex flex-col justify-between min-h-0">
         <div>
           <div className="flex justify-between items-start mb-1">
             <h3 className="font-[Epilogue] text-xl font-semibold">{r.name}</h3>
@@ -477,7 +477,7 @@ export default function HomePage() {
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="relative h-[500px] flex items-center justify-center overflow-hidden">
+      <section className="relative h-[280px] md:h-[500px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
             className="w-full h-full object-cover brightness-[0.4]"
@@ -485,17 +485,17 @@ export default function HomePage() {
             alt="hero"
           />
         </div>
-        <div className="relative z-10 w-full max-w-4xl px-6 text-center">
-          <h1 className="font-[Epilogue] text-[48px] font-bold leading-tight text-white mb-4">
+        <div className="relative z-10 w-full max-w-4xl px-4 md:px-6 text-center">
+          <h1 className="font-[Epilogue] text-2xl md:text-[48px] font-bold leading-tight text-white mb-2 md:mb-4">
             나만의 취향에 맞는 정밀한 다이닝
           </h1>
-          <p className="text-white/90 text-lg mb-8">
+          <p className="text-white/90 text-sm md:text-lg mb-4 md:mb-8">
             AI 기반 인사이트로 나만의 맛집 지도를 완성하세요.
           </p>
 
           {/* Search Bar */}
           <div className="bg-white p-2 rounded-xl shadow-xl flex flex-col md:flex-row gap-2">
-            <div className="flex-1 flex items-center px-4 border-r border-slate-100">
+            <div className="flex-1 flex items-center px-4 md:border-r border-slate-100">
               <span className="material-symbols-outlined text-secondary mr-2">
                 search
               </span>
@@ -515,8 +515,8 @@ export default function HomePage() {
       </section>
 
       {/* Filter Section */}
-      <section className="max-w-screen-xl mx-auto px-6 py-10">
-        <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-100">
+      <section className="max-w-screen-xl mx-auto px-4 md:px-6 py-6 md:py-10">
+        <div className="bg-white p-4 md:p-8 rounded-xl shadow-sm border border-slate-100">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
               <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
@@ -598,7 +598,7 @@ export default function HomePage() {
       </section>
 
       {/* Results + Map */}
-      <section className="max-w-screen-xl mx-auto px-6 pb-20 grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <section className="max-w-screen-xl mx-auto px-4 md:px-6 pb-16 md:pb-20 grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Results */}
         <div className="lg:col-span-8">
           <div className="flex justify-between items-end mb-6">

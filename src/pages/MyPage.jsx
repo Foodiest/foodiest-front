@@ -7,7 +7,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { filterLabelMap, cuisineMap } from "../data/mockFilters";
 import { getByUser } from "../services/reviewService";
 import { getById as getRestaurantById } from "../services/restaurantService";
-import { follow, unfollow, checkIsFollowing, getFollowing, getFollowersCount } from "../services/followService";
+import { follow, unfollow, checkIsFollowing, getFollowersCount } from "../services/followService";
 import { supabase } from "../lib/supabase";
 import ReviewReportButton from "../components/ReviewReportButton";
 
@@ -192,8 +192,6 @@ export default function MyPage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
-  const [showFollowingModal, setShowFollowingModal] = useState(false);
-  const [followingList, setFollowingList] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [sortOrder, setSortOrder] = useState("latest");
   const [showSortMenu, setShowSortMenu] = useState(false);
@@ -258,6 +256,7 @@ export default function MyPage() {
           keywords: r.keywords ?? {},
           images: r.images?.length ? r.images : [defaultRestaurantImg],
           createdAt: r.created_at,
+          likesCount: r.likes_count ?? 0,
         }))
       );
     });
@@ -308,18 +307,12 @@ export default function MyPage() {
     }
   };
 
-  const handleOpenFollowingModal = async () => {
-    if (!profile?.auth_id) return;
-    setShowFollowingModal(true);
-    const list = await getFollowing(profile.auth_id);
-    setFollowingList(list);
-  };
-
   const sortedReviews = useMemo(() => {
     const copy = [...reviews];
     if (sortOrder === "latest") return copy.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     if (sortOrder === "rating_high") return copy.sort((a, b) => b.stars - a.stars || new Date(b.createdAt) - new Date(a.createdAt));
     if (sortOrder === "rating_low") return copy.sort((a, b) => a.stars - b.stars || new Date(b.createdAt) - new Date(a.createdAt));
+    if (sortOrder === "likes") return copy.sort((a, b) => (b.likesCount ?? 0) - (a.likesCount ?? 0) || new Date(b.createdAt) - new Date(a.createdAt));
     return copy;
   }, [reviews, sortOrder]);
 
@@ -419,11 +412,11 @@ export default function MyPage() {
             </div>
             {isOwnProfile ? (
               <button
-                onClick={handleOpenFollowingModal}
+                onClick={() => navigate('/follow')}
                 className="rounded-xl font-bold transition-all active:scale-95 px-4 py-3 bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 text-sm flex items-center justify-center gap-1.5"
               >
                 <span className="material-symbols-outlined text-sm">group</span>
-                팔로우 목록
+                팔로잉 페이지
               </button>
             ) : (
               <button
@@ -530,6 +523,7 @@ export default function MyPage() {
                 {sortOrder === "latest" && "최신순"}
                 {sortOrder === "rating_high" && "별점 높은순"}
                 {sortOrder === "rating_low" && "별점 낮은순"}
+                {sortOrder === "likes" && "추천순"}
                 <span className="material-symbols-outlined text-sm">expand_more</span>
               </button>
               {showSortMenu && (
@@ -538,6 +532,7 @@ export default function MyPage() {
                     { key: "latest", label: "최신순" },
                     { key: "rating_high", label: "별점 높은순" },
                     { key: "rating_low", label: "별점 낮은순" },
+                    { key: "likes", label: "추천순" },
                   ].map(({ key, label }) => (
                     <button
                       key={key}
@@ -572,60 +567,6 @@ export default function MyPage() {
         </section>
       </main>
 
-      {/* 팔로잉 목록 모달 */}
-      {showFollowingModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
-          onClick={() => setShowFollowingModal(false)}
-        >
-          <div
-            className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
-              <h3 className="font-[Epilogue] text-lg font-bold text-on-surface">팔로우 목록</h3>
-              <button
-                onClick={() => setShowFollowingModal(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-
-            <div className="max-h-96 overflow-y-auto">
-              {followingList.length === 0 ? (
-                <div className="py-16 text-center text-slate-400">
-                  <span className="material-symbols-outlined text-3xl mb-2 block">group_off</span>
-                  <p className="text-sm">아직 팔로우한 유저가 없습니다.</p>
-                </div>
-              ) : (
-                followingList.map((user) => (
-                  <button
-                    key={user.auth_id}
-                    onClick={() => {
-                      setShowFollowingModal(false);
-                      navigate(`/mypage/${user.user_id}`);
-                    }}
-                    className="w-full flex items-center gap-4 px-6 py-4 hover:bg-orange-50 transition-colors border-b border-slate-50 last:border-none"
-                  >
-                    <div className="w-11 h-11 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      {user.profile_image
-                        ? <img src={user.profile_image} alt={user.nickname} className="w-full h-full object-cover" />
-                        : <span className="text-primary font-bold text-sm">{(user.nickname || user.user_id).slice(0, 2).toUpperCase()}</span>
-                      }
-                    </div>
-                    <div className="flex-1 text-left min-w-0">
-                      <p className="font-semibold text-sm text-on-surface truncate">{user.nickname || user.user_id}</p>
-                      <p className="text-xs text-slate-400 truncate">{user.user_id}</p>
-                    </div>
-                    <span className="material-symbols-outlined text-slate-300 text-sm">chevron_right</span>
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </Layout>
   );
 }
