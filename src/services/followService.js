@@ -78,3 +78,29 @@ export async function getFollowingCount(authId) {
   if (error) return 0;
   return count ?? 0;
 }
+
+export async function getFollowingFeed(authId) {
+  const { data: followRows, error } = await supabase
+    .from('follows')
+    .select('following_auth_id')
+    .eq('follower_auth_id', authId);
+  if (error || !followRows?.length) return { users: [], reviews: [] };
+
+  const authIds = followRows.map((r) => r.following_auth_id);
+
+  const { data: users } = await supabase
+    .from('users')
+    .select('id, user_id, nickname, profile_image, auth_id')
+    .in('auth_id', authIds);
+  if (!users?.length) return { users: [], reviews: [] };
+
+  const dbUserIds = users.map((u) => u.id);
+  const { data: reviews } = await supabase
+    .from('reviews')
+    .select('*, users(user_id, nickname, profile_image), restaurants(id, name, image)')
+    .in('user_id', dbUserIds)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  return { users, reviews: reviews ?? [] };
+}

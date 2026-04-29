@@ -5,7 +5,7 @@ import Layout from '../components/Layout';
 import { filterLabelMap, cuisineMap } from '../data/mockFilters';
 import { getById } from '../services/restaurantService';
 import { getByRestaurant as getMenusByRestaurant } from '../services/menuService';
-import { getByRestaurant } from '../services/reviewService';
+import { getByRestaurant, toggleLike, getLikedReviewIds } from '../services/reviewService';
 import { useAuth } from '../contexts/AuthContext';
 import { isSaved as isSavedService, toggleSaved as toggleSavedService } from '../services/savedService';
 import { analyzeReviews } from '../services/aiAnalysisService';
@@ -251,6 +251,7 @@ export default function RestaurantDetailPage() {
   const [copyToast, setCopyToast] = useState(false);
   const [saved, setSaved] = useState(false);
   const [sortOrder, setSortOrder] = useState('latest');
+  const [likedReviews, setLikedReviews] = useState(new Set());
   const [lightbox, setLightbox] = useState({ open: false, images: [], index: 0 });
 
   // AI 분석 상태
@@ -352,6 +353,40 @@ export default function RestaurantDetailPage() {
       .catch((err) => setAiError(err.message))
       .finally(() => setAiLoading(false));
   }, [restaurant, reviews]);
+
+  useEffect(() => {
+    if (!isLoggedIn || reviews.length === 0) return;
+    getLikedReviewIds(reviews.map((r) => r.id)).then(setLikedReviews);
+  }, [isLoggedIn, reviews]);
+
+  const handleLikeToggle = async (reviewId) => {
+    if (!isLoggedIn) { navigate('/login'); return; }
+    const wasLiked = likedReviews.has(reviewId);
+    setLikedReviews((prev) => {
+      const next = new Set(prev);
+      wasLiked ? next.delete(reviewId) : next.add(reviewId);
+      return next;
+    });
+    setReviews((prev) => prev.map((r) =>
+      r.id === reviewId
+        ? { ...r, likes_count: Math.max(0, (r.likes_count ?? 0) + (wasLiked ? -1 : 1)) }
+        : r
+    ));
+    try {
+      await toggleLike(reviewId);
+    } catch {
+      setLikedReviews((prev) => {
+        const next = new Set(prev);
+        wasLiked ? next.add(reviewId) : next.delete(reviewId);
+        return next;
+      });
+      setReviews((prev) => prev.map((r) =>
+        r.id === reviewId
+          ? { ...r, likes_count: Math.max(0, (r.likes_count ?? 0) + (wasLiked ? 1 : -1)) }
+          : r
+      ));
+    }
+  };
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href).then(() => {
@@ -733,6 +768,7 @@ export default function RestaurantDetailPage() {
                     { value: 'latest', label: '최신순' },
                     { value: 'high', label: '별점 높은순' },
                     { value: 'low', label: '별점 낮은순' },
+                    { value: 'likes', label: '추천순' },
                   ].map(({ value, label }) => (
                     <button
                       key={value}
@@ -766,8 +802,9 @@ export default function RestaurantDetailPage() {
             ) : (
               <div className="space-y-4">
                 {[...reviews].sort((a, b) => {
-                  if (sortOrder === 'high') return b.rating - a.rating;
-                  if (sortOrder === 'low') return a.rating - b.rating;
+                  if (sortOrder === 'high') return b.rating - a.rating || new Date(b.created_at) - new Date(a.created_at);
+                  if (sortOrder === 'low') return a.rating - b.rating || new Date(b.created_at) - new Date(a.created_at);
+                  if (sortOrder === 'likes') return (b.likes_count ?? 0) - (a.likes_count ?? 0) || new Date(b.created_at) - new Date(a.created_at);
                   return new Date(b.created_at) - new Date(a.created_at);
                 }).map((review) => {
                   const nickname = review.users?.nickname ?? '익명';
@@ -848,6 +885,24 @@ export default function RestaurantDetailPage() {
                           ))}
                         </div>
                       )}
+                      <div className="mt-3 pt-3 border-t border-slate-50 flex items-center">
+                        <button
+                          onClick={() => handleLikeToggle(review.id)}
+                          className={`flex items-center gap-1.5 text-sm font-medium transition-all active:scale-95 select-none ${
+                            likedReviews.has(review.id)
+                              ? 'text-orange-500'
+                              : 'text-slate-400 hover:text-orange-400'
+                          }`}
+                        >
+                          <span
+                            className="material-symbols-outlined text-base"
+                            style={{ fontVariationSettings: likedReviews.has(review.id) ? "'FILL' 1" : "'FILL' 0" }}
+                          >
+                            thumb_up
+                          </span>
+                          <span>추천 {review.likes_count ?? 0}</span>
+                        </button>
+                      </div>
                     </div>
                   );
                 })}

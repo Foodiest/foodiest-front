@@ -96,3 +96,39 @@ export async function remove(reviewId) {
     .eq('user_id', userId);
   if (error) throw error;
 }
+
+export async function toggleLike(reviewId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('로그인이 필요합니다.');
+
+  const { data: existing } = await supabase
+    .from('review_likes')
+    .select('id')
+    .eq('review_id', reviewId)
+    .eq('user_auth_id', user.id)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase.from('review_likes').delete().eq('id', existing.id);
+    await supabase.rpc('decrement_review_likes', { rid: reviewId });
+    return false;
+  } else {
+    const { error } = await supabase
+      .from('review_likes')
+      .insert({ review_id: reviewId, user_auth_id: user.id });
+    if (error && error.code === '23505') return true;
+    await supabase.rpc('increment_review_likes', { rid: reviewId });
+    return true;
+  }
+}
+
+export async function getLikedReviewIds(reviewIds) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !reviewIds.length) return new Set();
+  const { data } = await supabase
+    .from('review_likes')
+    .select('review_id')
+    .in('review_id', reviewIds)
+    .eq('user_auth_id', user.id);
+  return new Set((data ?? []).map((d) => d.review_id));
+}
